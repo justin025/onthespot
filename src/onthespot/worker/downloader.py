@@ -38,7 +38,7 @@ class DownloadWorker(QObject):
             f"extra_path_as_root: '{extra_path_as_root}' ")
         if trk_track_id_str in cancel_list:
             self.logger.info(f'The media : {trk_track_id_str} was cancelled !')
-            self.progress.emit([trk_track_id_str, "Cancelled", [0, 100]])
+            self.progress.emit([trk_track_id_str, self.tr("Cancelled"), [0, 100]])
             cancel_list.pop(trk_track_id_str)
             failed_downloads[trk_track_id_str] = {}
             self.__last_cancelled = True
@@ -91,12 +91,12 @@ class DownloadWorker(QObject):
         except Exception:
             self.logger.error(
                 f"Metadata fetching failed for track by id '{trk_track_id_str}', {traceback.format_exc()}")
-            self.progress.emit([trk_track_id_str, "Get metadata failed", None])
+            self.progress.emit([trk_track_id_str, self.tr("Get metadata failed"), [0, 100]])
             return False
         try:
             if not song_info['is_playable']:
                 self.logger.error(f"Track is unavailable, track id '{trk_track_id_str}'")
-                self.progress.emit([trk_track_id_str, "Unavailable", [0, 100]])
+                self.progress.emit([trk_track_id_str, self.tr("Unavailable"), [0, 100]])
                 unavailable.add(trk_track_id_str)
                 # Do not wait for n second before next download
                 self.__last_cancelled = True
@@ -150,9 +150,9 @@ class DownloadWorker(QObject):
                             if (total_size - downloaded) < _CHUNK_SIZE:
                                 _CHUNK_SIZE = total_size - downloaded
                             if fail > config.get("max_retries"):
-                                self.progress.emit([trk_track_id_str, "RETRY " + str(fail + 1), None])
+                                self.progress.emit([trk_track_id_str, self.tr("RETRY ") + str(fail + 1), None])
                                 self.logger.error(f"Max retries exceed for track by id '{trk_track_id_str}'")
-                                self.progress.emit([trk_track_id_str, "PD error. Will retry", None])
+                                self.progress.emit([trk_track_id_str, self.tr("PD error. Will retry"), None])
                                 if os.path.exists(filename):
                                     os.remove(filename)
                                 return None
@@ -171,24 +171,24 @@ class DownloadWorker(QObject):
                         )
                     self.logger.info(f"Downloaded track by id '{trk_track_id_str}'")
                     if config.get('inp_enable_lyrics'):
-                        self.progress.emit([trk_track_id_str, "Getting Lyrics", None])
+                        self.progress.emit([trk_track_id_str, self.tr("Getting Lyrics"), None])
                         self.logger.info(f'Fetching lyrics for track id: {trk_track_id_str}, '
                                          f'{config.get("only_synced_lyrics")}')
                         try:
                             lyrics = get_track_lyrics(session, trk_track_id_str, song_info, config.get('only_synced_lyrics'))
                             if lyrics:
                                 self.logger.info(f'Found lyrics for: {trk_track_id_str}, writing...')
-                                if config.get('use_lrc_file', 1):
+                                if config.get('use_lrc_file'):
                                     with open(filename[0:-len(config.get('media_format'))] + 'lrc', 'w',
                                               encoding='utf-8') as f:
                                         f.write(lyrics)
-                                if config.get('embed_lyrics', 0):
+                                if config.get('embed_lyrics'):
                                     set_audio_tags(filename, {'lyrics': lyrics}, trk_track_id_str)
                                 self.logger.info(f'lyrics saved for: {trk_track_id_str}')
                         except Exception:
                             self.logger.error(f'Could not get lyrics for {trk_track_id_str}, '
                                               f'unexpected error: {traceback.format_exc()}')
-                    self.progress.emit([trk_track_id_str, "Downloaded", [100, 100],
+                    self.progress.emit([trk_track_id_str, self.tr("Downloaded"), [100, 100],
                                         filename,
                                         f'{song_info["name"]} [{_artist} - {song_info["album_name"]}:{song_info["release_year"]}].f{config.get("media_format")}'])
                     return True
@@ -197,7 +197,7 @@ class DownloadWorker(QObject):
                 os.remove(filename)
             self.logger.error(
                 f"Network timeout from spotify for track by id '{trk_track_id_str}', download will be retried !")
-            self.progress.emit([trk_track_id_str, "Timeout. Will retry", None])
+            self.progress.emit([trk_track_id_str, self.tr("Timeout. Will retry"), None])
             return None
         except subprocess.CalledProcessError as exc:
             if os.path.exists(filename):
@@ -206,13 +206,13 @@ class DownloadWorker(QObject):
                 f"Decoding error for track by id '{trk_track_id_str}', "
                 f"possibly due to use of rate limited spotify account ! {exc.returncode} | {exc.output}"
             )
-            self.progress.emit([trk_track_id_str, "Decode error. Will retry", None])
+            self.progress.emit([trk_track_id_str, self.tr("Decode error. Will retry"), None])
             traceback.print_exc()
             return None
         except Exception:
             if os.path.exists(filename):
                 os.remove(filename)
-            self.progress.emit([trk_track_id_str, "Failed", None])
+            self.progress.emit([trk_track_id_str, self.tr("Failed"), [0, 100]])
             self.logger.error(
                 f"Download failed for track by id '{trk_track_id_str}', Unexpected error: {traceback.format_exc()} !")
             return False
@@ -225,7 +225,7 @@ class DownloadWorker(QObject):
         if extra_paths == "":
             extra_paths = os.path.join(extra_paths, podcast_name)
         if podcast_name is None:
-            self.progress.emit([episode_id_str, "Not Found", [0, 100]])
+            self.progress.emit([episode_id_str, self.tr("Not Found"), [0, 100]])
             self.logger.error(f"Download failed for episode by id '{episode_id_str}', Not found")
             return False
         else:
@@ -247,12 +247,12 @@ class DownloadWorker(QObject):
 
                 if os.path.isfile(file_path) and os.path.getsize(file_path) and skip_existing_file:
                     self.logger.info(f"Episode by id '{episode_id_str}', already exists.. Skipping ")
-                    self.progress.emit([episode_id_str, "Downloaded", [100, 100], file_path, filename])
+                    self.progress.emit([episode_id_str, self.tr("Downloaded"), [100, 100], file_path, filename])
                     return True
                 with open(file_path, 'wb') as file:
                     while downloaded <= total_size:
                         if episode_id_str in cancel_list:
-                            self.progress.emit([episode_id_str, "Cancelled", [0, 100]])
+                            self.progress.emit([episode_id_str, self.tr("Cancelled"), [0, 100]])
                             cancel_list.pop(episode_id_str)
                             self.__last_cancelled = True
                             if os.path.exists(file_path):
@@ -268,15 +268,15 @@ class DownloadWorker(QObject):
                         if len(data) == 0:
                             fail += 1
                         if fail > config.get("max_retries"):
-                            self.progress.emit([episode_id_str, "RETRY " + str(fail + 1), None])
+                            self.progress.emit([episode_id_str, self.tr("RETRY ") + str(fail + 1), None])
                             break
                 if downloaded >= total_size:
                     self.logger.info(f"Episode by id '{episode_id_str}', downloaded")
                     if extension not in ['ogg', 'wav']:
-                        self.progress.emit([episode_id_str, "Converting", None, file_path, filename])
+                        self.progress.emit([episode_id_str, self.tr("Converting"), None, file_path, filename])
                         convert_audio_format(file_path, quality)
                     self.logger.info(f'Writing metadata for episode "{episode_id_str}" ')
-                    self.progress.emit([episode_id_str, "Writing metadata", None, file_path, filename])
+                    self.progress.emit([episode_id_str, self.tr("Writing metadata"), None, file_path, filename])
                     set_audio_tags(
                         file_path,
                         {
@@ -289,15 +289,15 @@ class DownloadWorker(QObject):
                         },
                         episode_id_str
                     )
-                    self.progress.emit([episode_id_str, "Setting thumbnail", None, file_path, filename])
+                    self.progress.emit([episode_id_str, self.tr("Setting thumbnail"), None, file_path, filename])
                     self.logger.info(f'Setting thumbnail for episode "{episode_id_str}" ')
                     set_music_thumbnail(file_path, thumbnail)
-                    self.progress.emit([episode_id_str, "Downloaded", [100, 100], file_path, filename])
+                    self.progress.emit([episode_id_str, self.tr("Downloaded"), [100, 100], file_path, filename])
                     return True
                 else:
                     self.logger.error(
                         f"Downloading failed for episode by id '{episode_id_str}', partial download failed !")
-                    self.progress.emit([episode_id_str, "Failed", [0, 100]])
+                    self.progress.emit([episode_id_str, self.tr("Failed"), [0, 100]])
                     return False
             except subprocess.CalledProcessError as exc:
                 if os.path.exists(file_path):
@@ -306,7 +306,7 @@ class DownloadWorker(QObject):
                     f"Decoding error for track by id '{episode_id_str}', "
                     f"possibly due to use of rate limited spotify account ! {exc.returncode} | {exc.output}"
                 )
-                self.progress.emit([episode_id_str, "Decode error. Will retry", None])
+                self.progress.emit([episode_id_str, self.tr("Decode error. Will retry"), None])
                 traceback.print_exc()
                 return None
             except Exception:
@@ -314,7 +314,7 @@ class DownloadWorker(QObject):
                     f"Downloading failed for episode by id "
                     f"'{episode_id_str}', Unexpected Exception: {traceback.format_exc()}"
                 )
-                self.progress.emit([episode_id_str, "Failed", [0, 100]])
+                self.progress.emit([episode_id_str, self.tr("Failed"), [0, 100]])
                 return False
 
     def run(self):
@@ -337,7 +337,7 @@ class DownloadWorker(QObject):
                 status = False
                 download = True
                 selected_uuid = fetch_account_uuid(download)
-                self.progress.emit([item['media_id'], "Downloading", None])
+                self.progress.emit([item['media_id'], self.tr("Downloading"), None])
                 try:
                     if item['media_type'] == "track":
                         status = self.download_track(
@@ -370,7 +370,7 @@ class DownloadWorker(QObject):
                         while wait_ - int(time.time()) > 0:
                             self.logger.error(f"Retrying '{item['media_id']}' in {wait_ - int(time.time())} sec")
                             self.progress.emit(
-                                [item['media_id'], f"Retrying in {wait_ - int(time.time())} sec", [0, 100]]
+                                [item['media_id'], self.tr("Retrying in {0} sec").format(wait_ - int(time.time())), [0, 100]]
                             )
                             time.sleep(1)
                     else:

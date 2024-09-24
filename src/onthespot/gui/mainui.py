@@ -9,7 +9,7 @@ from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QApplication, QMainWindow, QHeaderView, QLabel, QPushButton, QProgressBar, QTableWidgetItem, QFileDialog
 from ..exceptions import EmptySearchResultException
 from ..utils.spotify import search_by_term, get_thumbnail
-from ..utils.utils import fetch_account_uuid, name_by_from_sdata, login_user, remove_user, get_url_data, re_init_session
+from ..utils.utils import fetch_account_uuid, name_by_from_sdata, login_user, remove_user, get_url_data, re_init_session, latest_release, open_item
 from ..worker import LoadSessions, ParsingQueueProcessor, MediaWatcher, PlayListMaker, DownloadWorker
 from ..worker.zeroconf import new_session
 from .dl_progressbtn import DownloadActionsButtons
@@ -29,32 +29,37 @@ def dl_progress_update(data):
     progress = data[2]
     try:
         if status is not None:
-            if status.lower() in ['failed', 'cancelled', 'unavailable']:
+            if progress == [0, 100]:
                 downloads_status[media_id]["btn"]['cancel'].hide()
-                if status.lower() != "unavailable":
-                    if config.get("download_copy_btn"):
-                        downloads_status[media_id]['btn']['copy'].show()
-                    downloads_status[media_id]["btn"]['retry'].show()
-            if 'downloading' == status.lower():
+                if config.get("download_copy_btn"):
+                    downloads_status[media_id]['btn']['copy'].show()
+                downloads_status[media_id]["btn"]['retry'].show()
+            elif progress != [0, 100]:
                 downloads_status[media_id]["btn"]['retry'].hide()
                 if config.get("download_copy_btn"):
                     downloads_status[media_id]['btn']['copy'].show()
                 downloads_status[media_id]["btn"]['cancel'].show()
             downloads_status[media_id]["status_label"].setText(status)
             logger.debug(f"Updating status text for download item '{media_id}' to '{status}'")
-        if progress is not None:
+        if progress != None:
             percent = int((progress[0] / progress[1]) * 100)
             if percent >= 100:
                 downloads_status[media_id]['btn']['cancel'].hide()
                 downloads_status[media_id]['btn']['retry'].hide()
                 if config.get("download_copy_btn"):
                     downloads_status[media_id]['btn']['copy'].show()
-                if config.get("download_save_btn"):
-                    downloads_status[media_id]['btn']['save'].show()
                 if config.get("download_play_btn"):
                     downloads_status[media_id]['btn']['play'].show()
+                if config.get("download_save_btn"):
+                    downloads_status[media_id]['btn']['save'].show()
+                if config.get("download_queue_btn"):
+                    downloads_status[media_id]['btn']['queue'].show()
+                if config.get("download_open_btn"):
+                    downloads_status[media_id]['btn']['open'].show()
                 if config.get("download_locate_btn"):
                     downloads_status[media_id]['btn']['locate'].show()
+                if config.get("download_delete_btn"):
+                    downloads_status[media_id]['btn']['delete'].show()
                 downloaded_data[media_id] = {
                     'media_path': data[3],
                     'media_name': data[4]
@@ -70,7 +75,8 @@ def dl_progress_update(data):
 
 def retry_all_failed_downloads():
     for dl_id in list(failed_downloads.keys()):
-        downloads_status[dl_id]["status_label"].setText("Waiting")
+        if config.get("download_copy_btn"):
+            downloads_status[media_id]['btn']['copy'].show()
         downloads_status[dl_id]["btn"]['cancel'].show()
         downloads_status[dl_id]["btn"]['retry'].hide()
         download_queue.put(failed_downloads[dl_id].copy())
@@ -89,16 +95,11 @@ def cancel_all_downloads():
 
 class MainWindow(QMainWindow):
 
+    # Remove Later
     def contribute(self):
         if self.inp_language.currentIndex() == self.inp_language.count() - 1:
-            import platform, subprocess
             url = "https://github.com/justin025/onthespot/blob/main/README.md#6-contributingsupporting"
-            if platform.system() == 'Windows':
-                os.startfile(url)
-            elif platform.system() == 'Darwin':  # For MacOS
-                subprocess.Popen(['open', url])
-            else:  # For Linux and other Unix-like systems
-                subprocess.Popen(['xdg-open', url])
+            open_item(url)
 
     def __init__(self, _dialog, start_url=''):
         super(MainWindow, self).__init__()
@@ -131,8 +132,8 @@ class MainWindow(QMainWindow):
         self.btn_search_filter_toggle.setIcon(collapse_down_icon)
 
         # Breaks zeroconf login because of dirty restart
-        #self.start_url = start_url
-        self.start_url = ""
+        self.start_url = start_url
+        self.inp_version.setText(config.get("version"))
         self.inp_session_uuid.setText(config.session_uuid)
         logger.info(f"Initialising main window, logging session : {config.session_uuid}")
         self.group_search_items.hide()
@@ -383,7 +384,7 @@ class MainWindow(QMainWindow):
             elif item['item_id'] in failed_downloads:
                 dl_id = item['item_id']
                 logger.info(f'The media: "{item["item_title"]}" ({item["item_id"]}) had failed to download, re-downloading ! !')
-                downloads_status[dl_id]["status_label"].setText("Waiting")
+                downloads_status[dl_id]["status_label"].setText(self.tr("Waiting"))
                 downloads_status[dl_id]["btn"]['cancel'].show()
                 downloads_status[dl_id]["btn"]['retry'].hide()
                 download_queue.put(failed_downloads[dl_id].copy())
@@ -398,46 +399,67 @@ class MainWindow(QMainWindow):
         #copy_btn.setText('Retry')
         copy_icon = QIcon(os.path.join(config.app_root, 'resources', 'icons', 'link.png'))
         copy_btn.setIcon(copy_icon)
-        copy_btn.setToolTip('Copy')
+        copy_btn.setToolTip(self.tr('Copy'))
         copy_btn.setMinimumHeight(30)
         copy_btn.hide()
         cancel_btn = QPushButton()
         # cancel_btn.setText('Cancel')
         cancel_icon = QIcon(os.path.join(config.app_root, 'resources', 'icons', 'stop.png'))
         cancel_btn.setIcon(cancel_icon)
-        cancel_btn.setToolTip('Cancel')
+        cancel_btn.setToolTip(self.tr('Cancel'))
         cancel_btn.setMinimumHeight(30)
         retry_btn = QPushButton()
         #retry_btn.setText('Retry')
         retry_icon = QIcon(os.path.join(config.app_root, 'resources', 'icons', 'retry.png'))
         retry_btn.setIcon(retry_icon)
-        retry_btn.setToolTip('Retry')
+        retry_btn.setToolTip(self.tr('Retry'))
         retry_btn.setMinimumHeight(30)
         retry_btn.hide()
-        save_btn = QPushButton()
-        #save_btn.setText('Save')
-        #save_icon = QIcon(os.path.join(config.app_root, 'resources', 'icons', 'filled-heart.png'))
-        #save_btn.setIcon(save_icon)
-        save_btn.setToolTip('Save')
-        save_btn.setMinimumHeight(30)
-        save_btn.hide()
         play_btn = QPushButton()
         #play_btn.setText('Play')
         play_icon = QIcon(os.path.join(config.app_root, 'resources', 'icons', 'play.png'))
         play_btn.setIcon(play_icon)
-        play_btn.setToolTip('Play')
+        play_btn.setToolTip(self.tr('Play'))
         play_btn.setMinimumHeight(30)
         play_btn.hide()
+        save_btn = QPushButton()
+        #save_btn.setText('Save')
+        #save_icon = QIcon(os.path.join(config.app_root, 'resources', 'icons', 'filled-heart.png'))
+        #save_btn.setIcon(save_icon)
+        save_btn.setToolTip(self.tr('Save'))
+        save_btn.setMinimumHeight(30)
+        save_btn.hide()
+        queue_btn = QPushButton()
+        #queue_btn.setText('Queue')
+        queue_icon = QIcon(os.path.join(config.app_root, 'resources', 'icons', 'queue.png'))
+        queue_btn.setIcon(queue_icon)
+        queue_btn.setToolTip(self.tr('Queue'))
+        queue_btn.setMinimumHeight(30)
+        queue_btn.hide()
+        open_btn = QPushButton()
+        #open_btn.setText('Open')
+        open_icon = QIcon(os.path.join(config.app_root, 'resources', 'icons', 'file.png'))
+        open_btn.setIcon(open_icon)
+        open_btn.setToolTip(self.tr('Open'))
+        open_btn.setMinimumHeight(30)
+        open_btn.hide()
         locate_btn = QPushButton()
         #locate_btn.setText('Locate')
         locate_icon = QIcon(os.path.join(config.app_root, 'resources', 'icons', 'folder.png'))
         locate_btn.setIcon(locate_icon)
-        locate_btn.setToolTip('Locate')
+        locate_btn.setToolTip(self.tr('Locate'))
         locate_btn.setMinimumHeight(30)
         locate_btn.hide()
+        delete_btn = QPushButton()
+        #delete_btn.setText('Delete')
+        delete_icon = QIcon(os.path.join(config.app_root, 'resources', 'icons', 'delete.png'))
+        delete_btn.setIcon(delete_icon)
+        delete_btn.setToolTip(self.tr('Delete'))
+        delete_btn.setMinimumHeight(30)
+        delete_btn.hide()
         status = QLabel(self.tbl_dl_progress)
-        status.setText("Waiting")
-        actions = DownloadActionsButtons(item['item_id'], item['dl_params']['media_type'], pbar, copy_btn, cancel_btn, retry_btn, save_btn, play_btn, locate_btn)
+        status.setText(self.tr("Waiting"))
+        actions = DownloadActionsButtons(item['item_id'], item['dl_params']['media_type'], pbar, copy_btn, cancel_btn, retry_btn, play_btn, save_btn, queue_btn, open_btn, locate_btn, delete_btn)
         download_queue.put(
             {
                 'media_type': item['dl_params']['media_type'],
@@ -458,9 +480,12 @@ class MainWindow(QMainWindow):
                 "copy": copy_btn,
                 "cancel": cancel_btn,
                 "retry": retry_btn,
-                "save": save_btn,
                 "play": play_btn,
-                "locate": locate_btn
+                "save": save_btn,
+                "queue": queue_btn,
+                "open": open_btn,
+                "locate": locate_btn,
+                "delete": delete_btn
             }
         }
         logger.info(
@@ -496,6 +521,10 @@ class MainWindow(QMainWindow):
         self.start_url = ''
         # Build threads
         self.__rebuild_threads()
+        # Update Checker
+        if config.get("check_for_updates"):
+            if latest_release() == False:
+                self.__splash_dialog.run(self.tr("<p>An update is available at the link below,<p><a style='color: #6495ed;' href='https://github.com/justin025/onthespot/releases/latest'>https://github.com/justin025/onthespot/releases/latest</a>"))
 
     def __user_table_remove_click(self, account_uuid):
         button = self.sender()
@@ -580,6 +609,16 @@ class MainWindow(QMainWindow):
         self.inp_playlist_name_formatter.setText(config.get("playlist_name_formatter"))
         self.inp_max_recdl_delay.setValue(config.get("recoverable_fail_wait_delay"))
         self.inp_dl_endskip.setValue(config.get("dl_end_padding_bytes"))
+        self.inp_search_thumb_height.setValue(config.get("search_thumb_height"))
+        self.inp_metadata_seperator.setText(config.get("metadata_seperator"))
+        if config.get("show_search_thumbnails"):
+            self.inp_show_search_thumbnails.setChecked(True)
+        else:
+            self.inp_show_search_thumbnails.setChecked(False)
+        if config.get("use_lrc_file"):
+            self.inp_use_lrc_file.setChecked(True)
+        else:
+            self.inp_use_lrc_file.setChecked(False)
         if config.get("rotate_acc_sn"):
             self.inp_rotate_acc_sn.setChecked(True)
         else:
@@ -588,18 +627,30 @@ class MainWindow(QMainWindow):
             self.inp_download_copy_btn.setChecked(True)
         else:
             self.inp_download_copy_btn.setChecked(False)
-        if config.get("download_save_btn"):
-            self.inp_download_save_btn.setChecked(True)
-        else:
-            self.inp_download_save_btn.setChecked(False)
         if config.get("download_play_btn"):
             self.inp_download_play_btn.setChecked(True)
         else:
             self.inp_download_play_btn.setChecked(False)
+        if config.get("download_save_btn"):
+            self.inp_download_save_btn.setChecked(True)
+        else:
+            self.inp_download_save_btn.setChecked(False)
+        if config.get("download_queue_btn"):
+            self.inp_download_queue_btn.setChecked(True)
+        else:
+            self.inp_download_queue_btn.setChecked(False)
+        if config.get("download_open_btn"):
+            self.inp_download_open_btn.setChecked(True)
+        else:
+            self.inp_download_open_btn.setChecked(False)
         if config.get("download_locate_btn"):
             self.inp_download_locate_btn.setChecked(True)
         else:
             self.inp_download_locate_btn.setChecked(False)
+        if config.get("download_delete_btn"):
+            self.inp_download_delete_btn.setChecked(True)
+        else:
+            self.inp_download_delete_btn.setChecked(False)
         if config.get("translate_file_path"):
             self.inp_translate_file_path.setChecked(True)
         else:
@@ -632,6 +683,82 @@ class MainWindow(QMainWindow):
             self.inp_create_playlists.setChecked(True)
         else:
             self.inp_create_playlists.setChecked(False)
+        if config.get('check_for_updates'):
+            self.inp_check_for_updates.setChecked(True)
+        else:
+            self.inp_check_for_updates.setChecked(False)
+        if config.get('embed_branding'):
+            self.inp_embed_branding.setChecked(True)
+        else:
+            self.inp_embed_branding.setChecked(False)
+        if config.get('embed_artist'):
+            self.inp_embed_artist.setChecked(True)
+        else:
+            self.inp_embed_artist.setChecked(False)
+        if config.get('embed_album'):
+            self.inp_embed_album.setChecked(True)
+        else:
+            self.inp_embed_album.setChecked(False)
+        if config.get('embed_albumartist'):
+            self.inp_embed_albumartist.setChecked(True)
+        else:
+            self.inp_embed_albumartist.setChecked(False)
+        if config.get('embed_name'):
+            self.inp_embed_name.setChecked(True)
+        else:
+            self.inp_embed_name.setChecked(False)
+        if config.get('embed_year'):
+            self.inp_embed_year.setChecked(True)
+        else:
+            self.inp_embed_year.setChecked(False)
+        if config.get('embed_discnumber'):
+            self.inp_embed_discnumber.setChecked(True)
+        else:
+            self.inp_embed_discnumber.setChecked(False)
+        if config.get('embed_tracknumber'):
+            self.inp_embed_tracknumber.setChecked(True)
+        else:
+            self.inp_embed_tracknumber.setChecked(False)
+        if config.get('embed_genre'):
+            self.inp_embed_genre.setChecked(True)
+        else:
+            self.inp_embed_genre.setChecked(False)
+        if config.get('embed_performers'):
+            self.inp_embed_performers.setChecked(True)
+        else:
+            self.inp_embed_performers.setChecked(False)
+        if config.get('embed_producers'):
+            self.inp_embed_producers.setChecked(True)
+        else:
+            self.inp_embed_producers.setChecked(False)
+        if config.get('embed_writers'):
+            self.inp_embed_writers.setChecked(True)
+        else:
+            self.inp_embed_writers.setChecked(False)
+        if config.get('embed_label'):
+            self.inp_embed_label.setChecked(True)
+        else:
+            self.inp_embed_label.setChecked(False)
+        if config.get('embed_copyright'):
+            self.inp_embed_copyright.setChecked(True)
+        else:
+            self.inp_embed_copyright.setChecked(False)
+        if config.get('embed_isrc'):
+            self.inp_embed_isrc.setChecked(True)
+        else:
+            self.inp_embed_isrc.setChecked(False)
+        if config.get('embed_length'):
+            self.inp_embed_length.setChecked(True)
+        else:
+            self.inp_embed_length.setChecked(False)
+        if config.get('embed_lyrics'):
+            self.inp_embed_lyrics.setChecked(True)
+        else:
+            self.inp_embed_lyrics.setChecked(False)
+        if config.get('embed_url'):
+            self.inp_embed_url.setChecked(True)
+        else:
+            self.inp_embed_url.setChecked(False)
 
         logger.info('Config filled to UI')
 
@@ -654,14 +781,24 @@ class MainWindow(QMainWindow):
         config.set_('chunk_size', self.inp_chunk_size.value())
         config.set_('recoverable_fail_wait_delay', self.inp_max_recdl_delay.value())
         config.set_('dl_end_padding_bytes', self.inp_dl_endskip.value())
+        config.set_('search_thumb_height', self.inp_search_thumb_height.value())
         config.set_('max_retries', self.inp_max_retries.value())
         config.set_('disable_bulk_dl_notices', self.inp_disable_bulk_popup.isChecked())
         config.set_('theme', self.theme)
+        config.set_('metadata_seperator', self.inp_metadata_seperator.text())
         if 0 < self.inp_max_search_results.value() <= 50:
             config.set_('max_search_results', self.inp_max_search_results.value())
         else:
             config.set_('max_search_results', 5)
         config.set_('media_format', self.inp_media_format.text())
+        if self.inp_show_search_thumbnails.isChecked():
+            config.set_('show_search_thumbnails', True)
+        else:
+            config.set_('show_search_thumbnails', False)
+        if self.inp_use_lrc_file.isChecked():
+            config.set_('use_lrc_file', True)
+        else:
+            config.set_('use_lrc_file', False)
         if self.inp_rotate_acc_sn.isChecked():
             config.set_('rotate_acc_sn', True)
         else:
@@ -678,18 +815,30 @@ class MainWindow(QMainWindow):
             config.set_('download_copy_btn', True)
         else:
             config.set_('download_copy_btn', False)
-        if self.inp_download_save_btn.isChecked():
-            config.set_('download_save_btn', True)
-        else:
-            config.set_('download_save_btn', False)
         if self.inp_download_play_btn.isChecked():
             config.set_('download_play_btn', True)
         else:
             config.set_('download_play_btn', False)
+        if self.inp_download_save_btn.isChecked():
+            config.set_('download_save_btn', True)
+        else:
+            config.set_('download_save_btn', False)
+        if self.inp_download_queue_btn.isChecked():
+            config.set_('download_queue_btn', True)
+        else:
+            config.set_('download_queue_btn', False)
+        if self.inp_download_open_btn.isChecked():
+            config.set_('download_open_btn', True)
+        else:
+            config.set_('download_open_btn', False)
         if self.inp_download_locate_btn.isChecked():
             config.set_('download_locate_btn', True)
         else:
             config.set_('download_locate_btn', False)
+        if self.inp_download_delete_btn.isChecked():
+            config.set_('download_delete_btn', True)
+        else:
+            config.set_('download_delete_btn', False)
         if self.inp_force_premium.isChecked():
             config.set_('force_premium', True)
         else:
@@ -710,6 +859,82 @@ class MainWindow(QMainWindow):
             config.set_('create_m3u_playlists', True)
         else:
             config.set_('create_m3u_playlists', False)
+        if self.inp_check_for_updates.isChecked():
+            config.set_('check_for_updates', True)
+        else:
+            config.set_('check_for_updates', False)
+        if self.inp_embed_branding.isChecked():
+            config.set_('embed_branding', True)
+        else:
+            config.set_('embed_branding', False)
+        if self.inp_embed_artist.isChecked():
+            config.set_('embed_artist', True)
+        else:
+            config.set_('embed_artist', False)
+        if self.inp_embed_album.isChecked():
+            config.set_('embed_album', True)
+        else:
+            config.set_('embed_album', False)
+        if self.inp_embed_albumartist.isChecked():
+            config.set_('embed_albumartist', True)
+        else:
+            config.set_('embed_albumartist', False)
+        if self.inp_embed_name.isChecked():
+            config.set_('embed_name', True)
+        else:
+            config.set_('embed_name', False)
+        if self.inp_embed_year.isChecked():
+            config.set_('embed_year', True)
+        else:
+            config.set_('embed_year', False)
+        if self.inp_embed_discnumber.isChecked():
+            config.set_('embed_discnumber', True)
+        else:
+            config.set_('embed_discnumber', False)
+        if self.inp_embed_tracknumber.isChecked():
+            config.set_('embed_tracknumber', True)
+        else:
+            config.set_('embed_tracknumber', False)
+        if self.inp_embed_genre.isChecked():
+            config.set_('embed_genre', True)
+        else:
+            config.set_('embed_genre', False)
+        if self.inp_embed_performers.isChecked():
+            config.set_('embed_performers', True)
+        else:
+            config.set_('embed_performers', False)
+        if self.inp_embed_producers.isChecked():
+            config.set_('embed_producers', True)
+        else:
+            config.set_('embed_producers', False)
+        if self.inp_embed_writers.isChecked():
+            config.set_('embed_writers', True)
+        else:
+            config.set_('embed_writers', False)
+        if self.inp_embed_label.isChecked():
+            config.set_('embed_label', True)
+        else:
+            config.set_('embed_label', False)
+        if self.inp_embed_copyright.isChecked():
+            config.set_('embed_copyright', True)
+        else:
+            config.set_('embed_copyright', False)
+        if self.inp_embed_isrc.isChecked():
+            config.set_('embed_isrc', True)
+        else:
+            config.set_('embed_isrc', False)
+        if self.inp_embed_length.isChecked():
+            config.set_('embed_length', True)
+        else:
+            config.set_('embed_length', False)
+        if self.inp_embed_lyrics.isChecked():
+            config.set_('embed_lyrics', True)
+        else:
+            config.set_('embed_lyrics', False)
+        if self.inp_embed_url.isChecked():
+            config.set_('embed_url', True)
+        else:
+            config.set_('embed_url', False)
         config.update()
         logger.info('Config updated !')
 
@@ -848,7 +1073,7 @@ class MainWindow(QMainWindow):
                 # Playlists fail because height and width in the response are set to null
                 elif d_key.lower() == "playlists":
                     url = item['images'][int('0')]['url']
-                    thumb_dict = [{'height': 640, 'url': url,'width': 640}]
+                    thumb_dict = [{'height': 64, 'url': url,'width': 64}]
                 else:
                     thumb_dict = item['images']
                 queue_data = {'media_type': d_key[0:-1], 'media_id': item['id'],
@@ -897,7 +1122,7 @@ class MainWindow(QMainWindow):
             if did in downloads_status:
                 progress = downloads_status[did]["progress_bar"].value()
                 status = downloads_status[did]["status_label"].text().lower()
-                if progress == 100 or status in ['cancelled']:
+                if progress == 100 or status == self.tr("cancelled"):
                     self.tbl_dl_progress.removeRow(check_row)
                     downloads_status.pop(did)
                 else:

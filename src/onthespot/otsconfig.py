@@ -38,11 +38,10 @@ class Config:
         self.__cfg_path = cfg_path
         self.platform = platform.system()
         self.ext_ = ".exe" if self.platform == "Windows" else ""
-        self.version = 0.6
         self.session_uuid = str(uuid.uuid4())
-        print('OTS Version : ', self.version)
         self.__template_data = {
-            "version": 0.6, # Application version
+            "version": "", # Application version
+            "check_for_updates": True, # Check for updates
             "language": "en_US", # Language
             "language_index": 0, # Language Index
             "max_threads": 1, # Maximum number of thread we can spawn
@@ -64,17 +63,38 @@ class Config:
             "recoverable_fail_wait_delay": 10, # No of seconds to wait before failure that can be retried
             "disable_bulk_dl_notices": True, # Hide popups for bulk download buttons
             "inp_enable_lyrics": False, # Enable lyrics download
+            "use_lrc_file": True, # Download .lrc file alongside track
             "only_synced_lyrics": False, # Only use synced lyrics
             "create_m3u_playlists": False, # Create m3u based playlist
-            "translate_file_path": False, # Translate downloaded mp3 names to application language
+            "translate_file_path": False, # Translate downloaded file path to application language
             "ffmpeg_args": [], # Extra arguments for ffmpeg
-            "show_search_thumbnails": 1, # Show thumbnails in search view
+            "show_search_thumbnails": False, # Show thumbnails in search view
             "search_thumb_height": 60, # Thumbnail height ( they are of equal width and height )
-            "metadata_seperator": ",", # Seperator used for metadata fields that have multiple values
+            "metadata_seperator": "; ", # Seperator used for metadata fields that have multiple values
+            "embed_branding": False,
+            "embed_artist": True,
+            "embed_album": True,
+            "embed_albumartist": True,
+            "embed_name": True,
+            "embed_year": True,
+            "embed_discnumber": True,
+            "embed_tracknumber": True,
+            "embed_genre": True,
+            "embed_performers": True,
+            "embed_producers": True,
+            "embed_writers": True,
+            "embed_label": True,
+            "embed_copyright": True,
+            "embed_isrc": True,
+            "embed_length": True,
+            "embed_lyrics": True,
+            "embed_url": True,
             "download_copy_btn": False, # Add copy button to downloads
             "download_save_btn": False, # Add save button to downloads
+            "download_queue_btn": False, # Add queue button to downloads
             "download_play_btn": True, # Add play button to downloads
             "download_locate_btn": True, # Add locate button to downloads
+            "download_delete_btn": False, # Add delete button to downloads
             "theme": "Dark", # Light\Dark
             "accounts": [] # Saved account information
         }
@@ -96,7 +116,6 @@ class Config:
             with open(self.__cfg_path, "w") as cf:
                 cf.write(json.dumps(self.__template_data, indent=4))
             self.__config = self.__template_data
-        print('Config version: ', self.__config['version'])
         try:
             os.makedirs(self.get("download_root"), exist_ok=True)
         except (FileNotFoundError, PermissionError):

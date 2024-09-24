@@ -17,7 +17,7 @@
    <item>
     <widget class="QLabel" name="lb_main">
      <property name="text">
-      <string>This should be pretty long text message, this is to check if the notice box looks too large while used in onthespot</string>
+      <string>Text</string>
      </property>
      <property name="scaledContents">
       <bool>true</bool>
