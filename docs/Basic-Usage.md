@@ -183,8 +183,6 @@ For users who want more control over how their music is organized and downloaded
 > [!CAUTION]
 > Changing some advanced settings may affect the organization and quality of your downloaded music. Proceed with adjustments only if you are familiar with the options.
 
----
-
 ## 6. Saving Your Configuration
 
 - **Apply Changes**
