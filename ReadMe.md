@@ -41,7 +41,15 @@ OnTheSpot is used to search and download music. You can perform searches by ente
 
 ### Installation
 
-[Work in Progress]
+We've made the installation process as simple as possible, even if you're new to this. You have two options to install OnTheSpot, we personally would recommend you the first one. Its the easiest:
+
+1. **[Install via GitHub Release Packages](docs/Installation.md)**
+
+[GIF Image how to Download]
+
+2. **[Build the Package Locally via Script](docs/Installation.md)**
+
+[GIF Image how to Download]
 
 ### Basic Usage
 
