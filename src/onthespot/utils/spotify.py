@@ -348,6 +348,11 @@ def set_audio_tags(filename, metadata, track_id_str):
             tags['label'] = value
         elif key == 'copyright' and config.get("embed_copyright"):
             tags['copyright'] = value
+        elif key == 'description' and config.get("embed_description"):
+            EasyID3.RegisterTextKey('comment', 'COMM')
+            tags['comment'] = value
+        elif key == 'language' and config.get("embed_language"):
+            tags['language'] = value
         elif key == 'isrc' and config.get("embed_isrc"):
             tags['isrc'] = value
         elif key == 'length' and config.get("embed_length"):
@@ -507,7 +512,7 @@ def get_episode_info(session, episode_id_str):
     if "error" in info:
         return None, None, None
     else:
-        return sanitize_data(info["show"]["name"]), sanitize_data(info["name"]), get_thumbnail(info['images']), info['release_date'], info['show']['total_episodes'], sanitize_data(info['show']['publisher'])
+        return sanitize_data(info["show"]["name"]), sanitize_data(info["name"]), get_thumbnail(info['images']), info['release_date'], info['show']['total_episodes'], sanitize_data(info['show']['publisher']), info['language'], info['description'], info['show']['copyrights']
 
 
 def get_show_episodes(session, show_id_str):

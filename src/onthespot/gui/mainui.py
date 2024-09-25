@@ -111,10 +111,10 @@ class MainWindow(QMainWindow):
 
         en_US_icon = QIcon(os.path.join(config.app_root, 'resources', 'icons', 'en_US.png'))
         self.inp_language.insertItem(0, en_US_icon, "English")
-        en_US_icon = QIcon(os.path.join(config.app_root, 'resources', 'icons', 'de_DE.png'))
-        self.inp_language.insertItem(1, en_US_icon, "Deutsch")
-        pt_PT_icon = QIcon(os.path.join(config.app_root, 'resources', 'icons', 'pt_PT.png'))
-        self.inp_language.insertItem(2, pt_PT_icon, "Português")
+        #de_DE_icon = QIcon(os.path.join(config.app_root, 'resources', 'icons', 'de_DE.png'))
+        #self.inp_language.insertItem(1, de_DE_icon, "Deutsch")
+        #pt_PT_icon = QIcon(os.path.join(config.app_root, 'resources', 'icons', 'pt_PT.png'))
+        #self.inp_language.insertItem(2, pt_PT_icon, "Português")
 
         # Contribute Translations
         pirate_icon = QIcon(os.path.join(config.app_root, 'resources', 'icons', 'pirate_flag.png'))
@@ -605,8 +605,11 @@ class MainWindow(QMainWindow):
         self.inp_max_retries.setValue(config.get("max_retries"))
         self.inp_chunk_size.setValue(config.get("chunk_size"))
         self.inp_media_format.setText(config.get("media_format"))
+        self.inp_podcast_media_format.setText(config.get("podcast_media_format"))
         self.inp_track_formatter.setText(config.get("track_path_formatter"))
-        self.inp_playlist_name_formatter.setText(config.get("playlist_name_formatter"))
+        self.inp_podcast_path_formatter.setText(config.get("podcast_path_formatter"))
+        self.inp_playlist_path_formatter.setText(config.get("playlist_path_formatter"))
+        self.inp_m3u_name_formatter.setText(config.get("m3u_name_formatter"))
         self.inp_max_recdl_delay.setValue(config.get("recoverable_fail_wait_delay"))
         self.inp_dl_endskip.setValue(config.get("dl_end_padding_bytes"))
         self.inp_search_thumb_height.setValue(config.get("search_thumb_height"))
@@ -679,6 +682,10 @@ class MainWindow(QMainWindow):
             self.inp_only_synced_lyrics.setChecked(True)
         else:
             self.inp_only_synced_lyrics.setChecked(False)
+        if config.get('use_playlist_path'):
+            self.inp_use_playlist_path.setChecked(True)
+        else:
+            self.inp_use_playlist_path.setChecked(False)
         if config.get('create_m3u_playlists'):
             self.inp_create_playlists.setChecked(True)
         else:
@@ -743,6 +750,14 @@ class MainWindow(QMainWindow):
             self.inp_embed_copyright.setChecked(True)
         else:
             self.inp_embed_copyright.setChecked(False)
+        if config.get('embed_description'):
+            self.inp_embed_description.setChecked(True)
+        else:
+            self.inp_embed_description.setChecked(False)
+        if config.get('embed_language'):
+            self.inp_embed_language.setChecked(True)
+        else:
+            self.inp_embed_language.setChecked(False)
         if config.get('embed_isrc'):
             self.inp_embed_isrc.setChecked(True)
         else:
@@ -776,7 +791,9 @@ class MainWindow(QMainWindow):
             config.set_('parsing_acc_sn', self.inp_parsing_acc_sn.value())
         config.set_('download_root', self.inp_download_root.text())
         config.set_('track_path_formatter', self.inp_track_formatter.text())
-        config.set_('playlist_name_formatter', self.inp_playlist_name_formatter.text())
+        config.set_('podcast_path_formatter', self.inp_podcast_path_formatter.text())
+        config.set_('playlist_path_formatter', self.inp_playlist_path_formatter.text())
+        config.set_('m3u_name_formatter', self.inp_m3u_name_formatter.text())
         config.set_('download_delay', self.inp_download_delay.value())
         config.set_('chunk_size', self.inp_chunk_size.value())
         config.set_('recoverable_fail_wait_delay', self.inp_max_recdl_delay.value())
@@ -791,6 +808,7 @@ class MainWindow(QMainWindow):
         else:
             config.set_('max_search_results', 5)
         config.set_('media_format', self.inp_media_format.text())
+        config.set_('podcast_media_format', self.inp_podcast_media_format.text())
         if self.inp_show_search_thumbnails.isChecked():
             config.set_('show_search_thumbnails', True)
         else:
@@ -855,6 +873,10 @@ class MainWindow(QMainWindow):
             config.set_('only_synced_lyrics', True)
         else:
             config.set_('only_synced_lyrics', False)
+        if self.inp_use_playlist_path.isChecked():
+            config.set_('use_playlist_path', True)
+        else:
+            config.set_('use_playlist_path', False)
         if self.inp_create_playlists.isChecked():
             config.set_('create_m3u_playlists', True)
         else:
@@ -919,6 +941,14 @@ class MainWindow(QMainWindow):
             config.set_('embed_copyright', True)
         else:
             config.set_('embed_copyright', False)
+        if self.inp_embed_description.isChecked():
+            config.set_('embed_description', True)
+        else:
+            config.set_('embed_description', False)
+        if self.inp_embed_language.isChecked():
+            config.set_('embed_language', True)
+        else:
+            config.set_('embed_language', False)
         if self.inp_embed_isrc.isChecked():
             config.set_('embed_isrc', True)
         else:

@@ -49,8 +49,10 @@ class Config:
             "rotate_acc_sn": False, # Rotate active account for parsing and downloading tracks
             "download_root": os.path.join(os.path.expanduser("~"), "Music", "OnTheSpot"), # Root dir for downloads
             "download_delay": 5, # Seconds to wait before next download
-            "track_path_formatter": "{artist}" + os.path.sep + "[{rel_year}] {album}" + os.path.sep + "{track_number}. {name}", # Track name format string
-            "playlist_name_formatter": "MyPlaylists" + os.path.sep + "{name} by {owner}", # Playlist name format string
+            "track_path_formatter": "{artist}" + os.path.sep + "[{rel_year}] {album}" + os.path.sep + "{track_number}. {name}", # Track path format string
+            "podcast_path_formatter": "Episodes" + os.path.sep + "{podcast_name}" + os.path.sep + "{episode_name}", # Episode path format string
+            "playlist_path_formatter": "Playlists" + os.path.sep + "{playlist_name} by {playlist_owner}" + os.path.sep + "{name}", # Playlist path format string
+            "m3u_name_formatter": "M3U" + os.path.sep + "{name} by {owner}", # M3U name format string
             "watch_bg_for_spotify": 0, # Detect and download songs playing on spotify client,
             "dl_end_padding_bytes": 167,
             "max_retries": 3, # Number of times to retry before giving up on download
@@ -63,8 +65,9 @@ class Config:
             "recoverable_fail_wait_delay": 10, # No of seconds to wait before failure that can be retried
             "disable_bulk_dl_notices": True, # Hide popups for bulk download buttons
             "inp_enable_lyrics": False, # Enable lyrics download
-            "use_lrc_file": True, # Download .lrc file alongside track
+            "use_lrc_file": False, # Download .lrc file alongside track
             "only_synced_lyrics": False, # Only use synced lyrics
+            "use_playlist_path": False, # Use playlist path
             "create_m3u_playlists": False, # Create m3u based playlist
             "translate_file_path": False, # Translate downloaded file path to application language
             "ffmpeg_args": [], # Extra arguments for ffmpeg
@@ -85,6 +88,8 @@ class Config:
             "embed_writers": True,
             "embed_label": True,
             "embed_copyright": True,
+            "embed_description": True,
+            "embed_language": True,
             "embed_isrc": True,
             "embed_length": True,
             "embed_lyrics": True,
@@ -92,7 +97,8 @@ class Config:
             "download_copy_btn": False, # Add copy button to downloads
             "download_save_btn": False, # Add save button to downloads
             "download_queue_btn": False, # Add queue button to downloads
-            "download_play_btn": True, # Add play button to downloads
+            "download_play_btn": False, # Add play button to downloads
+            "download_open_btn": True, # Add open button to downloads
             "download_locate_btn": True, # Add locate button to downloads
             "download_delete_btn": False, # Add delete button to downloads
             "theme": "Dark", # Light\Dark

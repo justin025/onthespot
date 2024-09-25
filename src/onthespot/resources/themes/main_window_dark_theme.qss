@@ -6,7 +6,7 @@ QComboBox {
    padding-left: auto;
    padding-right: 14%;
 }
-QGroupBox #gb0_0, #gb0_1, #gb0_2, #gb1_0, #gb1_1, #gb1_2, #gb1_3, #gb1_4, #gb1_5, #gb1_6, #gb2_0, #gb2_1, #gb2_2, #gb2_3, #gb2_4, #gb2_5, #gb2_6, #gb2_7, #gb2_8, #gb2_9 {
+QGroupBox #gb0_0, #gb0_1, #gb0_2, #gb1_0, #gb1_1, #gb1_2, #gb1_3, #gb1_4, #gb1_5, #gb1_6, #gb1_7, #gb1_8, #gb2_0, #gb2_1, #gb2_2, #gb2_3, #gb2_4, #gb2_5, #gb2_6, #gb2_7, #gb2_8, #gb2_9, #gb2_10 {
    border: 0;
 }
 QPushButton {

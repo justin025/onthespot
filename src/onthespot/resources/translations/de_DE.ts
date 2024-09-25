@@ -17,98 +17,97 @@
   <context>
     <name>DownloadWorker</name>
     <message>
-      <location filename="../../worker/downloader.py" line="255" />
-      <location filename="../../worker/downloader.py" line="126" />
+      <location filename="../../worker/downloader.py" line="287" />
+      <location filename="../../worker/downloader.py" line="146" />
       <location filename="../../worker/downloader.py" line="41" />
       <source>Cancelled</source>
       <translation>Abgesagt</translation>
     </message>
     <message>
-      <location filename="../../worker/downloader.py" line="94" />
+      <location filename="../../worker/downloader.py" line="114" />
       <source>Get metadata failed</source>
       <translation>Metadaten fehlgeschlagen</translation>
     </message>
     <message>
-      <location filename="../../worker/downloader.py" line="99" />
+      <location filename="../../worker/downloader.py" line="119" />
       <source>Unavailable</source>
       <translation>Nicht verfügbar</translation>
     </message>
     <message>
-      <location filename="../../worker/downloader.py" line="106" />
+      <location filename="../../worker/downloader.py" line="126" />
       <source>Already exists</source>
       <translation>Bereits vorhanden</translation>
     </message>
     <message>
-      <location filename="../../worker/downloader.py" line="271" />
-      <location filename="../../worker/downloader.py" line="153" />
+      <location filename="../../worker/downloader.py" line="303" />
+      <location filename="../../worker/downloader.py" line="173" />
       <source>RETRY </source>
       <translation>RETRY </translation>
     </message>
     <message>
-      <location filename="../../worker/downloader.py" line="155" />
+      <location filename="../../worker/downloader.py" line="175" />
       <source>PD error. Will retry</source>
       <translation>PD error. Will retry</translation>
     </message>
     <message>
-      <location filename="../../worker/downloader.py" line="276" />
-      <location filename="../../worker/downloader.py" line="161" />
+      <location filename="../../worker/downloader.py" line="307" />
+      <location filename="../../worker/downloader.py" line="181" />
       <source>Converting</source>
       <translation>Konvertieren</translation>
     </message>
     <message>
-      <location filename="../../worker/downloader.py" line="279" />
-      <location filename="../../worker/downloader.py" line="163" />
+      <location filename="../../worker/downloader.py" line="310" />
+      <location filename="../../worker/downloader.py" line="183" />
       <source>Writing metadata</source>
       <translation>Schreiben von Metadaten</translation>
     </message>
     <message>
-      <location filename="../../worker/downloader.py" line="292" />
-      <location filename="../../worker/downloader.py" line="165" />
+      <location filename="../../worker/downloader.py" line="326" />
+      <location filename="../../worker/downloader.py" line="185" />
       <source>Setting thumbnail</source>
       <translation>Einstellung Miniaturansicht</translation>
     </message>
     <message>
-      <location filename="../../worker/downloader.py" line="174" />
+      <location filename="../../worker/downloader.py" line="194" />
       <source>Getting Lyrics</source>
       <translation>Lyrics bekommen</translation>
     </message>
     <message>
-      <location filename="../../worker/downloader.py" line="295" />
-      <location filename="../../worker/downloader.py" line="250" />
-      <location filename="../../worker/downloader.py" line="191" />
+      <location filename="../../worker/downloader.py" line="329" />
+      <location filename="../../worker/downloader.py" line="282" />
+      <location filename="../../worker/downloader.py" line="211" />
       <source>Downloaded</source>
       <translation>Heruntergeladen</translation>
     </message>
     <message>
-      <location filename="../../worker/downloader.py" line="200" />
+      <location filename="../../worker/downloader.py" line="220" />
       <source>Timeout. Will retry</source>
       <translation>Zeitüberschreitung. Versucht erneut</translation>
     </message>
     <message>
-      <location filename="../../worker/downloader.py" line="309" />
-      <location filename="../../worker/downloader.py" line="209" />
+      <location filename="../../worker/downloader.py" line="338" />
+      <location filename="../../worker/downloader.py" line="229" />
       <source>Decode error. Will retry</source>
       <translation>Dekodierfehler. Versucht erneut</translation>
     </message>
     <message>
-      <location filename="../../worker/downloader.py" line="317" />
-      <location filename="../../worker/downloader.py" line="300" />
-      <location filename="../../worker/downloader.py" line="215" />
+      <location filename="../../worker/downloader.py" line="346" />
+      <location filename="../../worker/downloader.py" line="235" />
       <source>Failed</source>
       <translation>Gescheitert</translation>
     </message>
     <message>
-      <location filename="../../worker/downloader.py" line="228" />
+      <location filename="../../worker/downloader.py" line="248" />
       <source>Not Found</source>
       <translation>Nicht gefunden</translation>
     </message>
     <message>
-      <location filename="../../worker/downloader.py" line="340" />
+      <location filename="../../worker/downloader.py" line="369" />
       <source>Downloading</source>
       <translation>Herunterladen</translation>
     </message>
     <message>
-      <location filename="../../worker/downloader.py" line="373" />
+      <location filename="../../worker/downloader.py" line="402" />
       <source>Retrying in {0} sec</source>
       <translation>Erneuter Versuch in {0} Sekunden</translation>
     </message>
@@ -266,64 +265,64 @@
       <translation>Keine Sitzung verfügbar, melden Sie sich mit mindestens einem Konto an.</translation>
     </message>
     <message>
-      <location filename="../../gui/mainui.py" line="767" />
+      <location filename="../../gui/mainui.py" line="782" />
       <source>Language changed. 
  Application needs to be restarted for changes to take effect.</source>
       <translation>Sprache geändert. 
  Damit die Änderungen wirksam werden, muss die Anwendung neu gestartet werden.</translation>
     </message>
     <message>
-      <location filename="../../gui/mainui.py" line="770" />
+      <location filename="../../gui/mainui.py" line="785" />
       <source>Thread config was changed. 
  Application needs to be restarted for changes to take effect.</source>
       <translation>Die Thread-Konfiguration wurde geändert. 
  Damit die Änderungen wirksam werden, muss die Anwendung neu gestartet werden.</translation>
     </message>
     <message>
-      <location filename="../../gui/mainui.py" line="943" />
+      <location filename="../../gui/mainui.py" line="973" />
       <source>Waiting...</source>
       <translation>Warten...</translation>
     </message>
     <message>
-      <location filename="../../gui/mainui.py" line="948" />
+      <location filename="../../gui/mainui.py" line="978" />
       <source>Login Service Started...
 Select 'OnTheSpot' under devices in the Spotify Desktop App.</source>
       <translation>Anmeldedienst gestartet...
 Wählen Sie 'OnTheSpot' unter Geräte in der Spotify Desktop-App.</translation>
     </message>
     <message>
-      <location filename="../../gui/mainui.py" line="1013" />
-      <location filename="../../gui/mainui.py" line="954" />
+      <location filename="../../gui/mainui.py" line="1043" />
+      <location filename="../../gui/mainui.py" line="984" />
       <source>You need to login to at least one account to use this feature.</source>
       <translation>Sie müssen sich bei mindestens einem Konto anmelden, um diese Funktion zu nutzen.</translation>
     </message>
     <message>
-      <location filename="../../gui/mainui.py" line="999" />
+      <location filename="../../gui/mainui.py" line="1029" />
       <source>No results found.</source>
       <translation>Keine Ergebnisse gefunden.</translation>
     </message>
     <message>
-      <location filename="../../gui/mainui.py" line="1008" />
+      <location filename="../../gui/mainui.py" line="1038" />
       <source>Unable to parse inputted URL.</source>
       <translation>Unfähig, die eingegebene URL zu analysieren.</translation>
     </message>
     <message>
-      <location filename="../../gui/mainui.py" line="1026" />
+      <location filename="../../gui/mainui.py" line="1056" />
       <source>The {0} is being parsed and will be added to download queue shortly.</source>
       <translation>Die {0} wird analysiert und wird in Kürze zur Download-Warteschlange hinzugefügt.</translation>
     </message>
     <message>
-      <location filename="../../gui/mainui.py" line="1098" />
+      <location filename="../../gui/mainui.py" line="1128" />
       <source>No search results to download.</source>
       <translation>Keine Suchergebnisse zum Herunterladen.</translation>
     </message>
     <message>
-      <location filename="../../gui/mainui.py" line="1115" />
+      <location filename="../../gui/mainui.py" line="1145" />
       <source>Added all results to download queue.</source>
       <translation>Alle Ergebnisse zur Download-Warteschlange hinzugefügt.</translation>
     </message>
     <message>
-      <location filename="../../gui/mainui.py" line="1125" />
+      <location filename="../../gui/mainui.py" line="1155" />
       <source>cancelled</source>
       <translation>abgesagt</translation>
     </message>
@@ -631,12 +630,32 @@ Wählen Sie 'OnTheSpot' unter Geräte in der Spotify Desktop-App.</translation>
     </message>
     <message>
       <location filename="../../gui/qtui/main.ui" line="0" />
+      <source> Track Format</source>
+      <translation type="unfinished" />
+    </message>
+    <message>
+      <location filename="../../gui/qtui/main.ui" line="0" />
       <source> Track Path</source>
       <translation type="unfinished" />
     </message>
     <message>
       <location filename="../../gui/qtui/main.ui" line="0" />
-      <source> Media Format</source>
+      <source> Episode Format</source>
+      <translation type="unfinished" />
+    </message>
+    <message>
+      <location filename="../../gui/qtui/main.ui" line="0" />
+      <source>Episode Path</source>
+      <translation type="unfinished" />
+    </message>
+    <message>
+      <location filename="../../gui/qtui/main.ui" line="0" />
+      <source>Use Custom Playlist Path</source>
+      <translation type="unfinished" />
+    </message>
+    <message>
+      <location filename="../../gui/qtui/main.ui" line="0" />
+      <source>Playlist Path</source>
       <translation type="unfinished" />
     </message>
     <message>
@@ -647,11 +666,6 @@ Wählen Sie 'OnTheSpot' unter Geräte in der Spotify Desktop-App.</translation>
     <message>
       <location filename="../../gui/qtui/main.ui" line="0" />
       <source> M3U Path</source>
-      <translation type="unfinished" />
-    </message>
-    <message>
-      <location filename="../../gui/qtui/main.ui" line="0" />
-      <source>Force Premium*</source>
       <translation type="unfinished" />
     </message>
     <message>
@@ -667,6 +681,11 @@ Wählen Sie 'OnTheSpot' unter Geräte in der Spotify Desktop-App.</translation>
     <message>
       <location filename="../../gui/qtui/main.ui" line="0" />
       <source>Save LRC File*</source>
+      <translation type="unfinished" />
+    </message>
+    <message>
+      <location filename="../../gui/qtui/main.ui" line="0" />
+      <source>Force Premium*</source>
       <translation type="unfinished" />
     </message>
     <message>
@@ -691,13 +710,8 @@ Wählen Sie 'OnTheSpot' unter Geräte in der Spotify Desktop-App.</translation>
     </message>
     <message>
       <location filename="../../gui/qtui/main.ui" line="0" />
-      <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;A premium account is required to download lyrics&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-      <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ein Premium-Konto ist erforderlich, um Liedtexte herunterzuladen&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
-    </message>
-    <message>
-      <location filename="../../gui/qtui/main.ui" line="0" />
-      <source>Translate Track Path to Application Language</source>
-      <translation>Track Path in Anwendungssprache übersetzen</translation>
+      <source>Translate Download Path to Application Language</source>
+      <translation type="unfinished" />
     </message>
     <message>
       <location filename="../../gui/qtui/main.ui" line="0" />
@@ -781,6 +795,21 @@ Wählen Sie 'OnTheSpot' unter Geräte in der Spotify Desktop-App.</translation>
     </message>
     <message>
       <location filename="../../gui/qtui/main.ui" line="0" />
+      <source>Embed Description</source>
+      <translation type="unfinished" />
+    </message>
+    <message>
+      <location filename="../../gui/qtui/main.ui" line="0" />
+      <source>Embed Language</source>
+      <translation type="unfinished" />
+    </message>
+    <message>
+      <location filename="../../gui/qtui/main.ui" line="0" />
+      <source>Embed URL</source>
+      <translation type="unfinished" />
+    </message>
+    <message>
+      <location filename="../../gui/qtui/main.ui" line="0" />
       <source>Embed ISRC</source>
       <translation type="unfinished" />
     </message>
@@ -792,11 +821,6 @@ Wählen Sie 'OnTheSpot' unter Geräte in der Spotify Desktop-App.</translation>
     <message>
       <location filename="../../gui/qtui/main.ui" line="0" />
       <source>Embed Lyrics*</source>
-      <translation type="unfinished" />
-    </message>
-    <message>
-      <location filename="../../gui/qtui/main.ui" line="0" />
-      <source>Embed URL</source>
       <translation type="unfinished" />
     </message>
     <message>

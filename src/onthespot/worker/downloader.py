@@ -61,23 +61,43 @@ class DownloadWorker(QObject):
                 _album=song_info['album_name']
 
             _artist = song_info['artists'][0]
-            song_name = config.get("track_path_formatter").format(
-                artist=_artist,
-                album=_album,
-                name=_name,
-                rel_year=song_info['release_year'],
-                disc_number=song_info['disc_number'],
-                track_number=song_info['track_number'],
-                spotid=song_info['scraped_song_id'],
-                genre=song_info['genre'][0] if len(song_info['genre']) > 0 else '',
-                label=song_info['label'],
-                explicit='Explicit' if song_info['explicit'] else '',
-                trackcount=song_info['total_tracks'],
-                disccount=song_info['total_discs'],
-                playlist_name=playlist_name,
-                playlist_owner=playlist_owner,
-                playlist_desc=playlist_desc
-            )
+
+            if playlist_name != None and config.get("use_playlist_path"):
+                song_name = config.get("playlist_path_formatter").format(
+                    artist=_artist,
+                    album=_album,
+                    name=_name,
+                    rel_year=song_info['release_year'],
+                    disc_number=song_info['disc_number'],
+                    track_number=song_info['track_number'],
+                    spotid=song_info['scraped_song_id'],
+                    genre=song_info['genre'][0] if len(song_info['genre']) > 0 else '',
+                    label=song_info['label'],
+                    explicit='🅴' if song_info['explicit'] else '',
+                    trackcount=song_info['total_tracks'],
+                    disccount=song_info['total_discs'],
+                    playlist_name=playlist_name,
+                    playlist_owner=playlist_owner,
+                    playlist_desc=playlist_desc
+                )
+            else:
+                song_name = config.get("track_path_formatter").format(
+                    artist=_artist,
+                    album=_album,
+                    name=_name,
+                    rel_year=song_info['release_year'],
+                    disc_number=song_info['disc_number'],
+                    track_number=song_info['track_number'],
+                    spotid=song_info['scraped_song_id'],
+                    genre=song_info['genre'][0] if len(song_info['genre']) > 0 else '',
+                    label=song_info['label'],
+                    explicit='Explicit' if song_info['explicit'] else '',
+                    trackcount=song_info['total_tracks'],
+                    disccount=song_info['total_discs'],
+                    playlist_name=playlist_name,
+                    playlist_owner=playlist_owner,
+                    playlist_desc=playlist_desc
+                )
 
             if not config.get("force_raw"):
                 song_name = song_name + "." + config.get("media_format")
@@ -220,7 +240,7 @@ class DownloadWorker(QObject):
     def download_episode(self, session, episode_id_str, extra_paths="", extra_path_as_root=False):
         self.logger.info(f"Downloading episode by id '{episode_id_str}'")
         quality = AudioQuality.HIGH
-        podcast_name, episode_name, thumbnail, release_date, total_episodes, artist = get_episode_info(session, episode_id_str)
+        podcast_name, episode_name, thumbnail, release_date, total_episodes, artist, language, description, copyright = get_episode_info(session, episode_id_str)
         skip_existing_file = True
         if extra_paths == "":
             extra_paths = os.path.join(extra_paths, podcast_name)
@@ -237,13 +257,25 @@ class DownloadWorker(QObject):
                 downloaded = 0
                 _CHUNK_SIZE = config.get("chunk_size")
                 fail = 0
-                extension = config.get('podcast_media_format', 'mp3')
 
-                podcast_dl_root = os.path.abspath(extra_paths) if extra_path_as_root else os.path.join(config.get("download_root"), config.get("podcast_subdir", "Podcasts"))
+                audio_name = config.get("podcast_path_formatter").format(
+                    artist=artist,
+                    podcast_name=podcast_name,
+                    episode_name=episode_name,
+                    episode_id=episode_id,
+                    release_date=release_date,
+                    total_episodes=total_episodes,
+                    language=language
+                )
+
+                if not config.get("force_raw"):
+                    audio_name = audio_name + "." + config.get("podcast_media_format")
+                else:
+                    audio_name = audio_name + ".ogg"
+
                 extra_paths = '' if extra_path_as_root else extra_paths
-                file_path = os.path.join(os.path.abspath(podcast_dl_root), extra_paths, podcast_name, f"{filename}.{extension}")
+                file_path = os.path.abspath(extra_paths) if extra_path_as_root else os.path.join(config.get("download_root"), audio_name)
                 os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
 
                 if os.path.isfile(file_path) and os.path.getsize(file_path) and skip_existing_file:
                     self.logger.info(f"Episode by id '{episode_id_str}', already exists.. Skipping ")
@@ -270,35 +302,32 @@ class DownloadWorker(QObject):
                         if fail > config.get("max_retries"):
                             self.progress.emit([episode_id_str, self.tr("RETRY ") + str(fail + 1), None])
                             break
-                if downloaded >= total_size:
-                    self.logger.info(f"Episode by id '{episode_id_str}', downloaded")
-                    if extension not in ['ogg', 'wav']:
-                        self.progress.emit([episode_id_str, self.tr("Converting"), None, file_path, filename])
-                        convert_audio_format(file_path, quality)
-                    self.logger.info(f'Writing metadata for episode "{episode_id_str}" ')
-                    self.progress.emit([episode_id_str, self.tr("Writing metadata"), None, file_path, filename])
-                    set_audio_tags(
-                        file_path,
-                        {
-                            'name': episode_name,
-                            'album_name': podcast_name,
-                            'release_year': release_date,
-                            'total_tracks': total_episodes,
-                            'artists': [artist],
-                            'genre': ['Podcast']
-                        },
-                        episode_id_str
-                    )
-                    self.progress.emit([episode_id_str, self.tr("Setting thumbnail"), None, file_path, filename])
-                    self.logger.info(f'Setting thumbnail for episode "{episode_id_str}" ')
-                    set_music_thumbnail(file_path, thumbnail)
-                    self.progress.emit([episode_id_str, self.tr("Downloaded"), [100, 100], file_path, filename])
-                    return True
-                else:
-                    self.logger.error(
-                        f"Downloading failed for episode by id '{episode_id_str}', partial download failed !")
-                    self.progress.emit([episode_id_str, self.tr("Failed"), [0, 100]])
-                    return False
+                self.logger.info(f"Episode by id '{episode_id_str}', downloaded")
+                if not config.get("force_raw"):
+                    self.progress.emit([episode_id_str, self.tr("Converting"), None, file_path, filename])
+                    convert_audio_format(file_path, quality)
+                self.logger.info(f'Writing metadata for episode "{episode_id_str}" ')
+                self.progress.emit([episode_id_str, self.tr("Writing metadata"), None, file_path, filename])
+                set_audio_tags(
+                    file_path,
+                    {
+                        'name': episode_name,
+                        'album_name': podcast_name,
+                        'release_year': release_date,
+                        'total_tracks': total_episodes,
+                        'artists': [artist],
+                        'genre': ['Podcast'],
+                        'language': language,
+                        'description': description,
+                        'copyright': copyright
+                    },
+                    episode_id_str
+                )
+                self.progress.emit([episode_id_str, self.tr("Setting thumbnail"), None, file_path, filename])
+                self.logger.info(f'Setting thumbnail for episode "{episode_id_str}" ')
+                set_music_thumbnail(file_path, thumbnail)
+                self.progress.emit([episode_id_str, self.tr("Downloaded"), [100, 100], file_path, filename])
+                return True
             except subprocess.CalledProcessError as exc:
                 if os.path.exists(file_path):
                     os.remove(file_path)
