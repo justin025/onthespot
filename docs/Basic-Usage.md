@@ -27,14 +27,14 @@
 ## 1. Getting Started
 
 > [!WARNING]
-> When launching the application for the first time, you will receive a warning that no Spotify accounts are added.
+> When launching the application for the first time, you will receive a warning that no Music-App accounts are added.
 
 1. **Dismiss the Warning**
    - Click the close button on the warning dialog.
 
-2. **Add Your Spotify Account(s)**
+2. **Add Your Music-App Account(s)**
    - Navigate to the **Configuration** tab.
-   - Scroll to the bottom and add your Spotify account(s).
+   - Scroll to the bottom and add your Music-App account(s).
 
 > [!TIP]
 > Adding multiple accounts allows you to download multiple songs simultaneously, speeding up the download process.
@@ -64,13 +64,15 @@
 ### Download by URL
 
 1. **Enter the URL**
-   - Paste the Spotify URL of a song, album, artist, or playlist into the search field.
+   - Paste the Music-App URL of a song, album, artist, or playlist into the search field.
 
 2. **Start the Download**
    - Click the **Download** button to begin downloading.
 
 3. **Bulk URL Downloads**
    - You can also provide a path to a text file containing multiple URLs. OnTheSpot will queue all listed URLs for downloading.
+
+[GIF Image Explaining how to Download]
 
 > [!IMPORTANT]
 > Ensure each URL in the text file is on a separate line to avoid errors during the download process.
@@ -102,15 +104,15 @@ Customize **OnTheSpot** to fit your preferences by adjusting the settings in the
 
 | **Option**                           | **Description**                                                                                                                                                                                |
 | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Max Download Workers**             | Number of simultaneous download threads. Set this to match the number of Spotify accounts you've added. *Requires application restart to take effect.*                                         |
-| **Active Account Number**            | Select which Spotify account to use for searches and downloads. Accounts are numbered in the accounts list.                                                                                    |
+| **Max Download Workers**             | Number of simultaneous download threads. Set this to match the number of Music-App accounts you've added. *Requires application restart to take effect.*                                         |
+| **Active Account Number**            | Select which Music-App account to use for searches and downloads. Accounts are numbered in the accounts list.                                                                                    |
 | **Download Location**                | Choose the root folder where all downloaded media will be saved.                                                                                                                               |
-| **Download Delay**                   | Time (in seconds) to wait before initiating the next download after a successful one. Helps prevent hitting Spotify's rate limits.                                                             |
+| **Download Delay**                   | Time (in seconds) to wait before initiating the next download after a successful one. Helps prevent hitting Music-App's rate limits.                                                             |
 | **Max Retries**                      | Number of retry attempts for a failed download before skipping to the next item.                                                                                                               |
 | **Max Search Results**               | Limits the number of search results displayed for each media type (e.g., songs, albums). For example, setting this to '1' shows one result for each type, resulting in 4 total search results. |
 | **Raw Media Download**               | Downloads original audio files in `.ogg` format without converting or adding metadata. *Disables metadata writing and thumbnail embedding.*                                                    |
 | **Force Premium**                    | Use this option if your premium account is mistakenly recognized as free. **Caution:** Only enable if you are certain your account is premium.                                                 |
-| **Mirror Playback**                  | Automatically downloads songs you play in the Spotify app, building a library of frequently listened tracks.                                                                                   |
+| **Mirror Playback**                  | Automatically downloads songs you play in the Music-App app, building a library of frequently listened tracks.                                                                                   |
 | **Show/Hide Advanced Configuration** | Toggle to display or hide the Advanced Configuration settings.                                                                                                                                 |
 | **Save Settings**                    | Click to apply and save any changes made to the configuration options.                                                                                                                         |
 
@@ -140,7 +142,7 @@ For users who want more control over how their music is organized and downloaded
   | `{genre}`         | Genre of the song.                                  |
   | `{label}`         | Name of the record label.                           |
   | `{explicit}`      | Displays 'Explicit' if the song is marked explicit. |
-  | `{spotid}`        | Spotify ID of the track.                            |
+  | `{spotid}`        | Music-App ID of the track.                            |
 
 > [!TIP]
 > **Example:**  
@@ -169,7 +171,7 @@ For users who want more control over how their music is organized and downloaded
 
 | **Option**                            | **Description**                                                                                                                                                                                                      |
 | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Download Buttons**                  | Adds extra functionalities like copying song links, liking songs on Spotify, playing tracks, and locating local files.                                                                                               |
+| **Download Buttons**                  | Adds extra functionalities like copying song links, liking songs on Music-App, playing tracks, and locating local files.                                                                                               |
 | **Rotate Active Account Number**      | Automatically switches between added accounts for downloading to minimize the chance of hitting rate limits.                                                                                                         |
 | **Disable Bulk Download Notices**     | Turns off pop-up messages that appear during bulk downloads, providing a cleaner user experience.                                                                                                                    |
 | **Recoverable Downloads Retry Delay** | Sets the wait time before retrying a failed download attempt.                                                                                                                                                        |
