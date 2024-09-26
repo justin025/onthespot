@@ -1,7 +1,7 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="../../Assets/01_Logo/LOGO-HERE">
-  <source media="(prefers-color-scheme: light)" srcset="../../Assets/01_Logo/LOGO-HERE">
-  <img src="../../Assets/01_Logo/LOGO-HERE" alt="Logo of OnTheSpot" width="200">
+  <source media="(prefers-color-scheme: dark)" srcset="../assets/01_Logo/Project-Logo.png">
+  <source media="(prefers-color-scheme: light)" srcset="../assets/01_Logo/Project-Logo.png">
+  <img src="../assets/01_Logo/Project-Logo.png" alt="Logo of OnTheSpot" width="200">
 </picture>
 
 <br>
@@ -59,7 +59,7 @@
    - **Bulk Download**: Use the buttons below the results table to download multiple items at once.
 
 > [!NOTE]
-> Downloading large media types like albums or playlists may take longer. The application might appear unresponsive during this process—please be patient.
+> Downloading large media types like albums or playlists may take longer. The application might appear unresponsive during this process. Please be patient.
 
 ### Download by URL
 
@@ -142,6 +142,7 @@ For users who want more control over how their music is organized and downloaded
   | `{label}`         | Name of the record label.                           |
   | `{explicit}`      | Displays 'Explicit Label' if the song is marked explicit (default: 🅴). |
   | `{spotid}`        | Music-App ID of the track.                            |
+
 
 > [!TIP]
 > **Example:**  
