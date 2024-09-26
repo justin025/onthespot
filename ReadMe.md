@@ -2,9 +2,9 @@
 
 <div style="text-align: center;">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="Assets/01_Logo/LOGO-HERE">
-    <source media="(prefers-color-scheme: light)" srcset="Assets/01_Logo/LOGO-HERE">
-    <img src="Assets/01_Logo/LOGO-HERE" alt="Logo of OnTheSpot" width="40%">
+    <source media="(prefers-color-scheme: dark)" srcset="assets/01_Logo/Project-Logo.png">
+    <source media="(prefers-color-scheme: light)" srcset="assets/01_Logo/Project-Logo.png">
+    <img src="assets/01_Logo/Project-Logo.png" alt="Logo of OnTheSpot" width="20%">
   </picture>
 </div>
 
@@ -27,33 +27,46 @@
    <br>
 </div>
 
-<Image HERE>
+[WIP:Overview Image Here]
 
 <br>
 
 ## What is OnTheSpot?
 
-OnTheSpot is a simple and user-friendly music downloader built with Qt and Python. It allows you to search for songs, artists, albums, and playlists, and download them straight to your device. Designed to be easy to use and efficient, it works across multiple platforms, so anyone can enjoy their favorite music offline.
+OnTheSpot is a straightforward, user-friendly music downloader built with Qt and Python. You can search for songs, artists, albums and playlists and download them straight to your device. It's designed to be simple and effective, and it works across multiple platforms, so anyone can enjoy their favourite music offline.
+
+### Features
+
+- **Cross-Platform**<br>Available for Windows, macOS, and Linux (Including AppImage, PKGBuild, and eBuild).
+- **High-Quality Downloads**<br>Download music up to 320kbps directly from the source.
+- **Multi-Language Support**<br>Download track and album names translated to your application’s language.
+- **Comprehensive Content Coverage**<br>Supports podcasts, playlists, liked songs, albums, singles, and compilations.
+- **Rich Metadata Embedding**<br>Automatically embed detailed metadata like artist, album, year, and lyrics.
+- **Custom Download Paths**<br>Set personalized paths for playlists and episodes for easy organization.
+- **Free and Premium Support**<br>Compatible with both free and premium accounts.
+
+> [!IMPORTANT]  
+> If you want to know more about the features, take a look at the application itself or check out our documentation.
 
 ## How It Works
 
-OnTheSpot is used to search and download music. You can perform searches by entering queries or URLs, and the app will fetch the corresponding media. Downloads are managed efficiently, with options to customize download settings, formats, and directories.
+OnTheSpot is a music search and download app. You can search for what you need by entering queries or URLs, and the app will find the relevant media for you. Downloads are easy to manage, with options to tweak download settings, formats, and directories to your liking.
 
 ### Installation
 
-We've made the installation process as simple as possible, even if you're new to this. You have two options to install OnTheSpot, we personally would recommend you the first one. Its the easiest:
+We've made the installation process really straightforward, even if you're new to this. You can install OnTheSpot in two different ways. We think you'll find the first option easier. It's really straightforward.
 
 1. **[Install via GitHub Release Packages](docs/Installation.md#1-install-via-github-release-packages-recommended)**
 
-[GIF Image how to Download]
+[WIP:GIF Image how to Download]
 
 2. **[Build the Package Locally via Script](docs/Installation.md#2-build-the-package-locally-via-script)**
 
-[GIF Image how to Download]
+[WIP:GIF Image how to Download]
 
 ### Basic Usage
 
-Here you'll get a quick overview to help you get started with our app. For a comprehensive tutorial with images and videos, please refer to our [Basic Usage Guide](docs/Basic-Usage.md).
+This is a quick overview to help you get started with our app. For a full tutorial with pictures and videos, check out our [Basic Usage Guide](docs/Basic-Usage.md).
 
 > [!NOTE]
 > Our Basic Usage Guide has been made to be beginner-friendly, ensuring you can navigate and use OnTheSpot easy.
@@ -68,6 +81,8 @@ Here you'll get a quick overview to help you get started with our app. For a com
 6. [Configuration](docs/Basic-Usage.md#4-configuration)
 7. [Advanced Features](docs/Basic-Usage.md#5-advanced-configuration)
 8. [Saving Your Configuration](docs/Basic-Usage.md#6-saving-your-configuration)
+
+[WIP:Youtube Tutorial how to Use our App]
 
 #### Need More Help?
 

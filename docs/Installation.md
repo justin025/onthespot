@@ -1,7 +1,7 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="../../Assets/01_Logo/LOGO-HERE">
-  <source media="(prefers-color-scheme: light)" srcset="../../Assets/01_Logo/LOGO-HERE">
-  <img src="../../Assets/01_Logo/LOGO-HERE" alt="Logo of OnTheSpot" width="200">
+  <source media="(prefers-color-scheme: dark)" srcset="../assets/01_Logo/Project-Logo.png">
+  <source media="(prefers-color-scheme: light)" srcset="../assets/01_Logo/Project-Logo.png">
+  <img src="../assets/01_Logo/Project-Logo.png" alt="Logo of OnTheSpot" width="200">
 </picture>
 
 <br>
