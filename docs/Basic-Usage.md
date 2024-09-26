@@ -17,8 +17,8 @@
   - [4. Configuration](#4-configuration)
     - [General Configuration Options](#general-configuration-options)
   - [5. Advanced Configuration](#5-advanced-configuration)
-    - [Track Naming Format](#track-naming-format)
-    - [Album Directory Naming](#album-directory-naming)
+    - [Track/Playlist Path Format](#track/playlist-path-format)
+    - [Podcast Path Format](#podcast-path-format)
     - [Additional Advanced Options](#additional-advanced-options)
   - [6. Saving Your Configuration](#6-saving-your-configuration)
 
@@ -111,7 +111,6 @@ Customize **OnTheSpot** to fit your preferences by adjusting the settings in the
 | **Max Retries**                      | Number of retry attempts for a failed download before skipping to the next item.                                                                                                               |
 | **Max Search Results**               | Limits the number of search results displayed for each media type (e.g., songs, albums). For example, setting this to '1' shows one result for each type, resulting in 4 total search results. |
 | **Raw Media Download**               | Downloads original audio files in `.ogg` format without converting or adding metadata. *Disables metadata writing and thumbnail embedding.*                                                    |
-| **Force Premium**                    | Use this option if your premium account is mistakenly recognized as free. **Caution:** Only enable if you are certain your account is premium.                                                 |
 | **Mirror Playback**                  | Automatically downloads songs you play in the Music-App app, building a library of frequently listened tracks.                                                                                   |
 | **Show/Hide Advanced Configuration** | Toggle to display or hide the Advanced Configuration settings.                                                                                                                                 |
 | **Save Settings**                    | Click to apply and save any changes made to the configuration options.                                                                                                                         |
@@ -123,7 +122,7 @@ Customize **OnTheSpot** to fit your preferences by adjusting the settings in the
 
 For users who want more control over how their music is organized and downloaded.
 
-### Track Naming Format
+### Track/Playlist Path Format
 
 - **Customize File Names**
   - Define how downloaded tracks are named using variables enclosed in `{}`.
@@ -132,7 +131,7 @@ For users who want more control over how their music is organized and downloaded
 
   | **Variable**      | **Description**                                     |
   | ----------------- | --------------------------------------------------- |
-  | `{artist}`        | Name of the artist.                                 |
+  | `{artist}`        | Name of the artist(s).                                 |
   | `{album}`         | Name of the album.                                  |
   | `{name}`          | Name of the track.                                  |
   | `{rel_year}`      | Release year of the track.                          |
@@ -141,44 +140,53 @@ For users who want more control over how their music is organized and downloaded
   | `{playlist_name}` | Name of the playlist (if part of a playlist).       |
   | `{genre}`         | Genre of the song.                                  |
   | `{label}`         | Name of the record label.                           |
-  | `{explicit}`      | Displays 'Explicit' if the song is marked explicit. |
-  | `{spotid}`        | Music-App ID of the track.                          |
+  | `{explicit}`      | Displays 'Explicit Label' if the song is marked explicit (default: 🅴). |
+  | `{spotid}`        | Music-App ID of the track.                            |
+
 
 > [!TIP]
 > **Example:**  
 > Setting the format to `{artist} - {name}.mp3` will result in files named like `Artist Name - Song Title.mp3`.
 
-### Album Directory Naming
+### Podcast Path Format
 
 - **Organize by Folders**
-  - Define how albums are organized into directories using variables.
+  - Define how podcasts are organized into directories using variables.
 
 - **Available Variables**
 
   | **Variable**      | **Description**                               |
   | ----------------- | --------------------------------------------- |
-  | `{artist}`        | Name of the main artist of the album.         |
-  | `{album}`         | Name of the album.                            |
-  | `{rel_year}`      | Release year of the album.                    |
-  | `{playlist_name}` | Name of the playlist (if part of a playlist). |
-  | `{genre}`         | Genre of the album.                           |
+  | `{artist}`        | Name of the artist(s).                        |
+  | `{podcast_name}`  | Name of the Podcast.                          |
+  | `{episode_name}`  | Episode name.                                 |
+  | `{release_date}`  | Episode release date.                         |
+  | `{total_episodes}`| Total number of episodes in podcast.          |
+  | `{language}`      | Podcast language.                             |
 
 > [!TIP]
 > **Example:**  
-> Setting the directory format to `{artist}/{album} ({rel_year})` will create folders like `Artist Name/Album Title (2021)/`.
+> Setting the directory format to `{artist}/{podcast_name}/{episode})` will create folders like `Artist Name/Podcast Name/Episode Name.mp3`.
 
 ### Additional Advanced Options
 
 | **Option**                            | **Description**                                                                                                                                                                                                      |
 | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Download Buttons**                  | Adds extra functionalities like copying song links, liking songs on Music-App, playing tracks, and locating local files.                                                                                               |
+| **Download Buttons**                  | Adds extra functionalities like copying song links, liking and queueing songs on Music-App, opening tracks in your local music player, and locating download directory.                                         | **Disable Bulk Download Notices**     | Turns off pop-up messages that appear during bulk downloads, providing a cleaner user experience.                                                                                                             |                                                      
+| **Explicit Label**     | Changes how explicit songs are labelled in the application and track path (default: 🅴).                                                                                                                   |
+| **Track/Episode Format**                      | Select the audio format for your downloaded music or podcasts (e.g., `mp3`, `flac`). **Note:** Do not include a dot before the format (use `mp3`, not `.mp3`). This setting is ignored when using the Raw Media Download option. |
+| **Use Custom Playlist Path**                      | If downloading a playlist use the playlist path. |
+| **Download Lyrics**      | Enables fetching lyrics after downloading a track. |                                              
+| **Download Synced Lyrics Only**      | Only download synced lyrics.                                                                                  |
+| **Save LRC file**      | Save lyrics to a .lrc file.  |
+| **Force Premium**                    | Only download using very high quality. **Caution:** This feature requires a premium account.                                                 |
 | **Rotate Active Account Number**      | Automatically switches between added accounts for downloading to minimize the chance of hitting rate limits.                                                                                                         |
-| **Disable Bulk Download Notices**     | Turns off pop-up messages that appear during bulk downloads, providing a cleaner user experience.                                                                                                                    |
 | **Recoverable Downloads Retry Delay** | Sets the wait time before retrying a failed download attempt.                                                                                                                                                        |
-| **Skip Bytes at End**                 | Adjusts the number of bytes to skip when encountering download errors at the end of tracks. *Default is 167 bytes.* Set to `0` if you experience 'decode errors' or incomplete downloads.                            |
-| **Force Artist/Album Directories**    | - **Enable:** Organizes all downloads into artist and album folders, even for single tracks or playlists.                                                                                                            |
-|                                       | - **Disable:** Saves downloads directly into the main download folder without additional subfolders.                                                                                                                 |
-| **Media Format**                      | Select the audio format for your downloaded music (e.g., `mp3`, `flac`). **Note:** Do not include a dot before the format (use `mp3`, not `.mp3`). This setting is ignored when using the Raw Media Download option. |
+| **Skip Bytes at End**                 |  At times the last few bytes of a track can't be downloaded, leading to a 'PD Error' which causes the downloads to fail constantly. This option sets the number of bytes to skip downloading after experiencing a 'PD Error'. If you get 'decode errors' or incomplete song downloads, try setting it to 0.                       |
+| **Metadata Seperator**    | Determines how the application should seperate metadata fields in the event of multiple items, i.e. artist1; artist2;. The default seperator is '; '.|
+| **Embed 'Tag'**    | Embeds the specified metadata tag inside downloaded file                           |
+
+
 
 > [!CAUTION]
 > Changing some advanced settings may affect the organization and quality of your downloaded music. Proceed with adjustments only if you are familiar with the options.
