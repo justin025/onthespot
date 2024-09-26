@@ -23,6 +23,10 @@ def main():
             if " " not in config.get("metadata_seperator"):
                 config.set_("metadata_seperator", config.get("metadata_seperator")+" ")
             config.set_("download_play_btn", False)
+    if config.get("theme") == "Dark":
+        config.set_("theme", "dark")
+    if config.get("theme") == "Light":
+        config.set_("theme", "light")
 
     config.set_("version", version)
 

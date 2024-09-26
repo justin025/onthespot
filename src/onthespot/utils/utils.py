@@ -286,7 +286,7 @@ def get_now_playing_local(session):
 def name_by_from_sdata(d_key: str, item: dict):
     item_name = item_by = None
     if d_key == "tracks":
-        item_name = f"{'[ E ]' if item['explicit'] else '       '} {item['name']}"
+        item_name = f"{config.get('explicit_label') if item['explicit'] else '       '} {item['name']}"
         item_by = f"{','.join([artist['name'] for artist in item['artists']])}"
     elif d_key == "albums":
         rel_year = re.search(r'(\d{4})', item['release_date']).group(1)

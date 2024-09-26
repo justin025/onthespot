@@ -6,7 +6,7 @@ from ..otsconfig import config
 import requests
 import json
 from mutagen.easyid3 import EasyID3, ID3
-from mutagen.id3 import APIC, USLT, WOAS
+from mutagen.id3 import APIC, TXXX, USLT, WOAS
 import os
 from pathlib import Path
 import re
@@ -90,7 +90,7 @@ def get_currently_playing_url(session):
 def get_artist_albums(session, artist_id):
     logger.info(f"Get albums for artist by id '{artist_id}'")
     access_token = session.tokens().get("user-read-email")
-    resp = make_call(f'https://api.spotify.com/v1/artists/{artist_id}/albums?include_groups=album,single', token=access_token)
+    resp = make_call(f'https://api.spotify.com/v1/artists/{artist_id}/albums?include_groups=album%2Csingle%2Cappears_on%2Ccompilation&limit=50', token=access_token)
     return [resp['items'][i]['id'] for i in range(len(resp['items']))]
 
 
@@ -368,6 +368,10 @@ def set_audio_tags(filename, metadata, track_id_str):
     ID3tags = ID3(filename)
     if config.get("embed_url"):
         ID3tags.add(WOAS(url=f'https://open.spotify.com/{type_}/{track_id_str}'))
+    if config.get("embed_explicit") and metadata['explicit']:
+        ID3tags.add(TXXX(encoding=3, desc=u'ITUNESADVISORY', text="1"))
+    if config.get("embed_compilation") and metadata['album_type'] == "compilation":
+        ID3tags.add(TXXX(encoding=3, desc=u'COMPILATION', text="1"))
     for key in metadata.keys():
         value = metadata[key]
         if key == 'lyrics' and config.get("embed_lyrics"):
@@ -473,6 +477,7 @@ def get_song_info(session, song_id):
     info = {
         'artists': artists,
         'album_name': sanitize_data(info['tracks'][0]['album']["name"]),
+        'album_type': album_data['album_type'],
         'album_artists': album_data['artists'][0]['name'],
         'name': sanitize_data(info['tracks'][0]['name']),
         'image_url': get_thumbnail(info['tracks'][0]['album']['images'], preferred_size=640000),
@@ -489,13 +494,13 @@ def get_song_info(session, song_id):
         'performers': performers,
         'producers': producers,
         'writers': writers,
-        'label': sanitize_data(album_data['label']),
+        'label': album_data['label'],
         'copyright':  [
-            sanitize_data(holder['text'])
+            holder['text']
             for holder
             in album_data['copyrights']
             ],
-        'explicit': info['tracks'][0]['explicit'], # unused
+        'explicit': info['tracks'][0]['explicit'],
         'isrc': info['tracks'][0]['external_ids'].get('isrc', ''),
         'length': info['tracks'][0]['duration_ms'],
         'scraped_song_id': info['tracks'][0]['id'], # unused

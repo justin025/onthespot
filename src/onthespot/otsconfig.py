@@ -71,7 +71,8 @@ class Config:
             "create_m3u_playlists": False, # Create m3u based playlist
             "translate_file_path": False, # Translate downloaded file path to application language
             "ffmpeg_args": [], # Extra arguments for ffmpeg
-            "show_search_thumbnails": False, # Show thumbnails in search view
+            "show_search_thumbnails": True, # Show thumbnails in search view
+            "explicit_label": "🅴", # Explicit label in app and download path
             "search_thumb_height": 60, # Thumbnail height ( they are of equal width and height )
             "metadata_seperator": "; ", # Seperator used for metadata fields that have multiple values
             "embed_branding": False,
@@ -92,8 +93,10 @@ class Config:
             "embed_language": True,
             "embed_isrc": True,
             "embed_length": True,
-            "embed_lyrics": True,
             "embed_url": True,
+            "embed_lyrics": False,
+            "embed_explicit": False,
+            "embed_compilation": False,
             "download_copy_btn": False, # Add copy button to downloads
             "download_save_btn": False, # Add save button to downloads
             "download_queue_btn": False, # Add queue button to downloads
@@ -101,7 +104,7 @@ class Config:
             "download_open_btn": True, # Add open button to downloads
             "download_locate_btn": True, # Add locate button to downloads
             "download_delete_btn": False, # Add delete button to downloads
-            "theme": "Dark", # Light\Dark
+            "theme": "dark", # Light\Dark
             "accounts": [] # Saved account information
         }
         if os.path.isfile(self.__cfg_path):

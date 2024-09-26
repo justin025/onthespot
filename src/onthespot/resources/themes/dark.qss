@@ -1,0 +1,55 @@
+QWidget {
+    background-color: #282828;
+    color: #fff;
+}
+QWidget:item:selected
+{
+    background-color: #2596BE;
+    color: #fff;
+}
+QGroupBox #gb0_0, #gb0_1, #gb0_2, #gb0_3, #gb1_0, #gb1_1, #gb1_2, #gb1_3, #gb1_4, #gb1_5, #gb1_6, #gb1_7, #gb1_8, #gb2_0, #gb2_1, #gb2_2, #gb2_3, #gb2_4, #gb2_5, #gb2_6, #gb2_7, #gb2_8, #gb2_9, #gb2_10, #gb2_11 {
+    border: 0;
+}
+QComboBox {
+    padding-left: auto;
+    padding-right: 14%;
+}
+QToolTip {
+    background-color: #282828;
+    color: #fff;
+    padding: 4px;
+    border: 1px solid #000;
+}
+QCheckBox::indicator:unchecked {
+    background-color: #424242;
+}
+QProgressBar {
+    text-align: center;
+}
+QProgressBar::chunk {
+   background: #2596BE;
+   color: #fff;
+}
+QScrollBar {
+    border: 1px solid #424242;
+    background: #424242;
+    margin: 0px 0px 0px 0px;
+}
+QScrollBar:vertical {
+    width:10px;
+}
+QScrollBar:horizontal {
+    height:10px;
+}
+QScrollBar::handle {
+    background: #616161;
+    border-radius: 4px;
+}
+QScrollBar::add-line {
+    background: #616161;
+    height: 0px;
+}
+QScrollBar::sub-line {
+    background: #616161;
+    height: 0 px;
+}

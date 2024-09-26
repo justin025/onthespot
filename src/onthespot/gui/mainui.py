@@ -75,6 +75,7 @@ def dl_progress_update(data):
 
 def retry_all_failed_downloads():
     for dl_id in list(failed_downloads.keys()):
+        downloads_status[dl_id]["status_label"].setText("Waiting")
         if config.get("download_copy_btn"):
             downloads_status[media_id]['btn']['copy'].show()
         downloads_status[dl_id]["btn"]['cancel'].show()
@@ -188,27 +189,21 @@ class MainWindow(QMainWindow):
         self.__media_parser_worker.enqueue.connect(self.__add_item_to_downloads)
         self.__media_parser_thread.start()
 
-        # Create path to dark_theme
-        self.dark_theme_path = os.path.join(config.app_root,'resources', 'themes', 'main_window_dark_theme.qss')
-        self.light_theme_path = os.path.join(config.app_root,'resources', 'themes', 'main_window_light_theme.qss')
-        # Create button and add to the interface
+        # Set application theme
         self.toggle_theme_button.clicked.connect(self.toggle_theme)
-        # Set theme from config
         self.theme = config.get("theme")
-        if self.theme == "Dark":
-          theme_icon = QIcon(os.path.join(config.app_root, 'resources', 'icons', 'light.png'))
-          self.toggle_theme_button.setIcon(theme_icon)
-          self.toggle_theme_button.setText(self.tr(" Light Theme"))
-          with open(self.dark_theme_path, 'r') as f:
-              dark_theme = f.read()
-              self.setStyleSheet(dark_theme)
-        elif self.theme == "Light":
-          theme_icon = QIcon(os.path.join(config.app_root, 'resources', 'icons', 'dark.png'))
-          self.toggle_theme_button.setIcon(theme_icon)
-          self.toggle_theme_button.setText(self.tr(" Dark Theme"))
-          with open(self.light_theme_path, 'r') as f:
-              light_theme = f.read()
-              self.setStyleSheet(light_theme)
+        self.theme_path = os.path.join(config.app_root,'resources', 'themes', f'{self.theme}.qss')
+        if self.theme == "dark":
+            self.toggle_theme_button.setText(self.tr(" Light Theme"))
+            theme_icon = QIcon(os.path.join(config.app_root, 'resources', 'icons', 'light.png'))
+        elif self.theme == "light":
+            self.toggle_theme_button.setText(self.tr(" Dark Theme"))
+            theme_icon = QIcon(os.path.join(config.app_root, 'resources', 'icons', 'dark.png'))
+        self.toggle_theme_button.setIcon(theme_icon)
+
+        with open(self.theme_path, 'r') as f:
+              theme = f.read()
+              self.setStyleSheet(theme)
         logger.info(f"Set theme {self.theme}!")
 
         # Set the table header properties
@@ -216,27 +211,29 @@ class MainWindow(QMainWindow):
         logger.info("Main window init completed !")
 
     def load_dark_theme(self):
-        theme_icon = QIcon(os.path.join(config.app_root, 'resources', 'icons', 'light.png'))
+        self.theme = "dark"
+        self.theme_path = os.path.join(config.app_root,'resources', 'themes', f'{self.theme}.qss')
+        theme_icon = QIcon(os.path.join(config.app_root, 'resources', 'icons', f'light.png'))
         self.toggle_theme_button.setIcon(theme_icon)
         self.toggle_theme_button.setText(self.tr(" Light Theme"))
-        with open(self.dark_theme_path, 'r') as f:
+        with open(self.theme_path, 'r') as f:
             dark_theme = f.read()
             self.setStyleSheet(dark_theme)
-        self.theme = "Dark"
 
     def load_light_theme(self):
-        theme_icon = QIcon(os.path.join(config.app_root, 'resources', 'icons', 'dark.png'))
+        self.theme = "light"
+        self.theme_path = os.path.join(config.app_root,'resources', 'themes', f'{self.theme}.qss')
+        theme_icon = QIcon(os.path.join(config.app_root, 'resources', 'icons', f'dark.png'))
         self.toggle_theme_button.setIcon(theme_icon)
         self.toggle_theme_button.setText(self.tr(" Dark Theme"))
-        with open(self.light_theme_path, 'r') as f:
+        with open(self.theme_path, 'r') as f:
             light_theme = f.read()
             self.setStyleSheet(light_theme)
-        self.theme = "Light"
 
     def toggle_theme(self):
-        if self.theme == "Light":
+        if self.theme == "light":
             self.load_dark_theme()
-        elif self.theme == "Dark":
+        elif self.theme == "dark":
             self.load_light_theme()
 
     def bind_button_inputs(self):
@@ -599,6 +596,7 @@ class MainWindow(QMainWindow):
         self.inp_language.setCurrentIndex(config.get("language_index"))
         self.inp_max_threads.setValue(config.get("max_threads"))
         self.inp_parsing_acc_sn.setValue(config.get("parsing_acc_sn"))
+        self.inp_explicit_label.setText(config.get("explicit_label"))
         self.inp_download_root.setText(config.get("download_root"))
         self.inp_download_delay.setValue(config.get("download_delay"))
         self.inp_max_search_results.setValue(config.get("max_search_results"))
@@ -766,14 +764,22 @@ class MainWindow(QMainWindow):
             self.inp_embed_length.setChecked(True)
         else:
             self.inp_embed_length.setChecked(False)
-        if config.get('embed_lyrics'):
-            self.inp_embed_lyrics.setChecked(True)
-        else:
-            self.inp_embed_lyrics.setChecked(False)
         if config.get('embed_url'):
             self.inp_embed_url.setChecked(True)
         else:
             self.inp_embed_url.setChecked(False)
+        if config.get('embed_lyrics'):
+            self.inp_embed_lyrics.setChecked(True)
+        else:
+            self.inp_embed_lyrics.setChecked(False)
+        if config.get('embed_explicit'):
+            self.inp_embed_explicit.setChecked(True)
+        else:
+            self.inp_embed_explicit.setChecked(False)
+        if config.get('embed_compilation'):
+            self.inp_embed_compilation.setChecked(True)
+        else:
+            self.inp_embed_compilation.setChecked(False)
 
         logger.info('Config filled to UI')
 
@@ -789,6 +795,7 @@ class MainWindow(QMainWindow):
             self.inp_parsing_acc_sn.setValue(1)
         else:
             config.set_('parsing_acc_sn', self.inp_parsing_acc_sn.value())
+        config.set_('explicit_label', self.inp_explicit_label.text())
         config.set_('download_root', self.inp_download_root.text())
         config.set_('track_path_formatter', self.inp_track_formatter.text())
         config.set_('podcast_path_formatter', self.inp_podcast_path_formatter.text())
@@ -957,14 +964,22 @@ class MainWindow(QMainWindow):
             config.set_('embed_length', True)
         else:
             config.set_('embed_length', False)
-        if self.inp_embed_lyrics.isChecked():
-            config.set_('embed_lyrics', True)
-        else:
-            config.set_('embed_lyrics', False)
         if self.inp_embed_url.isChecked():
             config.set_('embed_url', True)
         else:
             config.set_('embed_url', False)
+        if self.inp_embed_lyrics.isChecked():
+            config.set_('embed_lyrics', True)
+        else:
+            config.set_('embed_lyrics', False)
+        if self.inp_embed_explicit.isChecked():
+            config.set_('embed_explicit', True)
+        else:
+            config.set_('embed_explicit', False)
+        if self.inp_embed_compilation.isChecked():
+            config.set_('embed_compilation', True)
+        else:
+            config.set_('embed_compilation', False)
         config.update()
         logger.info('Config updated !')
 
@@ -1108,7 +1123,7 @@ class MainWindow(QMainWindow):
                     thumb_dict = item['images']
                 queue_data = {'media_type': d_key[0:-1], 'media_id': item['id'],
                               'data': {
-                                  'media_title': item_name.replace("[ E ]", ""),
+                                  'media_title': item_name.replace(config.get("explicit_label"), ""),
                                   'thumb_url': get_thumbnail(thumb_dict,
                                                              preferred_size=config.get('search_thumb_height')^2
                                                              )
@@ -1136,7 +1151,7 @@ class MainWindow(QMainWindow):
                             continue
                         queue_data = {'media_type': d_key[0:-1], 'media_id': item['id'],
                                       'data': {
-                                          'media_title': item_name.replace('[ E ]', ''),
+                                          'media_title': item_name.replace(config.get("explicit_label"), ''),
                                           "hide_dialogs": hide_dialog
                                       }}
                         self.__send_to_pqp(queue_data)

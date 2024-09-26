@@ -17,15 +17,14 @@ class MiniDialog(QDialog):
         logger.debug('Dialog item is ready..')
 
         # Set theme
-        self.dark_theme_path = os.path.join(config.app_root,'resources', 'themes', 'mini_dialog_dark_theme.qss')
-        self.light_theme_path = os.path.join(config.app_root,'resources', 'themes', 'mini_dialog_light_theme.qss')
         self.theme = config.get("theme")
-        if self.theme == "Dark":
-          with open(self.dark_theme_path, 'r') as f:
+        self.theme_path = os.path.join(config.app_root,'resources', 'themes', f'{self.theme}.qss')
+        if self.theme == "dark":
+          with open(self.theme_path, 'r') as f:
               dark_theme = f.read()
               self.setStyleSheet(dark_theme)
-        elif self.theme == "Light":
-          with open(self.light_theme_path, 'r') as f:
+        elif self.theme == "light":
+          with open(self.theme_path, 'r') as f:
               light_theme = f.read()
               self.setStyleSheet(light_theme)
 
@@ -33,18 +32,18 @@ class MiniDialog(QDialog):
             with open(self.dark_theme_path, 'r') as f:
                 dark_theme = f.read()
                 self.setStyleSheet(dark_theme)
-            self.theme = "Dark"
+            self.theme = "dark"
 
         def load_light_theme(self):
             with open(self.light_theme_path, 'r') as f:
                 light_theme = f.read()
                 self.setStyleSheet(light_theme)
-            self.theme = "Dark"
+            self.theme = "dark"
 
         def toggle_theme(self):
-            if self.theme == "Light":
+            if self.theme == "light":
                 self.load_dark_theme()
-            elif self.theme == "Dark":
+            elif self.theme == "dark":
                 self.load_light_theme()
 
     def run(self, content, btn_hidden=False):
