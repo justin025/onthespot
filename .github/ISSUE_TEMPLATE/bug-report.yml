@@ -1,0 +1,91 @@
+name: Bug Report
+description: Found a bug? Report it here.
+labels: [bug]
+body:
+- type: markdown
+  attributes:
+    value: |
+      # 🐛 Bug Report
+
+      **Please follow the guidelines below to help us address your issue promptly.**
+
+      **Guidelines:**
+      - **Search Existing Issues:** Ensure your issue isn't already reported by [checking here](https://github.com/yourusername/yourproject/issues?q=is%3Aissue).
+      - **One Bug per Report:** Please report only one bug per issue.
+      - **Descriptive Title:** Provide a clear and descriptive title for your issue.
+      - **Detailed Information:** Be as detailed as possible to help us reproduce and fix the issue.
+
+- type: input
+  id: title
+  attributes:
+    label: Issue Title
+    description: A concise title for your bug report.
+    placeholder: Application crashes when opening a specific file
+  validations:
+    required: true
+
+- type: textarea
+  id: description
+  attributes:
+    label: Bug Description
+    description: A clear and thorough description of the bug.
+    placeholder: When I perform X action, Y happens instead of the expected Z.
+  validations:
+    required: true
+
+- type: textarea
+  id: steps
+  attributes:
+    label: Steps to Reproduce
+    description: Step-by-step instructions to reproduce the bug.
+    placeholder: |
+      1. Go to '...'
+      2. Click on '...'
+      3. Scroll down to '...'
+      4. See error
+  validations:
+    required: true
+
+- type: textarea
+  id: expected_behavior
+  attributes:
+    label: Expected Behavior
+    description: Describe what you expected to happen.
+    placeholder: The application should have...
+  validations:
+    required: true
+
+- type: textarea
+  id: actual_behavior
+  attributes:
+    label: Actual Behavior
+    description: Describe what actually happened.
+    placeholder: Instead of the expected behavior, the application...
+  validations:
+    required: true
+
+- type: textarea
+  id: environment
+  attributes:
+    label: Environment Details
+    description: Provide details about your setup.
+    render: markdown
+    value: |
+      | **Detail**             | **Your Information**                 |
+      |------------------------|--------------------------------------|
+      | **Operating System**   | Windows 10 / macOS 13 / Ubuntu 22.04 |
+      | **Application Version**| v0.7.0                               |
+      | **Installation Method**| Built from source / Binary           |
+      | **Python Version**     | 3.11.4                               |
+      | **FFmpeg Version**     | e.g., 4.3.1                          |
+  validations:
+    required: true
+
+- type: textarea
+  id: additional_info
+  attributes:
+    label: Additional Information
+    description: Add any other context, screenshots, or logs.
+    placeholder: Include logs, screenshots, or any other relevant details here.
+  validations:
+    required: false
