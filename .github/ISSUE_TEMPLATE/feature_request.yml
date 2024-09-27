@@ -1,0 +1,40 @@
+name: Feature Request
+description: Tell us how to make the app better.
+labels: [FEATURE]
+body:
+- type: markdown
+  attributes:
+    value: |
+      **Please follow the guidelines below to help us consider your feature request.**
+
+      **Guidelines:**
+      - Please **search existing issues** to ensure your feature hasn't already been suggested by [checking here](https://github.com/justin025/onthespot/issues?q=is%3Aissue).
+      - **Report one Suggestion per issue** by creating separate issues for each suggestion.
+      - **Provide a clear and descriptive title** that summarizes your idea.
+      - **Include detailed information** to help us understand the value of the feature.
+
+      **If you don't follow the guidelines, the issue will be deleted!**
+
+- type: textarea
+  id: description
+  attributes:
+    label: Feature Description
+    placeholder: Describe the feature or request you are proposing.
+  validations:
+    required: true
+
+- type: textarea
+  id: justification
+  attributes:
+    label: Justification
+    placeholder: Explain why this feature or request would be useful.
+  validations:
+    required: true
+
+- type: textarea
+  id: additional_info
+  attributes:
+    label: Additional Information
+    placeholder: Add any other context, screenshots, or examples here.
+  validations:
+    required: false

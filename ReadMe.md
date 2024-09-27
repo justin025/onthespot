@@ -20,14 +20,14 @@
       <br />
       <a href="PLACEHOLDER/">Join Discord</a>
       ·
-      <a href="PLACEHOLDER/">Report Bug</a>
+      <a href="https://github.com/V1p3rOne/OnTheSpot-Development/issues/new?assignees=&labels=bug&projects=&template=bug-report.yml">Report Bug</a>
       ·
-      <a href="PLACEHOLDER/">Request Feature</a>
+      <a href="https://github.com/V1p3rOne/OnTheSpot-Development/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.yml">Request Feature</a>
    </p>
    <br>
 </div>
 
-[WIP:Overview Image Here]
+<img src="https://github.com/user-attachments/assets/41657b8b-2b80-4fe4-afe7-ef8bacab5991">
 
 <br>
 

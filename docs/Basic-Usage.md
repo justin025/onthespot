@@ -17,7 +17,7 @@
   - [4. Configuration](#4-configuration)
     - [General Configuration Options](#general-configuration-options)
   - [5. Advanced Configuration](#5-advanced-configuration)
-    - [Track/Playlist Path Format](#track/playlist-path-format)
+    - [Track/Playlist Path Format](#trackplaylist-path-format)
     - [Podcast Path Format](#podcast-path-format)
     - [Additional Advanced Options](#additional-advanced-options)
   - [6. Saving Your Configuration](#6-saving-your-configuration)
@@ -143,7 +143,6 @@ For users who want more control over how their music is organized and downloaded
   | `{explicit}`      | Displays 'Explicit Label' if the song is marked explicit (default: 🅴). |
   | `{spotid}`        | Music-App ID of the track.                            |
 
-
 > [!TIP]
 > **Example:**  
 > Setting the format to `{artist} - {name}.mp3` will result in files named like `Artist Name - Song Title.mp3`.
@@ -172,11 +171,12 @@ For users who want more control over how their music is organized and downloaded
 
 | **Option**                            | **Description**                                                                                                                                                                                                      |
 | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Download Buttons**                  | Adds extra functionalities like copying song links, liking and queueing songs on Music-App, opening tracks in your local music player, and locating download directory.                                         | **Disable Bulk Download Notices**     | Turns off pop-up messages that appear during bulk downloads, providing a cleaner user experience.                                                                                                             |                                                      
+| **Download Buttons**                  | Adds extra functionalities like copying song links, liking and queueing songs on Music-App, opening tracks in your local music player, and locating download directory. |
+| **Disable Bulk Download Notices**     | Turns off pop-up messages that appear during bulk downloads, providing a cleaner user experience.                                                                                                             |
 | **Explicit Label**     | Changes how explicit songs are labelled in the application and track path (default: 🅴).                                                                                                                   |
 | **Track/Episode Format**                      | Select the audio format for your downloaded music or podcasts (e.g., `mp3`, `flac`). **Note:** Do not include a dot before the format (use `mp3`, not `.mp3`). This setting is ignored when using the Raw Media Download option. |
 | **Use Custom Playlist Path**                      | If downloading a playlist use the playlist path. |
-| **Download Lyrics**      | Enables fetching lyrics after downloading a track. |                                              
+| **Download Lyrics**      | Enables fetching lyrics after downloading a track. |
 | **Download Synced Lyrics Only**      | Only download synced lyrics.                                                                                  |
 | **Save LRC file**      | Save lyrics to a .lrc file.  |
 | **Force Premium**                    | Only download using very high quality. **Caution:** This feature requires a premium account.                                                 |
@@ -185,8 +185,6 @@ For users who want more control over how their music is organized and downloaded
 | **Skip Bytes at End**                 |  At times the last few bytes of a track can't be downloaded, leading to a 'PD Error' which causes the downloads to fail constantly. This option sets the number of bytes to skip downloading after experiencing a 'PD Error'. If you get 'decode errors' or incomplete song downloads, try setting it to 0.                       |
 | **Metadata Seperator**    | Determines how the application should seperate metadata fields in the event of multiple items, i.e. artist1; artist2;. The default seperator is '; '.|
 | **Embed 'Tag'**    | Embeds the specified metadata tag inside downloaded file                           |
-
-
 
 > [!CAUTION]
 > Changing some advanced settings may affect the organization and quality of your downloaded music. Proceed with adjustments only if you are familiar with the options.
