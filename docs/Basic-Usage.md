@@ -102,18 +102,27 @@ Customize **OnTheSpot** to fit your preferences by adjusting the settings in the
 
 ### General Configuration Options
 
-| **Option**                           | **Description**                                                                                                                                                                                |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Max Download Workers**             | Number of simultaneous download threads. Set this to match the number of Music-App accounts you've added. *Requires application restart to take effect.*                                         |
-| **Active Account Number**            | Select which Music-App account to use for searches and downloads. Accounts are numbered in the accounts list.                                                                                    |
-| **Download Location**                | Choose the root folder where all downloaded media will be saved.                                                                                                                               |
-| **Download Delay**                   | Time (in seconds) to wait before initiating the next download after a successful one. Helps prevent hitting Music-App's rate limits.                                                             |
-| **Max Retries**                      | Number of retry attempts for a failed download before skipping to the next item.                                                                                                               |
-| **Max Search Results**               | Limits the number of search results displayed for each media type (e.g., songs, albums). For example, setting this to '1' shows one result for each type, resulting in 4 total search results. |
-| **Raw Media Download**               | Downloads original audio files in `.ogg` format without converting or adding metadata. *Disables metadata writing and thumbnail embedding.*                                                    |
-| **Mirror Playback**                  | Automatically downloads songs you play in the Music-App app, building a library of frequently listened tracks.                                                                                   |
-| **Show/Hide Advanced Configuration** | Toggle to display or hide the Advanced Configuration settings.                                                                                                                                 |
-| **Save Settings**                    | Click to apply and save any changes made to the configuration options.                                                                                                                         |
+| **Option**                        | **Description**                                                                                                                                                                       |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Version**                        | Version of the application.                                                                                                                                                           |
+| **Check for Updates**              | Automatically check for application updates.                                                                                                                                           |
+| **Language**                       | Set the application language (default: `en_US`).                                                                                                                                       |
+| **Max Download Workers**           | Number of simultaneous download threads. Set this to match the number of Music-App accounts you've added. Requires application restart to take effect.                                   |
+| **Rotate Active Account**          | Automatically switch between added accounts for downloading to minimize the chance of hitting rate limits.                                                                              |
+| **Download Location**              | Root folder where all downloaded media will be saved.                                                                                                                                  |
+| **Download Delay**                 | Time (in seconds) to wait before initiating the next download. Helps prevent Music-App's rate limits.                                                                                   |
+| **Max Retries**                    | Number of retry attempts for a failed download before skipping to the next item.                                                                                                        |
+| **Max Search Results**             | Limits the number of search results displayed for each media type (e.g., songs, albums).                                                                                               |
+| **Media Format**                   | Select the audio format for your downloaded music or podcasts (e.g., `mp3`, `flac`).                                                                                                   |
+| **Track/Episode Path Format**      | Customize the file naming pattern for tracks, episodes, and playlists using variables like `{artist}`, `{album}`, etc.                                                                  |
+| **Download Lyrics**                | Enable downloading of lyrics for each track.                                                                                                                                           |
+| **Save LRC File**                  | Save lyrics in an `.lrc` file alongside the track.                                                                                                                                     |
+| **Force Premium**                  | Enforce high-quality downloads (requires a premium account).                                                                                                                            |
+| **Show Search Thumbnails**         | Display thumbnails next to search results.                                                                                                                                             |
+| **Metadata Separator**             | Set the separator for metadata fields with multiple values (default: `;`).                                                                                                             |
+| **Embed Metadata Tags**            | Select which metadata tags to embed in downloaded files (e.g., `artist`, `album`, `year`, `lyrics`, etc.).                                                                               |
+| **Explicit Label**                 | Customize how explicit content is labeled in file names and the app (default: 🅴).                                                                                                       |
+| **Theme**                          | Choose the application theme (`light` or `dark`).                                                                                                                                      |
 
 > [!IMPORTANT]
 > After making changes to the configuration, always click the **Save Settings** button to ensure your preferences are applied.
@@ -169,22 +178,14 @@ For users who want more control over how their music is organized and downloaded
 
 ### Additional Advanced Options
 
-| **Option**                            | **Description**                                                                                                                                                                                                      |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Download Buttons**                  | Adds extra functionalities like copying song links, liking and queueing songs on Music-App, opening tracks in your local music player, and locating download directory. |
-| **Disable Bulk Download Notices**     | Turns off pop-up messages that appear during bulk downloads, providing a cleaner user experience.                                                                                                             |
-| **Explicit Label**     | Changes how explicit songs are labelled in the application and track path (default: 🅴).                                                                                                                   |
-| **Track/Episode Format**                      | Select the audio format for your downloaded music or podcasts (e.g., `mp3`, `flac`). **Note:** Do not include a dot before the format (use `mp3`, not `.mp3`). This setting is ignored when using the Raw Media Download option. |
-| **Use Custom Playlist Path**                      | If downloading a playlist use the playlist path. |
-| **Download Lyrics**      | Enables fetching lyrics after downloading a track. |
-| **Download Synced Lyrics Only**      | Only download synced lyrics.                                                                                  |
-| **Save LRC file**      | Save lyrics to a .lrc file.  |
-| **Force Premium**                    | Only download using very high quality. **Caution:** This feature requires a premium account.                                                 |
-| **Rotate Active Account Number**      | Automatically switches between added accounts for downloading to minimize the chance of hitting rate limits.                                                                                                         |
-| **Recoverable Downloads Retry Delay** | Sets the wait time before retrying a failed download attempt.                                                                                                                                                        |
-| **Skip Bytes at End**                 |  At times the last few bytes of a track can't be downloaded, leading to a 'PD Error' which causes the downloads to fail constantly. This option sets the number of bytes to skip downloading after experiencing a 'PD Error'. If you get 'decode errors' or incomplete song downloads, try setting it to 0.                       |
-| **Metadata Seperator**    | Determines how the application should seperate metadata fields in the event of multiple items, i.e. artist1; artist2;. The default seperator is '; '.|
-| **Embed 'Tag'**    | Embeds the specified metadata tag inside downloaded file                           |
+| **Option**                          | **Description**                                                                                                                                                                               |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Use Custom Playlist Path**         | Enable the use of a custom path format for playlists.                                                                                                                                          |
+| **Download Buttons**                 | Adds extra functionalities like copying song links, opening tracks in your local music player, and locating the download directory.                                                             |
+| **Recoverable Downloads Retry Delay**| Sets the wait time before retrying a failed download attempt (default: `10 seconds`).                                                                                                          |
+| **Skip Bytes at End**                | Sets the number of bytes to skip at the end of a download when encountering 'PD Errors' to avoid incomplete tracks.                                                                             |
+| **Disable Bulk Download Notices**    | Disables pop-up messages during bulk downloads for a cleaner user experience.                                                                                                                  |
+| **Translate File Path**              | Translate file paths into the application language.                                                                                                                                           |
 
 > [!CAUTION]
 > Changing some advanced settings may affect the organization and quality of your downloaded music. Proceed with adjustments only if you are familiar with the options.
