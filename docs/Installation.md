@@ -30,7 +30,7 @@ This is the easiest way to get started.
 2. **Install OnTheSpot**
 
    - **Windows**: Run the downloaded `.exe`.
-   - **macOS**: Open the `.dmg` and drag `OnTheSpot.app` into your `Applications` folder. 
+   - **MacOS**: Open the `.dmg` and drag `OnTheSpot.app` into your `Applications` folder. 
    - **Linux**: Make the `.AppImage` executable and run it, alternatively extract the tar.gz and execute the binary.
 
 > [!TIP]
@@ -39,6 +39,8 @@ This is the easiest way to get started.
 3. **Launch OnTheSpot**
 
    - Open the application from your Downloads folder or Applications menu.
+
+[WIP: GIF Image how to Download]
 
 ## 2. Build the Package Locally via Script
 
@@ -55,10 +57,10 @@ If you prefer to build OnTheSpot yourself, follow these steps.
 
 2. **Run the Build Script for Your Operating System**
 
-   - **Windows**: Double-click [`Windows-Build.bat`](scripts/Windows-Build.bat) or run it in Command Prompt.
-   - **MacOS**: Run [`Mac-Build.sh`](scripts/Mac-Build.sh) in Terminal with `./scripts/Mac-Build.sh`.
-   - **Linux**: Run [`Linux-Build.sh`](scripts/Linux-Build.sh) in Terminal with `./scripts/Linux-Build.sh`.
-   - **Linux AppImage**: Run [`AppImage-Build.sh`](scripts/AppImage-Build.sh) in Terminal with `./scripts/AppImage-Build.sh`.
+   - **Windows**: Open the `/scripts` Folder. Double-click [`build_windows.bat`](scripts/build_windows.bat) or run it in Command Prompt.
+   - **MacOS**: Run [`build_mac.sh`](scripts/build_mac.sh) in Terminal with `./scripts/build_mac.sh`.
+   - **Linux**: Run [`build_linux.sh`](scripts/build_linux.sh) in Terminal with `./scripts/build_linux.sh`.
+   - **Linux AppImage**: Run [`build_appimage.sh`](scripts/build_appimage.sh) in Terminal with `./scripts/build_appimage.sh`.
 
    > [!WARNING]
    > Make sure to run the correct script for your platform to avoid any build failures.
@@ -68,7 +70,7 @@ If you prefer to build OnTheSpot yourself, follow these steps.
    > [!TIP]
    > After building, the application will be located in the `dist` folder. Be sure to follow installation steps based on your operating system.
 
-[GIF Image how to Download]
+[WIP: GIF Image how to Download]
 
 <br>
 

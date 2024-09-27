@@ -39,7 +39,7 @@
 > [!TIP]
 > Adding multiple accounts allows you to download multiple songs simultaneously, speeding up the download process.
 
-[Youtube Video Explaining the Usage]
+[WIP: Youtube Video Explaining the Usage]
 
 ## 2. Searching and Downloading Music
 
