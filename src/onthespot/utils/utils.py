@@ -287,11 +287,11 @@ def name_by_from_sdata(d_key: str, item: dict):
     item_name = item_by = None
     if d_key == "tracks":
         item_name = f"{config.get('explicit_label') if item['explicit'] else '       '} {item['name']}"
-        item_by = f"{','.join([artist['name'] for artist in item['artists']])}"
+        item_by = f"{config.get('metadata_seperator').join([artist['name'] for artist in item['artists']])}"
     elif d_key == "albums":
         rel_year = re.search(r'(\d{4})', item['release_date']).group(1)
         item_name = f"[Y:{rel_year}] [T:{item['total_tracks']}] {item['name']}"
-        item_by = f"{','.join([artist['name'] for artist in item['artists']])}"
+        item_by = f"{config.get('metadata_seperator').join([artist['name'] for artist in item['artists']])}"
     elif d_key == "playlists":
         item_name = f"{item['name']}"
         item_by = f"{item['owner']['display_name']}"

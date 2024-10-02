@@ -608,6 +608,7 @@ class MainWindow(QMainWindow):
         self.inp_podcast_path_formatter.setText(config.get("podcast_path_formatter"))
         self.inp_playlist_path_formatter.setText(config.get("playlist_path_formatter"))
         self.inp_m3u_name_formatter.setText(config.get("m3u_name_formatter"))
+        self.inp_album_cover_format.setText(config.get("album_cover_format"))
         self.inp_max_recdl_delay.setValue(config.get("recoverable_fail_wait_delay"))
         self.inp_dl_endskip.setValue(config.get("dl_end_padding_bytes"))
         self.inp_search_thumb_height.setValue(config.get("search_thumb_height"))
@@ -672,6 +673,10 @@ class MainWindow(QMainWindow):
             self.inp_disable_bulk_popup.setChecked(True)
         else:
             self.inp_disable_bulk_popup.setChecked(False)
+        if config.get("save_album_cover"):
+            self.inp_save_album_cover.setChecked(True)
+        else:
+            self.inp_save_album_cover.setChecked(False)
         if config.get("inp_enable_lyrics"):
             self.inp_enable_lyrics.setChecked(True)
         else:
@@ -692,6 +697,10 @@ class MainWindow(QMainWindow):
             self.inp_check_for_updates.setChecked(True)
         else:
             self.inp_check_for_updates.setChecked(False)
+        if config.get('embed_cover'):
+            self.inp_embed_cover.setChecked(True)
+        else:
+            self.inp_embed_cover.setChecked(False)
         if config.get('embed_branding'):
             self.inp_embed_branding.setChecked(True)
         else:
@@ -801,6 +810,7 @@ class MainWindow(QMainWindow):
         config.set_('podcast_path_formatter', self.inp_podcast_path_formatter.text())
         config.set_('playlist_path_formatter', self.inp_playlist_path_formatter.text())
         config.set_('m3u_name_formatter', self.inp_m3u_name_formatter.text())
+        config.set_('album_cover_format', self.inp_album_cover_format.text())
         config.set_('download_delay', self.inp_download_delay.value())
         config.set_('chunk_size', self.inp_chunk_size.value())
         config.set_('recoverable_fail_wait_delay', self.inp_max_recdl_delay.value())
@@ -872,6 +882,10 @@ class MainWindow(QMainWindow):
             config.set_('watch_bg_for_spotify', True)
         else:
             config.set_('watch_bg_for_spotify', False)
+        if self.inp_save_album_cover.isChecked():
+            config.set_('save_album_cover', True)
+        else:
+            config.set_('save_album_cover', False)
         if self.inp_enable_lyrics.isChecked():
             config.set_('inp_enable_lyrics', True)
         else:
@@ -892,6 +906,10 @@ class MainWindow(QMainWindow):
             config.set_('check_for_updates', True)
         else:
             config.set_('check_for_updates', False)
+        if self.inp_embed_cover.isChecked():
+            config.set_('embed_cover', True)
+        else:
+            config.set_('embed_cover', False)
         if self.inp_embed_branding.isChecked():
             config.set_('embed_branding', True)
         else:

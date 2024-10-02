@@ -72,7 +72,7 @@ class ParsingQueueProcessor(QObject):
                 {
                     'item_id': track['id'],
                     'item_title': f'{exp} {track["name"]}',
-                    'item_by_text': f"{','.join([artist['name'] for artist in track['artists']])}",
+                    'item_by_text': f"{config.get('metadata_seperator').join([artist['name'] for artist in track.get('artists', [])])}",
                     'item_type_text': item_type,
                     'dl_params': {
                         'media_type': 'track',

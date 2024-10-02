@@ -64,6 +64,8 @@ class Config:
             "chunk_size": 50000, # Chunk size in bytes to download in
             "recoverable_fail_wait_delay": 10, # No of seconds to wait before failure that can be retried
             "disable_bulk_dl_notices": True, # Hide popups for bulk download buttons
+            "save_album_cover": False, # Save album covers to a file
+            "album_cover_format": "png", # Album cover format
             "inp_enable_lyrics": False, # Enable lyrics download
             "use_lrc_file": False, # Download .lrc file alongside track
             "only_synced_lyrics": False, # Only use synced lyrics
@@ -76,6 +78,7 @@ class Config:
             "search_thumb_height": 60, # Thumbnail height ( they are of equal width and height )
             "metadata_seperator": "; ", # Seperator used for metadata fields that have multiple values
             "embed_branding": False,
+            "embed_cover": True,
             "embed_artist": True,
             "embed_album": True,
             "embed_albumartist": True,

@@ -53,9 +53,10 @@ class DownloadWorker(QObject):
             song_info = get_song_info(session, track_id_str)
 
             if config.get("translate_file_path"):
-                from googletrans import Translator
-                _name = Translator().translate(song_info['name'], src="auto", dest=config.get("language")).text
-                _album = Translator().translate(song_info['album_name'], src="auto", dest=config.get("language")).text
+                def translate(string):
+                    return requests.get(f"https://translate.googleapis.com/translate_a/single?dj=1&dt=t&dt=sp&dt=ld&dt=bd&client=dict-chrome-ex&sl=auto&tl={config.get('language')}&q={string}").json()["sentences"][0]["trans"]
+                _name = translate(song_info['name'])
+                _album = translate(song_info['album_name'])
             else:
                 _name = song_info['name']
                 _album=song_info['album_name']

@@ -5,6 +5,7 @@ import requests.adapters
 from ..otsconfig import config
 import requests
 import json
+from mutagen import File
 from mutagen.easyid3 import EasyID3, ID3
 from mutagen.id3 import APIC, TXXX, USLT, WOAS
 import os
@@ -162,9 +163,9 @@ def get_tracks_from_playlist(session, playlist_id):
     songs = []
     access_token = session.tokens().get("user-read-email")
     headers = {'Authorization': f'Bearer {access_token}'}
-    url = f'https://api.spotify.com/v1/playlists/{playlist_id}/tracks'
+    url = f'https://api.spotify.com/v1/playlists/{playlist_id}/tracks?additional_types=episode'
     while url:
-        resp = make_call(url, token=access_token)
+        resp = make_call(url, token=access_token, no_cache=True)
         songs.extend(resp['items'])
         url = resp['next']
     return songs
@@ -310,9 +311,14 @@ def set_audio_tags(filename, metadata, track_id_str):
         f"'{filename}', mediainfo -> '{metadata}'"
         )
     type_ = 'track'
-    tags = EasyID3(filename)
+    filetype = Path(filename).suffix
+    if filetype == '.mp3':
+        tags = EasyID3(filename)
+    else:
+        tags = File(filename)
     if config.get("embed_branding"):
-        EasyID3.RegisterTextKey('comment', 'COMM')
+        if filetype == '.mp3':
+            EasyID3.RegisterTextKey('comment', 'COMM')
         tags['comment'] = "Downloaded by OnTheSpot, https://github.com/justin025/onthespot"
     for key in metadata.keys():
         value = metadata[key]
@@ -339,17 +345,20 @@ def set_audio_tags(filename, metadata, track_id_str):
         elif key == 'performers' and config.get("embed_performers"):
             tags['performer'] = value
         elif key == 'producers' and config.get("embed_producers"):
-            EasyID3.RegisterTextKey('producer', 'TIPL')
+            if filetype == '.mp3':
+                EasyID3.RegisterTextKey('producer', 'TIPL')
             tags['producer'] = value
         elif key == 'writers' and config.get("embed_writers"):
             tags['author'] = value
         elif key == 'label' and config.get("embed_label"):
-            EasyID3.RegisterTextKey('label', 'TPUB')
-            tags['label'] = value
+            if filetype == '.mp3':
+                EasyID3.RegisterTextKey('publisher', 'TPUB')
+            tags['publisher'] = value
         elif key == 'copyright' and config.get("embed_copyright"):
             tags['copyright'] = value
         elif key == 'description' and config.get("embed_description"):
-            EasyID3.RegisterTextKey('comment', 'COMM')
+            if filetype == '.mp3':
+                EasyID3.RegisterTextKey('comment', 'COMM')
             tags['comment'] = value
         elif key == 'language' and config.get("embed_language"):
             tags['language'] = value
@@ -365,38 +374,64 @@ def set_audio_tags(filename, metadata, track_id_str):
     # https://id3.org/id3v2.4.0-frames
     tags.save()
 
-    ID3tags = ID3(filename)
+    if filetype == '.mp3':
+        tags = ID3(filename)
     if config.get("embed_url"):
-        ID3tags.add(WOAS(url=f'https://open.spotify.com/{type_}/{track_id_str}'))
+        url = f'https://open.spotify.com/{type_}/{track_id_str}'
+        if filetype == '.mp3':
+            tags.add(WOAS(url))
+        else:
+            tags['website'] = url
     if config.get("embed_explicit") and metadata['explicit']:
-        ID3tags.add(TXXX(encoding=3, desc=u'ITUNESADVISORY', text="1"))
+        if filetype == '.mp3':
+            tags.add(TXXX(encoding=3, desc=u'ITUNESADVISORY', text="1"))
+        else:
+            tags['explicit'] = 'yes'
     if config.get("embed_compilation") and metadata['album_type'] == "compilation":
-        ID3tags.add(TXXX(encoding=3, desc=u'COMPILATION', text="1"))
+        if filetype == '.mp3':
+            tags.add(TXXX(encoding=3, desc=u'COMPILATION', text="1"))
+        else:
+            tags['compilation'] = 'yes'
     for key in metadata.keys():
         value = metadata[key]
         if key == 'lyrics' and config.get("embed_lyrics"):
             # The following adds unsynced lyrics, not sure how to add synced lyrics (SYLT).
-            ID3tags.add(USLT(encoding=3, lang=u'xxx', desc=u'desc', text=value))
-    ID3tags.save()
+            if filetype == '.mp3':
+                tags.add(USLT(encoding=3, lang=u'xxx', desc=u'desc', text=value))
+            else:
+                tags['lyrics'] = value
+    tags.save()
 
 
 def set_music_thumbnail(filename, image_url):
-    logger.info(f"Set thumbnail for audio media at '{filename}' with '{image_url}'")
-    img = Image.open(BytesIO(requests.get(image_url).content))
-    buf = BytesIO()
-    if img.mode != 'RGB':
-        img = img.convert('RGB')
-    img.save(buf, format='png')
-    buf.seek(0)
-    tags = ID3(filename)
-    tags['APIC'] = APIC(
-                      encoding=3,
-                      mime='image/png',
-                      type=3, desc=u'Cover',
-                      data=buf.read()
-                    )
-    tags.save()
-
+    filetype = Path(filename).suffix
+    if config.get("embed_cover"):
+        logger.info(f"Set thumbnail for audio media at '{filename}' with '{image_url}'")
+        img = Image.open(BytesIO(requests.get(image_url).content))
+        buf = BytesIO()
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        img.save(buf, format=config.get('album_cover_format'))
+        buf.seek(0)
+        if filetype == '.mp3':
+            tags = ID3(filename)
+            tags['APIC'] = APIC(
+                              encoding=3,
+                              mime=f'image/{config.get("album_cover_format")}',
+                              type=3, desc=u'Cover',
+                              data=buf.read()
+                            )
+        else:
+            tags = File(filename)
+            tags['METADATA_BLOCK_PICTURE'] = [
+                f'picture/{config.get("album_cover_format")};{len(buf.read())};cover;{buf.read()}'
+            ]
+        tags.save()
+    if config.get("save_album_cover"):
+        cover_path = os.path.join(
+            Path(filename).parent, 'cover' + "." + config.get('album_cover_format'))
+        if not os.path.exists(cover_path):
+            img.save(cover_path)
 
 def search_by_term(session,
                    search_term,
