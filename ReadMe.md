@@ -4,7 +4,7 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/01_Logo/Repository-Logo.png">
     <source media="(prefers-color-scheme: light)" srcset="assets/01_Logo/Repository-Logo.png">
-    <img src="assets/01_Logo/Repository-Logo.png" alt="Logo of OnTheSpot" width="40%">
+    <img src="assets/01_Logo/Repository-Logo.png" alt="Logo of OnTheSpot" width="350px">
   </picture>
 </div>
 
@@ -12,6 +12,7 @@
 
 [![Issues Badge][issues-shield]][issues-url]
 [![Stars Badge][stars-shield]][stars-url]
+[![Downloads Badge][downloads-shield]][downloads-url]
 [![Commits Badge][commits-shield]][commits-url]
 [![License Badge][license-shield]][license-url]
 
@@ -100,11 +101,13 @@ OnTheSpot is strictly intended for **educational, private and fair use only** in
 The **creators** and **contributors** of OnTheSpot  assume **no liability** for **any misuse** of legal terms associated with the **application or its source code**.
 
 <!-- Badges -->
-[issues-shield]: https://img.shields.io/github/issues/justin025/onthespot?style=for-the-badge&label=ISSUES&labelColor=2B2B2B&color=428BEE
+[issues-shield]: https://img.shields.io/github/issues/justin025/onthespot?style=flat&label=Issues&labelColor=2B2B2B&color=428BEE
 [issues-url]: https://github.com/justin025/onthespot/issues
-[stars-shield]: https://img.shields.io/github/stars/justin025/onthespot?style=for-the-badge&label=STARS&labelColor=2B2B2B&color=FF006E
+[stars-shield]: https://img.shields.io/github/stars/justin025/onthespot?style=flat&label=Stars&labelColor=2B2B2B&color=FF006E
 [stars-url]: https://github.com/justin025/onthespot/stargazers
-[commits-shield]: https://img.shields.io/github/commit-activity/m/justin025/onthespot?style=for-the-badge&label=COMMITS&labelColor=2B2B2B&color=E53935
+[commits-shield]: https://img.shields.io/github/commit-activity/m/justin025/onthespot?style=flat&label=COMMITS&labelColor=2B2B2B&color=E53935
 [commits-url]: https://github.com/justin025/onthespot/commits/main
-[license-shield]: https://img.shields.io/github/license/justin025/onthespot?style=for-the-badge&label=LICENSE&labelColor=2B2B2B&color=FF6F3F
+[license-shield]: https://img.shields.io/github/license/justin025/onthespot?style=flat&label=License&labelColor=2B2B2B&color=FF6F3F
 [license-url]: https://github.com/justin025/onthespot/blob/main/LICENSE
+[downloads-shield]: https://img.shields.io/github/downloads/justin025/onthespot/total.svg?style=flat&label=Downloads&labelColor=2B2B2B&color=FF6F3F
+[downloads-url]: https://github.com/justin025/onthespot/releases/
