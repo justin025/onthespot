@@ -1,7 +1,7 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="../assets/01_Logo/Project-Logo.png">
-  <source media="(prefers-color-scheme: light)" srcset="../assets/01_Logo/Project-Logo.png">
-  <img src="../assets/01_Logo/Project-Logo.png" alt="Logo of OnTheSpot" width="200">
+  <source media="(prefers-color-scheme: dark)" srcset="../assets/01_Logo/Repository-Cover.png">
+  <source media="(prefers-color-scheme: light)" srcset="../assets/01_Logo/Repository-Cover.png">
+  <img src="../assets/01_Logo/Repository-Cover.png" alt="Logo of OnTheSpot" width="350">
 </picture>
 
 <br>
@@ -72,7 +72,7 @@
 3. **Bulk URL Downloads**
    - You can also provide a path to a text file containing multiple URLs. OnTheSpot will queue all listed URLs for downloading.
 
-[GIF Image Explaining how to Download]
+![OTS_Download-URL](../assets/03_GIFs/GIF_Download-URL.gif)
 
 > [!IMPORTANT]
 > Ensure each URL in the text file is on a separate line to avoid errors during the download process.
@@ -94,7 +94,7 @@
 > [!TIP]
 > From the **Progress** tab, you can pause, resume, or cancel ongoing downloads as needed.
 
-[GIF Image how to Monitor]
+![OTS_Monitor](../assets/02_Images/IMG_Monitor.png)
 
 ## 4. Configuration
 
@@ -198,7 +198,7 @@ For users who want more control over how their music is organized and downloaded
 > [!IMPORTANT]
 > Some configuration changes may require restarting **OnTheSpot** to take effect. Make sure to restart the application if prompted.
 
-[GIF Image how to Save]
+![OTS_Saving](../assets/02_Images/IMG_Saving.png)
 
 <br>
 

@@ -2,9 +2,9 @@
 
 <div style="text-align: center;">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/01_Logo/Project-Logo.png">
-    <source media="(prefers-color-scheme: light)" srcset="assets/01_Logo/Project-Logo.png">
-    <img src="assets/01_Logo/Project-Logo.png" alt="Logo of OnTheSpot" width="20%">
+    <source media="(prefers-color-scheme: dark)" srcset="assets/01_Logo/Repository-Logo.png">
+    <source media="(prefers-color-scheme: light)" srcset="assets/01_Logo/Repository-Logo.png">
+    <img src="assets/01_Logo/Repository-Logo.png" alt="Logo of OnTheSpot" width="40%">
   </picture>
 </div>
 
@@ -18,7 +18,7 @@
    <p>
       Welcome to OnTheSpot!
       <br />
-      <a href="PLACEHOLDER/">Join Discord</a>
+      <a href="https://discord.gg/">Join Discord</a>
       ·
       <a href="https://github.com/V1p3rOne/OnTheSpot-Development/issues/new?assignees=&labels=bug&projects=&template=bug-report.yml">Report Bug</a>
       ·
@@ -27,13 +27,13 @@
    <br>
 </div>
 
-<img src="https://github.com/user-attachments/assets/41657b8b-2b80-4fe4-afe7-ef8bacab5991">
+<img src="assets/02_Images/IMG_Overview.png">
 
 <br>
 
 ## What is OnTheSpot?
 
-OnTheSpot is a straightforward, user-friendly music downloader built with Qt and Python. You can search for songs, artists, albums and playlists and download them straight to your device. It's designed to be simple and effective, and it works across multiple platforms, so anyone can enjoy their favourite music offline.
+OnTheSpot is a straightforward, user-friendly music downloader built with Qt and Python. Inspired by [OnTheSpot](https://github.com/casualsnek/onthespot) and [Zotify](https://github.com/zotify-dev/zotify). You can search for songs, artists, albums and playlists and download them straight to your device. It's designed to be simple and effective, and it works across multiple platforms, so anyone can enjoy their favourite music offline.
 
 ### Features
 
@@ -58,11 +58,11 @@ We've made the installation process really straightforward, even if you're new t
 
 1. **[Install via GitHub Release Packages](docs/Installation.md#1-install-via-github-release-packages-recommended)**
 
-[WIP:GIF Image how to Download]
+    ![OTS_Download_1](assets/03_GIFs/GIF_Download-1.gif)
 
-2. **[Build the Package Locally via Script](docs/Installation.md#2-build-the-package-locally-via-script)**
+1. **[Build the Package Locally via Script](docs/Installation.md#2-build-the-package-locally-via-script)**
 
-[WIP:GIF Image how to Download]
+    ![OTS_Download_2](assets/03_GIFs/GIF_Download-2.gif)
 
 ### Basic Usage
 
@@ -89,13 +89,15 @@ This is a quick overview to help you get started with our app. For a full tutori
 If you have any questions or run into issues while using OnTheSpot, don't hesitate to reach out:
 
 - **Open an Issue**: [GitHub Issues](https://github.com/justin025/onthespot/issues)
-- **Join Our Discord**: [Discord Server](https://discord.gg/your-discord-link)
+- **Join Our Discord**: [Discord Server](https://discord.gg/)
 
 ## Disclaimer
 
-OnTheSpot is intended for **educational, private and fair use only** in compliance with the [**Digital Millennium Copyright Act (DMCA), Section 1201**](https://www.copyright.gov/dmca/). It is not affiliated with or endorsed by any music streaming services or platforms. The **contributors** of OnTheSpot are **not responsible** for any **misuse** of the **program or source code**.
+OnTheSpot is strictly intended for **educational, private and fair use only** in compliance with the [**Digital Millennium Copyright Act (DMCA), Section 1201**](https://www.copyright.gov/dmca/). It is not affiliated with or endorsed by, any music streaming services or platforms. The **contributors/developers** of OnTheSpot are **not responsible** for any **misuse** of the **program or source code**.
 
-**Users are responsible for ensuring** that their use of **OnTheSpot complies with all applicable laws in their country.** The **creators** and **contributors** of OnTheSpot are **not liable** for **any misuse** of the **application or its source code**.
+**Users are solely responsible for ensuring** that their use of **OnTheSpot complies with all relevant/applicable laws in their country.**
+
+The **creators** and **contributors** of OnTheSpot  assume **no liability** for **any misuse** of legal terms associated with the **application or its source code**.
 
 <!-- Badges -->
 [issues-shield]: https://img.shields.io/github/issues/justin025/onthespot?style=for-the-badge&label=ISSUES&labelColor=2B2B2B&color=428BEE

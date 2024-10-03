@@ -1,7 +1,7 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="../assets/01_Logo/Project-Logo.png">
-  <source media="(prefers-color-scheme: light)" srcset="../assets/01_Logo/Project-Logo.png">
-  <img src="../assets/01_Logo/Project-Logo.png" alt="Logo of OnTheSpot" width="200">
+  <source media="(prefers-color-scheme: dark)" srcset="../assets/01_Logo/Repository-Cover.png">
+  <source media="(prefers-color-scheme: light)" srcset="../assets/01_Logo/Repository-Cover.png">
+  <img src="../assets/01_Logo/Repository-Cover.png" alt="Logo of OnTheSpot" width="350">
 </picture>
 
 <br>
@@ -18,7 +18,6 @@
 
 This is the easiest way to get started.
 
-
 1. **Download the Latest Release**
 
    - Visit our [GitHub Releases Page](https://github.com/justin025/onthespot/releases).
@@ -30,17 +29,17 @@ This is the easiest way to get started.
 2. **Install OnTheSpot**
 
    - **Windows**: Run the downloaded `.exe`.
-   - **MacOS**: Open the `.dmg` and drag `OnTheSpot.app` into your `Applications` folder. 
+   - **MacOS**: Open the `.dmg` and drag `OnTheSpot.app` into your `Applications` folder.
    - **Linux**: Make the `.AppImage` executable and run it, alternatively extract the tar.gz and execute the binary.
 
 > [!TIP]
-> For macOS, if you encounter security warnings, right-click the app and select "Open" from the context menu to bypass the gatekeeper.
+> For MacOS, if you encounter security warnings, right-click the app and select "Open" from the context menu to bypass the gatekeeper.
 
-3. **Launch OnTheSpot**
+1. **Launch OnTheSpot**
 
    - Open the application from your Downloads folder or Applications menu.
 
-[WIP: GIF Image how to Download]
+![OTS_Download_1](../assets/03_GIFs/GIF_Download-1.gif)
 
 ## 2. Build the Package Locally via Script
 
@@ -62,15 +61,15 @@ If you prefer to build OnTheSpot yourself, follow these steps.
    - **Linux**: Run [`build_linux.sh`](scripts/build_linux.sh) in Terminal with `./scripts/build_linux.sh`.
    - **Linux AppImage**: Run [`build_appimage.sh`](scripts/build_appimage.sh) in Terminal with `./scripts/build_appimage.sh`.
 
-   > [!WARNING]
-   > Make sure to run the correct script for your platform to avoid any build failures.
+> [!WARNING]
+> Make sure to run the correct script for your platform to avoid any build failures.
 
-3. **Install and Launch OnTheSpot**
+1. **Install and Launch OnTheSpot**
 
-   > [!TIP]
-   > After building, the application will be located in the `dist` folder. Be sure to follow installation steps based on your operating system.
+> [!TIP]
+> After building, the application will be located in the `dist` folder. Be sure to follow installation steps based on your operating system.
 
-[WIP: GIF Image how to Download]
+![OTS_Download_2](../assets/03_GIFs/GIF_Download-2.gif)
 
 <br>
 
