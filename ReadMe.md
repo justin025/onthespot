@@ -2,9 +2,9 @@
 
 <div style="text-align: center;">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/01_Logo/Repository-Cover.png">
-    <source media="(prefers-color-scheme: light)" srcset="assets/01_Logo/Repository-Cover.png">
-    <img src="assets/01_Logo/Repository-Cover.png" alt="Logo of OnTheSpot" width="40%">
+    <source media="(prefers-color-scheme: dark)" srcset="assets/01_Logo/Repository-Logo.png">
+    <source media="(prefers-color-scheme: light)" srcset="assets/01_Logo/Repository-Logo.png">
+    <img src="assets/01_Logo/Repository-Logo.png" alt="Logo of OnTheSpot" width="40%">
   </picture>
 </div>
 
