@@ -1,3 +1,6 @@
+import base64
+import os
+import re
 import string
 import subprocess
 from ..exceptions import *
@@ -7,10 +10,11 @@ import requests
 import json
 from mutagen import File
 from mutagen.easyid3 import EasyID3, ID3
+from mutagen.flac import Picture, FLAC
 from mutagen.id3 import APIC, TXXX, USLT, WOAS
-import os
+from mutagen.mp4 import MP4, MP4Cover
+from mutagen.oggvorbis import OggVorbis
 from pathlib import Path
-import re
 from PIL import Image
 from io import BytesIO
 from hashlib import md5
@@ -317,53 +321,97 @@ def set_audio_tags(filename, metadata, track_id_str):
     else:
         tags = File(filename)
     if config.get("embed_branding"):
+        branding = "Downloaded by OnTheSpot, https://github.com/justin025/onthespot"
         if filetype == '.mp3':
             EasyID3.RegisterTextKey('comment', 'COMM')
-        tags['comment'] = "Downloaded by OnTheSpot, https://github.com/justin025/onthespot"
+            tags['comment'] = branding
+        if filetype == '.m4a':
+            tags['\xa9cmt'] = branding
+        else:
+            tags['comment'] = branding
     for key in metadata.keys():
         value = metadata[key]
+
         if key == 'artists' and config.get("embed_artist"):
-            tags['artist'] = conv_artist_format(value)
+            if filetype == '.m4a':
+                tags['\xa9ART'] = conv_artist_format(value)
+            else:
+                tags['artist'] = conv_artist_format(value)
+
         elif key in ['album_name', 'album'] and config.get("embed_album"):
-            tags['album'] = value
+            if filetype == '.m4a':
+                tags['\xa9alb'] = value
+            else:
+                tags['album'] = value
+
         elif key in ['album_artists'] and config.get("embed_albumartist"):
-            tags['albumartist'] = value
+            if filetype == '.m4a':
+                tags['\xa9art'] = value
+            else:
+                tags['albumartist'] = value
+
         elif key in ['name', 'track_title', 'tracktitle'] and config.get("embed_name"):
-            tags['title'] = value
+            if filetype == '.m4a':
+                tags['\xa9nam'] = value
+            else:
+                tags['title'] = value
+
         elif key in ['year', 'release_year'] and config.get("embed_year"):
-            tags['date'] = value
+            if filetype == '.m4a':
+                tags['\xa9day'] = value
+            else:
+                tags['date'] = value
         elif key in ['discnumber', 'disc_number', 'disknumber', 'disk_number'] and config.get("embed_discnumber"):
-            # EasyID3 requires the format value/total, i.e. 3/10
-            tags['discnumber'] = str(value) + '/' + str(metadata['total_discs'])
+            if filetype == '.m4a':
+                tags['\xa9dis'] = str(value) + '/' + str(metadata['total_discs'])
+            else:
+                # ID3 requires the format value/total, i.e. 3/10
+                tags['discnumber'] = str(value) + '/' + str(metadata['total_discs'])
         elif key in ['track_number', 'tracknumber'] and config.get("embed_tracknumber"):
-            # EasyID3 requires the format value/total, i.e. 3/10
-            tags['tracknumber'] = str(value) + '/' + str(metadata['total_tracks'])
+            if filetype == '.m4a':
+                tags['trcn'] = str(value) + '/' + str(metadata['total_tracks'])
+            else:
+                # ID3 requires the format value/total, i.e. 3/10
+                tags['tracknumber'] = str(value) + '/' + str(metadata['total_tracks'])
+
         elif key == 'genre' and config.get("embed_genre"):
             if 'Podcast' in value or 'podcast' in value:
                 type_ = 'episode'
-            tags['genre'] = conv_artist_format(value)
+            if filetype == '.m4a':
+                tags['\xa9gen'] = conv_artist_format(value)
+            else:
+                tags['genre'] = conv_artist_format(value)
+
         elif key == 'performers' and config.get("embed_performers"):
             tags['performer'] = value
+
         elif key == 'producers' and config.get("embed_producers"):
             if filetype == '.mp3':
                 EasyID3.RegisterTextKey('producer', 'TIPL')
             tags['producer'] = value
+
         elif key == 'writers' and config.get("embed_writers"):
             tags['author'] = value
+
         elif key == 'label' and config.get("embed_label"):
             if filetype == '.mp3':
                 EasyID3.RegisterTextKey('publisher', 'TPUB')
             tags['publisher'] = value
+
         elif key == 'copyright' and config.get("embed_copyright"):
             tags['copyright'] = value
+
         elif key == 'description' and config.get("embed_description"):
             if filetype == '.mp3':
                 EasyID3.RegisterTextKey('comment', 'COMM')
             tags['comment'] = value
+
         elif key == 'language' and config.get("embed_language"):
             tags['language'] = value
+
         elif key == 'isrc' and config.get("embed_isrc"):
             tags['isrc'] = value
+
         elif key == 'length' and config.get("embed_length"):
             tags['length'] = str(value)
     #tags['website'] = f'https://open.spotify.com/{type_}/{track_id_str}'
@@ -376,28 +424,38 @@ def set_audio_tags(filename, metadata, track_id_str):
 
     if filetype == '.mp3':
         tags = ID3(filename)
+
     if config.get("embed_url"):
         url = f'https://open.spotify.com/{type_}/{track_id_str}'
         if filetype == '.mp3':
             tags.add(WOAS(url))
+        elif filetype == '.m4a':
+            tags['\xa9web'] = url
         else:
             tags['website'] = url
+
     if config.get("embed_explicit") and metadata['explicit']:
         if filetype == '.mp3':
             tags.add(TXXX(encoding=3, desc=u'ITUNESADVISORY', text="1"))
+        elif filetype == '.m4a':
+            tags['\xa9exp'] = 'Yes'
         else:
             tags['explicit'] = 'yes'
+
     if config.get("embed_compilation") and metadata['album_type'] == "compilation":
         if filetype == '.mp3':
             tags.add(TXXX(encoding=3, desc=u'COMPILATION', text="1"))
         else:
             tags['compilation'] = 'yes'
+
     for key in metadata.keys():
         value = metadata[key]
         if key == 'lyrics' and config.get("embed_lyrics"):
             # The following adds unsynced lyrics, not sure how to add synced lyrics (SYLT).
             if filetype == '.mp3':
                 tags.add(USLT(encoding=3, lang=u'xxx', desc=u'desc', text=value))
+            elif filetype == '.m4a':
+                tags['\xa9lyr'] = value
             else:
                 tags['lyrics'] = value
     tags.save()
@@ -411,7 +469,7 @@ def set_music_thumbnail(filename, image_url):
         buf = BytesIO()
         if img.mode != 'RGB':
             img = img.convert('RGB')
-        img.save(buf, format=config.get('album_cover_format'))
+        img.save(buf, format=config.get("album_cover_format"))
         buf.seek(0)
         if filetype == '.mp3':
             tags = ID3(filename)
@@ -421,11 +479,33 @@ def set_music_thumbnail(filename, image_url):
                               type=3, desc=u'Cover',
                               data=buf.read()
                             )
+        elif filetype == '.flac':
+            tags = FLAC(filename)
+            picture = Picture()
+            picture.data = buf.read()
+            picture.type = 3
+            picture.desc = "Cover"
+            picture.mime = f"image/{config.get('album_cover_format')}"
+            picture_data = picture.write()
+            encoded_data = base64.b64encode(picture_data)
+            vcomment_value = encoded_data.decode("ascii")
+            tags["metadata_block_picture"] = [vcomment_value]
+        elif filetype == '.ogg':
+            tags = OggVorbis(filename)
+            picture = Picture()
+            picture.data = buf.read()
+            picture.type = 3
+            picture.desc = "Cover"
+            picture.mime = f"image/{config.get('album_cover_format')}"
+            picture_data = picture.write()
+            encoded_data = base64.b64encode(picture_data)
+            vcomment_value = encoded_data.decode("ascii")
+            tags["metadata_block_picture"] = [vcomment_value]
+        elif filetype == '.m4a':
+            tags = MP4(filename)
+            tags['covr'] = [MP4Cover(data=buf.read())]
         else:
-            tags = File(filename)
-            tags['METADATA_BLOCK_PICTURE'] = [
-                f'picture/{config.get("album_cover_format")};{len(buf.read())};cover;{buf.read()}'
-            ]
+            logger.info(f"Unsupported media type: {filetype}")
         tags.save()
     if config.get("save_album_cover"):
         cover_path = os.path.join(
@@ -509,6 +589,8 @@ def get_song_info(session, song_id):
     writers = config.get('metadata_seperator').join(writer_list)
     producer_list = [item for item in credits['producers'] if isinstance(item, str)]
     producers = config.get('metadata_seperator').join(producer_list)
+    copyright_list = [holder['text'] for holder in album_data['copyrights']]
+    copyright = config.get('metadata_seperator').join(copyright_list)
     info = {
         'artists': artists,
         'album_name': sanitize_data(info['tracks'][0]['album']["name"]),
@@ -530,11 +612,7 @@ def get_song_info(session, song_id):
         'producers': producers,
         'writers': writers,
         'label': album_data['label'],
-        'copyright':  [
-            holder['text']
-            for holder
-            in album_data['copyrights']
-            ],
+        'copyright': copyright,
         'explicit': info['tracks'][0]['explicit'],
         'isrc': info['tracks'][0]['external_ids'].get('isrc', ''),
         'length': info['tracks'][0]['duration_ms'],

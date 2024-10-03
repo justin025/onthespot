@@ -123,7 +123,15 @@ class DownloadWorker(QObject):
                 self.__last_cancelled = True
                 return False
             else:
-                if os.path.isfile(filename) and os.path.getsize(filename) and skip_existing_file:
+                # Skip file if exists under different extension
+                directory = os.path.dirname(filename)
+                base_filename = os.path.splitext(os.path.basename(filename))[0]
+                try:
+                    files_in_directory = os.listdir(directory)
+                except FileNotFoundError:
+                    files_in_directory = []
+                matching_files = [file for file in files_in_directory if file.startswith(base_filename) and not file.endswith('.lrc')]
+                if matching_files:
                     self.progress.emit([trk_track_id_str, self.tr("Already exists"), [100, 100],
                                         filename,
                                         f'{song_info["name"]} [{_artist} - {song_info["album_name"]}:{song_info["release_year"]}].f{config.get("media_format")}'])
