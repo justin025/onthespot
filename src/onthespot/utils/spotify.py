@@ -130,22 +130,28 @@ def get_track_lyrics(session, track_id, metadata, forced_synced):
                 tracktitle = value
             elif key in ['album_name', 'album']:
                 album = value
+            elif key in ['writers']:
+                author = value
         l_ms = metadata['length']
         if lyrics_json_req.status_code == 200:
             lyrics_json = lyrics_json_req.json()['lyrics']
-            lyrics.append(f'[ti:{tracktitle}]')
-            lyrics.append(f'[au:{config.get("metadata_seperator").join(writer for writer in metadata["credits"].get("writers", []))}]')
-            lyrics.append(f'[ar:{artist}]')
-            lyrics.append(f'[al:{album}]')
-            lyrics.append(f'[by:{lyrics_json["provider"]}]')
             if config.get("embed_branding"):
                 lyrics.append('[re:OnTheSpot]')
-            if round((l_ms/1000)/60) < 10:
-                digit="0"
-            else:
-                digit=""
-            lyrics.append(f'[length:{digit}{round((l_ms/1000)/60)}:{round((l_ms/1000)%60)}]\n')
-
+            if config.get("embed_name"):
+                lyrics.append(f'[ti:{tracktitle}]')
+            if config.get("embed_writers"):
+                lyrics.append(f'[au:{author}]')
+            if config.get("embed_artist"):
+                lyrics.append(f'[ar:{artist}]')
+            if config.get("embed_album"):
+                lyrics.append(f'[al:{album}]')
+            lyrics.append(f'[by:{lyrics_json["provider"]}]')
+            if config.get("embed_length"):
+                if round((l_ms/1000)/60) < 10:
+                    digit="0"
+                else:
+                    digit=""
+                lyrics.append(f'[length:{digit}{round((l_ms/1000)/60)}:{round((l_ms/1000)%60)}]\n')
             if lyrics_json['syncType'].lower() == 'text':
                 # It's un synced lyrics, if not forcing synced lyrics return it
                 if not forced_synced:
@@ -158,7 +164,7 @@ def get_track_lyrics(session, track_id, metadata, forced_synced):
             logger.warning(f'Failed to get lyrics for track id: {track_id}, '
                            f'statucode: {lyrics_json_req.status_code}, Text: {lyrics_json_req.text}')
     except (KeyError, IndexError):
-        logger.error(f'Failed to get lyrics for track id: {track_id}, ')
+        logger.error(f'KeyError/Index Error. Failed to get lyrics for track id: {track_id}, ')
     return None if len(lyrics) <= 2 else '\n'.join(lyrics)
 
 
@@ -440,13 +446,13 @@ def set_audio_tags(filename, metadata, track_id_str):
         elif filetype == '.m4a':
             tags['\xa9exp'] = 'Yes'
         else:
-            tags['explicit'] = 'yes'
+            tags['explicit'] = '1'
 
     if config.get("embed_compilation") and metadata['album_type'] == "compilation":
         if filetype == '.mp3':
             tags.add(TXXX(encoding=3, desc=u'COMPILATION', text="1"))
         else:
-            tags['compilation'] = 'yes'
+            tags['compilation'] = '1'
 
     for key in metadata.keys():
         value = metadata[key]
