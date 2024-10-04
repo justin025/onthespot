@@ -304,14 +304,12 @@ def name_by_from_sdata(d_key: str, item: dict):
 
 def fetch_account_uuid(download):
     if config.get("rotate_acc_sn") == True:
-         try:
-             parsing_index = config.get("parsing_acc_sn")
-             return config.get('accounts')[parsing_index][3]
-         except IndexError as e:
-             parsing_index = 0
-             return config.get('accounts')[parsing_index][3]
-         if download == True:
+         parsing_index = config.get("parsing_acc_sn")
+         if download == True and parsing_index < (len(config.get('accounts'))-1):
              config.set_('parsing_acc_sn', parsing_index + 1)
+         else:
+             config.set_('parsing_acc_sn', 0)
+         return config.get('accounts')[parsing_index][3]
     else:
         return config.get('accounts')[ config.get('parsing_acc_sn') - 1 ][3]
 
