@@ -1,7 +1,7 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="../assets/01_Logo/Repository-Cover.png">
-  <source media="(prefers-color-scheme: light)" srcset="../assets/01_Logo/Repository-Cover.png">
-  <img src="../assets/01_Logo/Repository-Cover.png" alt="Logo of OnTheSpot" width="350">
+  <source media="(prefers-color-scheme: dark)" srcset="../assets/01_Logo/Cover_White.png">
+  <source media="(prefers-color-scheme: light)" srcset="../assets/01_Logo/Cover_Black.png">
+  <img src="../assets/01_Logo/Cover_White.png" alt="Logo of OnTheSpot" width="350">
 </picture>
 
 <br>
@@ -33,7 +33,7 @@ This is the easiest way to get started.
 > [!TIP]
 > For MacOS, if you encounter security warnings, right-click the app and select "Open" from the context menu to bypass the gatekeeper.
 
-1. **Launch OnTheSpot**
+3. **Launch OnTheSpot**
 
    - Open the application from your Downloads folder or Applications menu.
 
@@ -62,7 +62,7 @@ If you prefer to build OnTheSpot yourself, follow these steps.
 > [!WARNING]
 > Make sure to run the correct script for your platform to avoid any build failures.
 
-1. **Install and Launch OnTheSpot**
+3. **Install and Launch OnTheSpot**
 
 > [!TIP]
 > After building, the application will be located in the `dist` folder. Be sure to follow installation steps based on your operating system.

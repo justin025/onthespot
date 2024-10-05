@@ -1,7 +1,7 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="../assets/01_Logo/Repository-Cover.png">
-  <source media="(prefers-color-scheme: light)" srcset="../assets/01_Logo/Repository-Cover.png">
-  <img src="../assets/01_Logo/Repository-Cover.png" alt="Logo of OnTheSpot" width="350">
+  <source media="(prefers-color-scheme: dark)" srcset="../assets/01_Logo/Cover_White.png">
+  <source media="(prefers-color-scheme: light)" srcset="../assets/01_Logo/Cover_Black.png">
+  <img src="../assets/01_Logo/Cover_White.png" alt="Logo of OnTheSpot" width="350">
 </picture>
 
 <br>

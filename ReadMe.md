@@ -19,7 +19,7 @@
    <p>
       Welcome to OnTheSpot!
       <br />
-      <a href="https://discord.gg/">Join Discord</a>
+      <a href="https://discord.gg/GCQwRBFPk9">Join Discord</a>
       ·
       <a href="https://github.com/V1p3rOne/OnTheSpot-Development/issues/new?assignees=&labels=bug&projects=&template=bug-report.yml">Report Bug</a>
       ·
@@ -32,19 +32,19 @@
 
 ## What is OnTheSpot?
 
-OnTheSpot is a open-source straightforward, user-friendly music downloader built with Qt and Python. Inspired by [**OnTheSpot**](https://github.com/casualsnek/onthespot) and [**Zotify**](https://github.com/zotify-dev/zotify) made for educational and personal use only. You can search for songs, artists, albums and playlists and download them straight to your device. It's designed to be simple and effective, and it works across multiple platforms, so anyone can enjoy their favourite music offline.
+OnTheSpot is a open-source, user-friendly music downloader built with Qt and Python. Inspired by the original [**OnTheSpot**](https://github.com/casualsnek/onthespot) and [**Zotify**](https://github.com/zotify-dev/zotify) made for educational and personal use only. You can search for songs, artists, albums and playlists and download them straight to your device. It's designed to be simple and effective, and it works across multiple platforms, so anyone can enjoy their favourite music offline.
 
-<img src="assets/02_Images/IMG_Overview.png">
+![OTS_Overview](assets/02_Images/IMG_Overview.png)
 
 ### Features
 
-- [**Cross-Platform**](https://github.com/justin025/onthespot/releases)<br>Available for Windows, macOS, and Linux (Including AppImage, PKGBuild, and eBuild).
-- [**High-Quality Downloads**](https://github.com/justin025/onthespot/releases)<br>Download music up to 320kbps directly from the source.
-- [**Multi-Language Support**](https://github.com/justin025/onthespot/releases)<br>Download track and album names translated to your application’s language.
-- [**Comprehensive Content Coverage**](https://github.com/justin025/onthespot/releases)<br>Supports podcasts, playlists, liked songs, albums, singles, and compilations.
-- [**Rich Metadata Embedding**](https://github.com/justin025/onthespot/releases)<br>Automatically embed detailed metadata like artist, album, year, and lyrics.
-- [**Custom Download Paths**](https://github.com/justin025/onthespot/releases)<br>Set personalized paths for playlists and episodes for easy organization.
-- [**Free and Premium Support**](https://github.com/justin025/onthespot/releases)<br>Compatible with both free and premium accounts.
+- [**Cross-Platform**](https://www.techopedia.com/definition/17056/cross-platform)<br>Available for Windows, macOS, and Linux (Including AppImage, PKGBUILD, and eBuild).
+- [**High-Quality Downloads**](https://www.whathifi.com/advice/high-resolution-audio-everything-you-need-to-know)<br>Download music up to 320kbps directly from the source.
+- [**Multi-Language Support**](https://phrase.com/blog/posts/multilingual-customer-support/)<br>Download track and album names translated to your application's language.
+- [**Comprehensive Content Coverage**](https://thisisglance.com/blog/why-spotify-is-the-outright-best-music-streaming-app)<br>Supports songs, podcasts, playlists, albums, singles, and compilations.
+- [**Rich Metadata Embedding**](https://sonosuite.com/en/blog/what-is-music-metadata-and-why-is-important-to-digital-music/)<br>Automatically embed detailed metadata like artist, album, year, and lyrics.
+- [**Custom Download Paths**](https://www.microsoft.com/en-us/microsoft-365/business-insights-ideas/resources/11-ideas-for-how-to-organize-digital-files)<br>Set personalized paths for playlists and episodes for easy organization.
+- [**Free and Premium Support**](https://community.spotify.com/t5/Social-Random/What-is-the-difference-between-free-Spotify-and-Premium/td-p/5478479)<br>Compatible with both free and premium accounts.
 
 > [!IMPORTANT]  
 > If you want to know more about the features, take a look at the application itself or check out our documentation.
@@ -63,16 +63,16 @@ To begin, please refer to the following documents:
 If you have any questions or run into issues while using OnTheSpot, feel free to ask by:
 
 - [**Opening an Issue**](https://github.com/justin025/onthespot/issues)
-- [**Joining Our Discord**](https://discord.gg/)
+- [**Joining Our Discord**](https://discord.gg/GCQwRBFPk9)
 
 ## Contributing
 
 Contributions are welcome! If you encounter bugs or have suggestions, please [**open an Issue**](https://github.com/justin025/onthespot/issues) or submit a pull request. Follow these steps:
 
 1. Fork the project.
-2. Create your feature branch: **`git checkout -b feature/new-feature`**
-3. Commit your changes: **`git commit -am 'Add a new feature'`**
-4. Push to the branch: **`git push origin feature/new-feature`**
+2. Create your feature branch: `git checkout -b feature/new-feature`
+3. Commit your changes: `git commit -am 'Add a new feature'`
+4. Push to the branch: `git push origin feature/new-feature`
 5. Open a pull request.
 
 For more detailed info, please read our [**Contributions**](documentation/contributing.md) Document.
@@ -97,17 +97,17 @@ For full details, please read our [**Disclaimer**](documentation/disclaimer.md).
 If you have any questions, co or need assistance, feel free to [contact us](mailto:your-email@example.com).
 
 <!-- Issues Badge -->
-[issues-shield]: https://img.shields.io/github/issues/justin025/onthespot?style=flat&label=Issues&labelColor=2B2B2B&color=26ACD9
+[issues-shield]: https://img.shields.io/github/issues/justin025/onthespot?style=flat&label=Issues&labelColor=003366&color=1DB954
 [issues-url]: https://github.com/justin025/onthespot/issues
 <!-- Stars Badge -->
-[stars-shield]: https://img.shields.io/github/stars/justin025/onthespot?style=flat&label=Stars&labelColor=2B2B2B&color=2671D9
+[stars-shield]: https://img.shields.io/github/stars/justin025/onthespot?style=flat&label=Stars&labelColor=003366&color=1DB954
 [stars-url]: https://github.com/justin025/onthespot/stargazers
 <!-- Downloads Badge -->
-[downloads-shield]: https://img.shields.io/github/downloads/justin025/onthespot/total.svg?style=flat&label=Downloads&labelColor=2B2B2B&color=D92674
+[downloads-shield]: https://img.shields.io/github/downloads/justin025/onthespot/total.svg?style=flat&label=Downloads&labelColor=003366&color=1DB954
 [downloads-url]: https://github.com/justin025/onthespot/releases/
 <!-- Commits Badge -->
-[commits-shield]: https://img.shields.io/github/commit-activity/m/justin025/onthespot?style=flat&label=Commits&labelColor=2B2B2B&color=D92926
+[commits-shield]: https://img.shields.io/github/commit-activity/m/justin025/onthespot?style=flat&label=Commits&labelColor=003366&color=1DB954
 [commits-url]: https://github.com/justin025/onthespot/commits/main
 <!-- License Badge -->
-[license-shield]: https://img.shields.io/github/license/justin025/onthespot?style=flat&label=License&labelColor=2B2B2B&color=D95326
+[license-shield]: https://img.shields.io/github/license/justin025/onthespot?style=flat&label=License&labelColor=003366&color=1DB954
 [license-url]: https://github.com/justin025/onthespot/blob/main/LICENSE
