@@ -66,7 +66,7 @@ Customize **OnTheSpot** to fit your preferences by adjusting the settings in the
 ### General Configuration Options
 
 <details>
-  <summary>Options Table</summary>
+  <summary  style="color: red"><b>Open Options Table</b></summary>
 
   | **Option** | **Description** |
   | ------ | ------ |
@@ -105,19 +105,24 @@ For users who want more control over how their music is organized and downloaded
 
 - **Available Variables**
 
-  | **Variable**      | **Description**                                     |
-  | ----------------- | --------------------------------------------------- |
-  | `{artist}`        | Name of the artist(s).                              |
-  | `{album}`         | Name of the album.                                  |
-  | `{name}`          | Name of the track.                                  |
-  | `{rel_year}`      | Release year of the track.                          |
-  | `{track_number}`  | Track number on the album.                          |
-  | `{disc_number}`   | Disc number (if applicable).                        |
-  | `{playlist_name}` | Name of the playlist (if part of a playlist).       |
-  | `{genre}`         | Genre of the song.                                  |
-  | `{label}`         | Name of the record label.                           |
-  | `{explicit}`      | Displays 'Explicit Label' if the song is marked explicit (default: 🅴). |
-  | `{spotid}`        | Spotify ID of the track.                            |
+   <details>
+   <summary style="color: red"><b>Open Variables Table</b></summary>
+
+   | **Variable**      | **Description**                                     |
+   | ----------------- | --------------------------------------------------- |
+   | `{artist}`        | Name of the artist(s).                              |
+   | `{album}`         | Name of the album.                                  |
+   | `{name}`          | Name of the track.                                  |
+   | `{rel_year}`      | Release year of the track.                          |
+   | `{track_number}`  | Track number on the album.                          |
+   | `{disc_number}`   | Disc number (if applicable).                        |
+   | `{playlist_name}` | Name of the playlist (if part of a playlist).       |
+   | `{genre}`         | Genre of the song.                                  |
+   | `{label}`         | Name of the record label.                           |
+   | `{explicit}`      | Displays 'Explicit Label' if the song is marked explicit (default: 🅴). |
+   | `{spotid}`        | Spotify ID of the track.                            |
+
+   </details>
 
 > [!TIP]
 > **Example:**  
@@ -130,6 +135,9 @@ For users who want more control over how their music is organized and downloaded
 
 - **Available Variables**
 
+   <details>
+   <summary style="color: red"><b>Open Variables Table</b></summary>
+
   | **Variable**      | **Description**                               |
   | ----------------- | --------------------------------------------- |
   | `{artist}`        | Name of the artist(s).                        |
@@ -139,11 +147,16 @@ For users who want more control over how their music is organized and downloaded
   | `{total_episodes}`| Total number of episodes in podcast.          |
   | `{language}`      | Podcast language.                             |
 
+   </details>
+
 > [!TIP]
 > **Example:**  
 > Setting the directory format to `{artist}/{podcast_name}/{episode})` will create folders like `Artist Name/Podcast Name/Episode Name.mp3`.
 
 ### Additional Advanced Options
+
+   <details>
+   <summary style="color: red"><b>Open Advanced Options</b></summary>
 
 | **Option**                          | **Description**                                                                                                                                                                               |
 | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -153,6 +166,8 @@ For users who want more control over how their music is organized and downloaded
 | **Skip Bytes at End**                | Sets the number of bytes to skip at the end of a download when encountering 'PD Errors' to avoid incomplete tracks.                                                                             |
 | **Disable Bulk Download Notices**    | Disables pop-up messages during bulk downloads for a cleaner user experience.                                                                                                                  |
 | **Translate File Path**              | Translate file paths into the application language.                                                                                                                                           |
+
+   </details>
 
 > [!CAUTION]
 > Changing some advanced settings may affect the organization and quality of your downloaded music. Proceed with adjustments only if you are familiar with the options.

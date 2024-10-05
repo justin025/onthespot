@@ -32,7 +32,7 @@
 
 ## What is OnTheSpot?
 
-OnTheSpot is a open-source, user-friendly music downloader built with Qt and Python. Inspired by the original [**OnTheSpot**](https://github.com/casualsnek/onthespot) and [**Zotify**](https://github.com/zotify-dev/zotify) made for educational and personal use only. You can search for songs, artists, albums and playlists and download them straight to your device. It's designed to be simple and effective, and it works across multiple platforms, so anyone can enjoy their favourite music offline.
+OnTheSpot is a open-source user-friendly music downloader built with Qt and Python. Inspired by the original [**OnTheSpot**](https://github.com/casualsnek/onthespot) and [**Zotify**](https://github.com/zotify-dev/zotify), made for educational and personal use only. You can search for songs, artists, albums and playlists and download them straight to your device. It's designed to be simple and effective, and it works across multiple platforms, so anyone can enjoy their favourite music offline.
 
 ![OTS_Overview](assets/02_Images/IMG_Overview.png)
 
@@ -94,7 +94,7 @@ For full details, please read our [**Disclaimer**](documentation/disclaimer.md).
 
 ## Contact Us
 
-If you have any questions, co or need assistance, feel free to [contact us](mailto:your-email@example.com).
+If you have any questions, co or need assistance, feel free to [contact us](mailto:justin026@protonmail.com).
 
 <!-- Issues Badge -->
 [issues-shield]: https://img.shields.io/github/issues/justin025/onthespot?style=flat&label=Issues&labelColor=003366&color=1DB954

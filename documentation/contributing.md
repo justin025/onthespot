@@ -1,12 +1,20 @@
-# Welcome!
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="../assets/01_Logo/Cover_White.png">
+  <source media="(prefers-color-scheme: light)" srcset="../assets/01_Logo/Cover_Black.png">
+  <img src="../assets/01_Logo/Cover_White.png" alt="Logo of OnTheSpot" width="350">
+</picture>
 
-Thank you for considering contributing to the **OnTheSpot** project! If you have any questions or doubts, please don't hesitate to reach out. We appreciate all contributions and are committed to fostering an open, transparent, and collaborative environment.
+<br>
 
-Before contributing, we encourage you to read our [LICENSE](LICENSE), [README](README.md), and [Code of Conduct](CODE_OF_CONDUCT.md) files, also found in this repository. If you have any inquiries or questions not answered by the content of this repository, feel free to [contact us](mailto:your-email@example.com).
+# Contributing
+
+Thank you for considering contributing to the **OnTheSpot** project! We appreciate all contributions.
+
+Before contributing, we encourage you to read our [License](../license) and [ReadMe](../ReadMe.md). If you have any questions not answered by the content of this repository, feel free to [contact us](mailto:justin026@protonmail.com).
 
 ## License
 
-OnTheSpot is open-source software licensed under the [GNU General Public License v2.0](LICENSE). By contributing to this project, you agree that your contributions will be licensed under the GPL-2.0 as well.
+OnTheSpot is open-source software licensed under the [GNU General Public License v2.0](../license). By contributing to this project, you agree that your contributions will be licensed under the GPL-2.0 as well.
 
 ## How to Contribute
 
@@ -14,7 +22,7 @@ We welcome contributions in many forms, including bug reports, feature requests,
 
 ### Reporting Issues
 
-If you encounter any bugs or have feature requests, please [open an issue](issues) in this repository. Provide as much detail as possible to help us understand and address your concerns.
+If you encounter any bugs or have feature requests, please [open an issue]([issues](https://github.com/justin025/OnTheSpot/issues)) in this repository. Provide as much detail as possible to help us understand and address your concerns.
 
 ### Submitting Pull Requests
 
@@ -56,10 +64,6 @@ If you would like to contribute code changes, please follow these steps:
 - Write clear, concise, and well-documented code.
 - Include tests when adding new features or fixing bugs.
 
-## Code of Conduct
-
-We are committed to maintaining a welcoming and respectful community. Please read our [Code of Conduct](CODE_OF_CONDUCT.md) and ensure your contributions align with our standards.
-
 ## Contact Us
 
-If you have any questions or need assistance, feel free to [contact us](mailto:your-email@example.com).
+If you have any questions or need assistance, feel free to [contact us](mailto:justin026@protonmail.com).
