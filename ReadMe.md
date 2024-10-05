@@ -28,86 +28,86 @@
    <br>
 </div>
 
-<img src="assets/02_Images/IMG_Overview.png">
-
 <br>
 
 ## What is OnTheSpot?
 
-OnTheSpot is a straightforward, user-friendly music downloader built with Qt and Python. Inspired by [OnTheSpot](https://github.com/casualsnek/onthespot) and [Zotify](https://github.com/zotify-dev/zotify). You can search for songs, artists, albums and playlists and download them straight to your device. It's designed to be simple and effective, and it works across multiple platforms, so anyone can enjoy their favourite music offline.
+OnTheSpot is a open-source straightforward, user-friendly music downloader built with Qt and Python. Inspired by [**OnTheSpot**](https://github.com/casualsnek/onthespot) and [**Zotify**](https://github.com/zotify-dev/zotify) made for educational and personal use only. You can search for songs, artists, albums and playlists and download them straight to your device. It's designed to be simple and effective, and it works across multiple platforms, so anyone can enjoy their favourite music offline.
+
+<img src="assets/02_Images/IMG_Overview.png">
 
 ### Features
 
-- **Cross-Platform**<br>Available for Windows, macOS, and Linux (Including AppImage, PKGBuild, and eBuild).
-- **High-Quality Downloads**<br>Download music up to 320kbps directly from the source.
-- **Multi-Language Support**<br>Download track and album names translated to your application’s language.
-- **Comprehensive Content Coverage**<br>Supports podcasts, playlists, liked songs, albums, singles, and compilations.
-- **Rich Metadata Embedding**<br>Automatically embed detailed metadata like artist, album, year, and lyrics.
-- **Custom Download Paths**<br>Set personalized paths for playlists and episodes for easy organization.
-- **Free and Premium Support**<br>Compatible with both free and premium accounts.
+- [**Cross-Platform**](https://github.com/justin025/onthespot/releases)<br>Available for Windows, macOS, and Linux (Including AppImage, PKGBuild, and eBuild).
+- [**High-Quality Downloads**](https://github.com/justin025/onthespot/releases)<br>Download music up to 320kbps directly from the source.
+- [**Multi-Language Support**](https://github.com/justin025/onthespot/releases)<br>Download track and album names translated to your application’s language.
+- [**Comprehensive Content Coverage**](https://github.com/justin025/onthespot/releases)<br>Supports podcasts, playlists, liked songs, albums, singles, and compilations.
+- [**Rich Metadata Embedding**](https://github.com/justin025/onthespot/releases)<br>Automatically embed detailed metadata like artist, album, year, and lyrics.
+- [**Custom Download Paths**](https://github.com/justin025/onthespot/releases)<br>Set personalized paths for playlists and episodes for easy organization.
+- [**Free and Premium Support**](https://github.com/justin025/onthespot/releases)<br>Compatible with both free and premium accounts.
 
 > [!IMPORTANT]  
 > If you want to know more about the features, take a look at the application itself or check out our documentation.
 
-## How It Works
+## Getting Started
 
-OnTheSpot is a music search and download app. You can search for what you need by entering queries or URLs, and the app will find the relevant media for you. Downloads are easy to manage, with options to tweak download settings, formats, and directories to your liking.
+OnTheSpot is an open-source music search and download application. You can find what you need by entering queries or URLs, and the app will locate the relevant media for you. Downloads are easy to manage, with options to adjust settings, formats, and directories to your liking.
 
-### Installation
+To begin, please refer to the following documents:
 
-We've made the installation process really straightforward, even if you're new to this. You can install OnTheSpot in two different ways. We think you'll find the first option easier. It's really straightforward.
+1. [**Installation Guide**](documentation/installation.md)
+2. [**Basic Usage Instructions**](documentation/usage.md)
 
-1. **[Install via GitHub Release Packages](docs/Installation.md#1-install-via-github-release-packages-recommended)**
+### Need More Help?
 
-    ![OTS_Download_1](assets/03_GIFs/GIF_Download-1.gif)
+If you have any questions or run into issues while using OnTheSpot, feel free to ask by:
 
-1. **[Build the Package Locally via Script](docs/Installation.md#2-build-the-package-locally-via-script)**
+- [**Opening an Issue**](https://github.com/justin025/onthespot/issues)
+- [**Joining Our Discord**](https://discord.gg/)
 
-    ![OTS_Download_2](assets/03_GIFs/GIF_Download-2.gif)
+## Contributing
 
-### Basic Usage
+Contributions are welcome! If you encounter bugs or have suggestions, please [**open an Issue**](https://github.com/justin025/onthespot/issues) or submit a pull request. Follow these steps:
 
-This is a quick overview to help you get started with our app. For a full tutorial with pictures and videos, check out our [Basic Usage Guide](docs/Basic-Usage.md).
+1. Fork the project.
+2. Create your feature branch: **`git checkout -b feature/new-feature`**
+3. Commit your changes: **`git commit -am 'Add a new feature'`**
+4. Push to the branch: **`git push origin feature/new-feature`**
+5. Open a pull request.
 
-> [!NOTE]
-> Our Basic Usage Guide has been made to be beginner-friendly, ensuring you can navigate and use OnTheSpot easy.
-
-#### Overview of Topics
-
-1. [Getting Started](docs/Basic-Usage.md#1-getting-started)
-2. [Searching and Downloading Music](docs/Basic-Usage.md#2-searching-and-downloading-music)
-3. [Search by Query](docs/Basic-Usage.md#search-by-query)
-4. [Downloading by URL](docs/Basic-Usage.md#download-by-url)
-5. [Monitoring Download Status](docs/Basic-Usage.md#3-monitoring-download-status)
-6. [Configuration](docs/Basic-Usage.md#4-configuration)
-7. [Advanced Features](docs/Basic-Usage.md#5-advanced-configuration)
-8. [Saving Your Configuration](docs/Basic-Usage.md#6-saving-your-configuration)
-
-[WIP:Youtube Tutorial how to Use our App]
-
-#### Need More Help?
-
-If you have any questions or run into issues while using OnTheSpot, don't hesitate to reach out:
-
-- **Open an Issue**: [GitHub Issues](https://github.com/justin025/onthespot/issues)
-- **Join Our Discord**: [Discord Server](https://discord.gg/)
+For more detailed info, please read our [**Contributions**](documentation/contributing.md) Document.
 
 ## Disclaimer
 
-OnTheSpot is strictly intended for **educational, private and fair use only** in compliance with the [**Digital Millennium Copyright Act (DMCA), Section 1201**](https://www.copyright.gov/dmca/). It is not affiliated with or endorsed by, any music streaming services or platforms. The **contributors/developers** of OnTheSpot are **not responsible** for any **misuse** of the **program or source code**.
+OnTheSpot is an open-source project designed to enhance your experience with legitimate music streaming subscriptions for **educational and personal use only**.
 
-**Users are solely responsible for ensuring** that their use of **OnTheSpot complies with all relevant/applicable laws in their country.**
+### Important Notice
 
-The **creators** and **contributors** of OnTheSpot  assume **no liability** for **any misuse** of legal terms associated with the **application or its source code**.
+- [**Educational and Personal Use Only**](documentation/disclaimer.md#1-purpose-and-use)
+- [**Independent Project**](documentation/disclaimer.md#2-no-affiliation)
+- [**Legal Compliance**](documentation/disclaimer.md#3-legal-compliance)
+- [**Usage Limitations**](documentation/disclaimer.md#4-usage-limitations)
+- [**Liability and Warranty**](documentation/disclaimer.md#5-liability-and-warranty)
+- [**Agreement and Modifications**](documentation/disclaimer.md#6-agreement-and-modifications)
 
-<!-- Badges -->
-[issues-shield]: https://img.shields.io/github/issues/justin025/onthespot?style=flat&label=Issues&labelColor=2B2B2B&color=39a8cd
+For full details, please read our [**Disclaimer**](documentation/disclaimer.md).
+
+## Contact Us
+
+If you have any questions, co or need assistance, feel free to [contact us](mailto:your-email@example.com).
+
+<!-- Issues Badge -->
+[issues-shield]: https://img.shields.io/github/issues/justin025/onthespot?style=flat&label=Issues&labelColor=2B2B2B&color=26ACD9
 [issues-url]: https://github.com/justin025/onthespot/issues
-[stars-shield]: https://img.shields.io/github/stars/justin025/onthespot?style=flat&label=Stars&labelColor=2B2B2B&color=2570d9
+<!-- Stars Badge -->
+[stars-shield]: https://img.shields.io/github/stars/justin025/onthespot?style=flat&label=Stars&labelColor=2B2B2B&color=2671D9
 [stars-url]: https://github.com/justin025/onthespot/stargazers
-[downloads-shield]: https://img.shields.io/github/downloads/justin025/onthespot/total.svg?style=flat&label=Downloads&labelColor=2B2B2B&color=FF006E
+<!-- Downloads Badge -->
+[downloads-shield]: https://img.shields.io/github/downloads/justin025/onthespot/total.svg?style=flat&label=Downloads&labelColor=2B2B2B&color=D92674
 [downloads-url]: https://github.com/justin025/onthespot/releases/
-[commits-shield]: https://img.shields.io/github/commit-activity/m/justin025/onthespot?style=flat&label=COMMITS&labelColor=2B2B2B&color=E53935
+<!-- Commits Badge -->
+[commits-shield]: https://img.shields.io/github/commit-activity/m/justin025/onthespot?style=flat&label=Commits&labelColor=2B2B2B&color=D92926
 [commits-url]: https://github.com/justin025/onthespot/commits/main
-[license-shield]: https://img.shields.io/github/license/justin025/onthespot?style=flat&label=License&labelColor=2B2B2B&color=FF6F3F
+<!-- License Badge -->
+[license-shield]: https://img.shields.io/github/license/justin025/onthespot?style=flat&label=License&labelColor=2B2B2B&color=D95326
 [license-url]: https://github.com/justin025/onthespot/blob/main/LICENSE

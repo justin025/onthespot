@@ -6,13 +6,11 @@
 
 <br>
 
-# Installation
+# Installing
 
-- [Installation](#installation)
-  - [1. Install via GitHub Releases (Recommended)](#1-install-via-github-releases-recommended)
-  - [2. Build the Package Locally via Script](#2-build-the-package-locally-via-script)
+We've made the installation process really straightforward, even if you're new to this. You can install OnTheSpot in two different ways. We think you'll find the first option easier. 
 
-<br>
+It's really straightforward.
 
 ## 1. Install via GitHub Releases (Recommended)
 
@@ -70,15 +68,3 @@ If you prefer to build OnTheSpot yourself, follow these steps.
 > After building, the application will be located in the `dist` folder. Be sure to follow installation steps based on your operating system.
 
 ![OTS_Download_2](../assets/03_GIFs/GIF_Download-2.gif)
-
-<br>
-
----
-
-> [⮝ **Go to the Basic Usage** ⮝](Basic-Usage.md)
-
----
-
-> [⮝ **Go back to the ReadMe** ⮝](../)
-
----

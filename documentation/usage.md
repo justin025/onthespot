@@ -6,28 +6,9 @@
 
 <br>
 
-# Basic Usage
+# Getting Started
 
-- [Basic Usage](#basic-usage)
-  - [1. Getting Started](#1-getting-started)
-  - [2. Searching and Downloading Music](#2-searching-and-downloading-music)
-    - [Search by Query](#search-by-query)
-    - [Download by URL](#download-by-url)
-  - [3. Monitoring Download Status](#3-monitoring-download-status)
-  - [4. Configuration](#4-configuration)
-    - [General Configuration Options](#general-configuration-options)
-  - [5. Advanced Configuration](#5-advanced-configuration)
-    - [Track/Playlist Path Format](#trackplaylist-path-format)
-    - [Podcast Path Format](#podcast-path-format)
-    - [Additional Advanced Options](#additional-advanced-options)
-  - [6. Saving Your Configuration](#6-saving-your-configuration)
-
-<br>
-
-## 1. Getting Started
-
-> [!WARNING]
-> When launching the application for the first time, you will receive a warning that no Music-App accounts are added.
+When launching the application for the first time, you will receive a warning that no Music-App accounts are added.
 
 1. **Dismiss the Warning**
    - Click the close button on the warning dialog.
@@ -193,21 +174,9 @@ For users who want more control over how their music is organized and downloaded
 ## 6. Saving Your Configuration
 
 - **Apply Changes**
-  - After adjusting any settings, click the **Save Settings** button to apply your changes.
+  - After adjusting any settings, click the **Save Settings** button on the right to apply your changes.
 
 > [!IMPORTANT]
 > Some configuration changes may require restarting **OnTheSpot** to take effect. Make sure to restart the application if prompted.
 
 ![OTS_Saving](../assets/02_Images/IMG_Saving.png)
-
-<br>
-
----
-
-> [⮝ **Go to the Installation** ⮝](Basic-Usage.md)
-
----
-
-> [⮝ **Go back to the ReadMe** ⮝](../)
-
----
