@@ -42,6 +42,9 @@ When launching the application for the first time you will receive a warning tha
 > [!NOTE]
 > Downloading large media types like albums or playlists may take longer. The application might appear unresponsive during this process. Please be patient.
 
+> [!TIP]
+> You can also specify the path to a text file containing the links you want to download.
+
 ### Download by URL
 
 1. **Enter the URL**
