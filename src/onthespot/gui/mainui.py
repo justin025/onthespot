@@ -621,7 +621,7 @@ class MainWindow(QMainWindow):
 
             btn.setMinimumHeight(30)
             service = QTableWidgetItem(result['item_service'].title())
-            service.setIcon(QIcon(os.path.join(config.app_root, 'resources', 'icons', f'{result['item_service']}.png')))
+            service.setIcon(QIcon(os.path.join(config.app_root, 'resources', 'icons', f'{result["item_service"]}.png')))
 
             rows = self.tbl_search_results.rowCount()
             self.tbl_search_results.insertRow(rows)
