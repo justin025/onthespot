@@ -78,6 +78,7 @@ class Config:
             "use_lrc_file": False, # Download .lrc file alongside track
             "only_synced_lyrics": False, # Only use synced lyrics
             "use_playlist_path": False, # Use playlist path
+            "delete_removed": False,  # Clear the folder before adding new files if True
             "create_m3u_playlists": False, # Create m3u based playlist
             "translate_file_path": False, # Translate downloaded file path to application language
             "ffmpeg_args": [], # Extra arguments for ffmpeg
