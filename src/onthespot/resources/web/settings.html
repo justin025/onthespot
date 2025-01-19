@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
     <script src="{{ url_for('static', filename='utils.js') }}" defer></script>
 </head>
+
 <body>
     <div class="header">
         <ul>
@@ -39,8 +41,7 @@
                 <tr>
                     <td>
                         <label>
-                            <input type="radio" name="parsing_acc_sn" value="{{ loop.index - 1 }}" onclick="updateSettings()"
-                            {% if loop.index - 1 == config.parsing_acc_sn %} checked {% endif %}>
+                            <input type="radio" name="parsing_acc_sn" value="{{ loop.index - 1 }}" onclick="updateSettings()" {% if loop.index - 1==config.parsing_acc_sn %} checked {% endif %}>
                         </label>
                     </td>
                     <td style="max-width: 10px; overflow: hidden; text-overflow: ellipsis;">{{ account.username }}{% if account.username|length > 20 %}...{% endif %}</td>
@@ -151,6 +152,9 @@
 
         <label for="use_playlist_path">Use Playlist Path</label>
         <input type="checkbox" id="use_playlist_path" {% if config.use_playlist_path %}checked{% endif %}><br><br>
+
+        <label for="delete_removed">Clear Folder Before Download</label>
+        <input type="checkbox" id="delete_removed" {% if config.delete_removed %}checked{% endif %}><br><br>
 
         <label for="playlist_path_formatter">Playlist Path Formatter:</label>
         <input type="text" id="playlist_path_formatter" value="{{ config.playlist_path_formatter }}" placeholder="Enter playlist path formatter"><br><br>
@@ -455,48 +459,49 @@
                 },
                 body: JSON.stringify(data),
             })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Success:', data);
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-            });
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Success:', data);
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
         }
     </script>
-        <script>
-            // Should be in user.js but flask doesn't seem to load them
-            function capitalizeFirstLetter(string) {
-                if (!string) return 'N/A';
-                return string.charAt(0).toUpperCase() + string.slice(1);
-            }
+    <script>
+        // Should be in user.js but flask doesn't seem to load them
+        function capitalizeFirstLetter(string) {
+            if (!string) return 'N/A';
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
 
-            function copyToClipboard(text) {
-                navigator.clipboard.writeText(text)
-                    .then(() => {
-                        console.log('Link copied to clipboard');
-                        // alert('Link copied to clipboard!');
-                    })
-                    .catch(err => {
-                        console.error('Failed to copy: ', err);
-                    });
-            }
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text)
+                .then(() => {
+                    console.log('Link copied to clipboard');
+                    // alert('Link copied to clipboard!');
+                })
+                .catch(err => {
+                    console.error('Failed to copy: ', err);
+                });
+        }
 
-            function formatServiceName(serviceName) {
-                const spacedServiceName = serviceName.replace(/_/g, ' ');
+        function formatServiceName(serviceName) {
+            const spacedServiceName = serviceName.replace(/_/g, ' ');
 
-                const formattedServiceName = spacedServiceName.split(' ')
-                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                    .join(' ');
+            const formattedServiceName = spacedServiceName.split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
 
-                return formattedServiceName;
-            }
-        </script>
+            return formattedServiceName;
+        }
+    </script>
 
 </body>
+
 </html>

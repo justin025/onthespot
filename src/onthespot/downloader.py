@@ -170,6 +170,20 @@ class DownloadWorker(QObject):
                     directory, file_name = os.path.split(file_path)
                     temp_file_path = os.path.join(directory, '~' + file_name)
 
+                    # Clear the directory if it exists
+                    if config.get("delete_removed", False):
+                        if os.path.exists(os.path.dirname(file_path)):
+                            for file_name in os.listdir(os.path.dirname(file_path)):
+                                file_path_to_delete = os.path.join(os.path.dirname(file_path), file_name)
+                                try:
+                                    if os.path.isfile(file_path_to_delete):
+                                        os.remove(file_path_to_delete)
+                                    elif os.path.isdir(file_path_to_delete):
+                                        os.rmdir(file_path_to_delete)
+                                except Exception as e:
+                                    logger.error(f"Error while cleaning {file_path_to_delete}: {e}")
+
+                    # Create the directory if it doesn't exist
                     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
                     # Skip download if file exists under different extension

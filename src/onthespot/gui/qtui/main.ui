@@ -1714,6 +1714,16 @@
                       </widget>
                      </item>
                      <item>
+                      <widget class="QCheckBox" name="inp_delete_removed">
+                       <property name="layoutDirection">
+                        <enum>Qt::RightToLeft</enum>
+                       </property>
+                       <property name="text">
+                        <string>Clear folder before download</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
                       <spacer name="horizontalSpacer_16">
                        <property name="orientation">
                         <enum>Qt::Horizontal</enum>

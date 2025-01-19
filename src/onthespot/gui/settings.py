@@ -151,6 +151,7 @@ def load_config(self):
     self.inp_embed_valence.setChecked(config.get('embed_valence'))
     self.inp_mirror_spotify_playback.setChecked(config.get('mirror_spotify_playback'))
     self.inp_download_youtube_videos.setChecked(config.get('download_youtube_videos'))
+    self.inp_delete_removed.setChecked(config.get("delete_removed"))
 
     # Disable scrolling to change values of QSpinBoxes and QComboBoxes
     do_not_scroll = [
@@ -297,4 +298,5 @@ def save_config(self):
     config.set_('embed_valence', self.inp_embed_valence.isChecked())
     config.set_('mirror_spotify_playback', self.inp_mirror_spotify_playback.isChecked())
     config.set_('download_youtube_videos', self.inp_download_youtube_videos.isChecked())
+    config.set_('delete_removed', self.inp_delete_removed.isChecked())
     config.update()
