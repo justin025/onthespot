@@ -303,24 +303,4 @@ class Config:
             cf.write(json.dumps(self.__template_data, indent=4))
         self.__config = self.__template_data
 
-    def apply_overrides(self, overrides):
-        for key, value in overrides.items():
-            if key in self.__config or key in self.__template_data:
-                current_value = self.get(key)
-                if isinstance(current_value, bool):
-                    value = value.lower() in ("true", "1", "yes")
-                elif isinstance(current_value, int):
-                    value = int(value)
-                elif isinstance(current_value, float):
-                    value = float(value)
-
-                print(f"Overriding configuration : {key} = {value}")
-                self.set(key, value)
-            elif key=="download":
-                print(f"Direct downloading {value}.")
-            else:
-                print(f"Warning: parameter {key} doesn't exist in configuration and will be discarded.")
-
-        self.update()
-
 config = Config()
