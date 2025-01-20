@@ -115,10 +115,51 @@ class CLI(Cmd):
 
 
     def do_config(self, arg):
-        parts = arg.split()
+        parts = arg.split(maxsplit=1)
+
         if arg == "reset_settings":
             config.rollback()
-            print('\033[32mReset settings, please restart the app.\033[0m')
+            print('\033[32mSettings reset, please restart the app.\033[0m')
+            return
+
+        if len(parts) > 1 and parts[0] == "set":
+            try:
+                key, value = parts[1].split(maxsplit=1)
+                if key in config.__dict__['_Config__config']:
+                    try:
+                        if value.lower() in ['true', 'false']:
+                            value = value.lower() == 'true'
+                        elif value.isdigit():
+                            value = int(value)
+                    except ValueError:
+                        pass
+
+                    config.set_(key, value)
+                    config.update()
+                    print(f"\033[32mUpdated {key} to {value}.\033[0m")
+                else:
+                    print(f"\033[31mError: {key} is not a valid configuration key.\033[0m")
+            except ValueError:
+                print("\033[31mUsage: config set <key> <value>\033[0m")
+            return
+
+        if len(parts) > 1 and parts[0] == "get":
+            try:
+                key = parts[1]
+                value = config.get(key)
+                if value is not None:
+                    print(f"\033[32m{key} = {value}\033[0m")
+                else:
+                    print(f"\033[31mError: {key} is not a valid configuration key.\033[0m")
+            except ValueError:
+                print("\033[31mUsage: config get <key>\033[0m")
+            return
+
+        if arg == "list":
+            print("\033[32mConfiguration Parameters:\033[0m")
+            for key, value in config.__dict__['_Config__template_data'].items():
+                print(f"  {key} = {config.get(key)}")
+            return
 
         if arg == "list_accounts":
             print('\033[32mLegend:\033[0m\n\033[34m>\033[0mSelected: Service, Status\n\n\033[32mAccounts:\033[0m')
@@ -126,64 +167,76 @@ class CLI(Cmd):
                 print(f"{'\033[34m>\033[0m' if config.get('active_account_number') == index else ' '}[{index}] {item['username']}: {item['service']}, {item['status']}")
             return
 
-        elif arg == "add_account":
-            print("soundcloud")
-            print("spotify")
-            print("deezer")
+        if arg.startswith("add_account"):
+            parts = arg.split(maxsplit=2)
+            if len(parts) == 1:
+                print("Available services: soundcloud, spotify, deezer")
+            elif parts[1] == "spotify":
+                print("\033[32mLogin service started, select 'OnTheSpot' under devices in the Spotify Desktop App.\033[0m")
 
-        elif arg == "add_account spotify":
-            print("\033[32mLogin service started, select 'OnTheSpot' under devices in the Spotify Desktop App.\033[0m")
+                def add_spotify_account_worker():
+                    session = spotify_new_session
+                    if session:
+                        print("\033[32mAccount added, please restart the app.\033[0m")
+                        config.set_('active_account_number', config.get('active_account_number') + 1)
+                        config.update()
+                    else:
+                        print("\033[31mAccount already exists.\033[0m")
 
-            def add_spotify_account_worker():
-                session = spotify_new_session
-                if session == True:
-                    print("\033[32mAccount added, please restart the app.\033[0m")
-                    config.set('active_account_number', config.get('active_account_number') + 1)
+                login_worker = threading.Thread(target=add_spotify_account_worker)
+                login_worker.daemon = True
+                login_worker.start()
+            elif parts[1] == "deezer":
+                if len(parts) == 3:
+                    deezer_add_account(parts[2])
+                else:
+                    print("\033[31mUsage: add_account deezer <arl>\033[0m")
+            elif parts[1] == "soundcloud":
+                print("Not implemented yet.")
+            else:
+                print("\033[31mUnknown service. Available services: soundcloud, spotify, deezer.\033[0m")
+            return
+
+        if arg.startswith("select_account"):
+            parts = arg.split(maxsplit=1)
+            if len(parts) == 2:
+                try:
+                    account_number = int(parts[1])
+                    config.set_('active_account_number', account_number)
                     config.update()
-                elif session == False:
-                    print("\033[32mAccount already exists.\033[0m")
+                    print(f"\033[32mSelected account number: {account_number}\033[0m")
+                except ValueError:
+                    print("\033[31mInvalid account number. Please enter a valid integer.\033[0m")
+            else:
+                print("\033[31mUsage: select_account <index>\033[0m")
+            return
 
-            login_worker = threading.Thread(target=add_spotify_account_worker)
-            login_worker.daemon = True
-            login_worker.start()
+        if arg.startswith("delete_account"):
+            parts = arg.split(maxsplit=1)
+            if len(parts) == 2:
+                try:
+                    account_number = int(parts[1])
+                    accounts = config.get('accounts').copy()
+                    del accounts[account_number]
+                    config.set_('accounts', accounts)
+                    config.update()
+                    del account_pool[account_number]
+                    print(f"\033[32mDeleted account number: {account_number}\033[0m")
+                except ValueError:
+                    print("\033[31mInvalid account number. Please enter a valid integer.\033[0m")
+            else:
+                print("\033[31mUsage: delete_account <index>\033[0m")
+            return
 
-        elif arg == "add_account soundcloud":
-            print("not implemented yet")
-
-        elif arg == "add_account deezer":
-            print("\033[32madd_account deezer [arl]\033[0m")
-
-        elif len(parts) == 3 and parts[0] == "add_account" and parts[1] == "deezer":
-            deezer_add_account(parts[2])
-
-        elif len(parts) == 2 and parts[0] == "select_account":
-            try:
-                account_number = int(parts[1])
-                config.set('active_account_number', account_number)
-                config.update()
-                print(f"\033[32mSelected account number: {account_number}\033[0m")
-            except ValueError:
-                print("\033[32mInvalid account number. Please enter a valid integer.\033[0m")
-
-        elif len(parts) == 2 and parts[0] == "delete_account":
-            try:
-                account_number = int(parts[1])
-                accounts = config.get('accounts').copy()
-                del accounts[account_number]
-                config.set('accounts', accounts)
-                config.update()
-                del account_pool[account_number]
-                print(f"\033[32mDeleted account number: {account_number}\033[0m")
-            except ValueError:
-                print("\033[32mInvalid account number. Please enter a valid integer.\033[0m")
-        else:
-            print("\033[32mConfiguration options:\033[0m")
-            print("  list_accounts")
-            print("  add_account [service]")
-            print("  select_account [index]")
-            print("  delete_account [index]")
-            print("  reset_settings")
-            print(f"  \033[36mAdditional options can be found at {config_dir()}{os.path.sep}otsconfig.json\033[0m")
+        print("\033[32mConfiguration options:\033[0m")
+        print("  list                                   - Display all configuration parameters")
+        print("  get <key>                              - Get the value of a specific parameter")
+        print("  set <key> <value>                      - Set the value of a specific parameter")
+        print("  list_accounts                          - List all accounts")
+        print("  add_account <service> [credentials]    - Add a new account")
+        print("  select_account <index>                 - Select an account")
+        print("  delete_account <index>                 - Delete an account")
+        print("  reset_settings                         - Reset all settings to default")
 
 
     def do_search(self, arg):
