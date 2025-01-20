@@ -6,7 +6,7 @@ from yt_dlp import YoutubeDL
 from ..otsconfig import config
 from ..runtimedata import get_logger, account_pool
 
-logger = get_logger("api.youtube")
+logger = get_logger("api.youtube_music")
 
 
 def youtube_music_login_user(account):
@@ -45,7 +45,7 @@ def youtube_music_add_account():
             "active": True,
         }
     cfg_copy.append(new_user)
-    config.set_('accounts', cfg_copy)
+    config.set('accounts', cfg_copy)
     config.update()
 
 
@@ -93,7 +93,7 @@ def youtube_music_get_track_metadata(_, item_id):
             cf.write(json_output)
 
     # Convert length to milliseconds
-    timestamp = info_dict.get('duration_string', '')
+    timestamp = info_dict.get('duration_string')
     try:
         if timestamp:
             parts = timestamp.split(':')
@@ -115,7 +115,7 @@ def youtube_music_get_track_metadata(_, item_id):
     # Get thumbnail url
     thumbnail_url = None
     for thumbnail in info_dict.get('thumbnails', []):
-        current_url = thumbnail.get('url', '')
+        current_url = thumbnail.get('url')
         # Square thumbnails are stored on googleusercontent.com as
         # opposed to ytimg.com. Select the last (highest quality)
         # square thumbnail.
@@ -123,28 +123,28 @@ def youtube_music_get_track_metadata(_, item_id):
             thumbnail_url = current_url
 
     if not thumbnail_url and info_dict.get('thumbnails', []):
-        thumbnail_url = info_dict.get('thumbnails', [])[-1].get('url', '')
+        thumbnail_url = info_dict.get('thumbnails', [])[-1].get('url')
 
     info = {}
-    info['title'] = info_dict.get('title', '')
-    album = info_dict.get('album', '')
-    info['album_name'] = album if album else info_dict.get('title', '')
-    info['artists'] = info_dict.get('channel', '')
-    info['album_artists'] = info_dict.get('channel', '')
-    info['description'] = info_dict.get('description', '')
+    info['title'] = info_dict.get('title')
+    album = info_dict.get('album')
+    info['album_name'] = album if album else info_dict.get('title')
+    info['artists'] = info_dict.get('channel')
+    info['album_artists'] = info_dict.get('channel')
+    info['description'] = info_dict.get('description')
     # Commented thumbnails are periodically missing
-    #info['image_url'] = info_dict.get('thumbnail', '')
+    #info['image_url'] = info_dict.get('thumbnail')
     #info['image_url'] = f'https://i.ytimg.com/vi/{item_id}/maxresdefault.jpg'
     #info['image_url'] = f'https://i.ytimg.com/vi/{item_id}/hqdefault.jpg'
     info['image_url'] = thumbnail_url
-    info['language'] = info_dict.get('language', '')
+    info['language'] = info_dict.get('language')
     info['item_url'] = url
     # Windows takes issue with the following line, not sure why
-    #info['release_year'] = info_dict.get('release_date', '')[:4] #20150504
-    release_year = info_dict.get('release_year', '')
-    info['release_year'] = str(release_year if release_year else info_dict.get('upload_date', '')[:4])
+    #info['release_year'] = info_dict.get('release_date')[:4] #20150504
+    release_year = info_dict.get('release_year')
+    info['release_year'] = str(release_year if release_year else info_dict.get('upload_date')[:4])
     info['length'] = length
-    info['is_playable'] = True if info_dict.get('availability', '') == 'public' and not info_dict.get('is_live', '') else False
+    info['is_playable'] = True if info_dict.get('availability') == 'public' and not info_dict.get('is_live') else False
     info['item_id'] = item_id
 
     return info
@@ -160,12 +160,12 @@ def youtube_music_get_playlist_data(_, playlist_id):
     with YoutubeDL(ydl_opts) as ytdl:
         playlist_data = ytdl.extract_info(url, download=False)
 
-    playlist_name = playlist_data.get('title', '')
-    playlist_by = playlist_data.get('channel', '') # If null the item is an album
+    playlist_name = playlist_data.get('title')
+    playlist_by = playlist_data.get('channel') # If null the item is an album
 
     track_ids = []
     for entry in playlist_data['entries']:
-        track_ids.append(entry.get('id', ''))
+        track_ids.append(entry.get('id'))
     return playlist_name, playlist_by, track_ids
 
 
@@ -182,5 +182,5 @@ def youtube_music_get_channel_track_ids(_, channel_id):
 
     track_ids = []
     for entry in channel_data['entries']:
-        track_ids.append(entry.get('id', ''))
+        track_ids.append(entry.get('id'))
     return track_ids

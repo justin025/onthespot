@@ -45,7 +45,7 @@ def bandcamp_add_account():
             "active": True,
         }
     cfg_copy.append(new_user)
-    config.set_('accounts', cfg_copy)
+    config.set('accounts', cfg_copy)
     config.update()
 
 
@@ -135,7 +135,7 @@ def bandcamp_get_track_metadata(_, url):
 
     # Year
     year = ''
-    match = re.search(r"\d{1,2} \w+ (\d{4})", track_data.get('tralbum', {}).get('current', {}).get('publish_date', ''))
+    match = re.search(r"\d{1,2} \w+ (\d{4})", track_data.get('tralbum', {}).get('current', {}).get('publish_date'))
     if match:
         year = match.group(1)
 
@@ -148,28 +148,28 @@ def bandcamp_get_track_metadata(_, url):
 
     # Output the resulting dictionary
     info = {}
-    info['title'] = track_data.get('tralbum', {}).get('current', {}).get('title', '')
-    info['artists'] = track_data.get('embed', {}).get('artist', '')
-    info['album_artists'] = track_data.get('embed', {}).get('artist', '')
-    info['item_url'] = track_data.get('embed', {}).get('linkback', '')
-    info['album_name'] = track_data.get('embed', {}).get('album_embed_data', {}).get('album_title', '')
+    info['title'] = track_data.get('tralbum', {}).get('current', {}).get('title')
+    info['artists'] = track_data.get('embed', {}).get('artist')
+    info['album_artists'] = track_data.get('embed', {}).get('artist')
+    info['item_url'] = track_data.get('embed', {}).get('linkback')
+    info['album_name'] = track_data.get('embed', {}).get('album_embed_data', {}).get('album_title')
     info['release_year'] = year
-    info['track_number'] = track_data.get('tralbum', {}).get('current', {}).get('track_number', '')
-    info['total_tracks'] = album_data.get('numTracks', '')
-    info['description'] = album_data.get('description', '')
-    info['copyright'] = album_data.get('creditText', '')
-    isrc = track_data.get('tralbum', {}).get('current', {}).get('isrc', '')
+    info['track_number'] = track_data.get('tralbum', {}).get('current', {}).get('track_number')
+    info['total_tracks'] = album_data.get('numTracks')
+    info['description'] = album_data.get('description')
+    info['copyright'] = album_data.get('creditText')
+    isrc = track_data.get('tralbum', {}).get('current', {}).get('isrc')
     info['isrc'] = isrc if isrc else ''
     info['is_playable'] = True
 
     try:
-        info['file_url'] = track_data.get('tralbum', {}).get('trackinfo', [{}])[0].get('file', {}).get('mp3-128', '')
+        info['file_url'] = track_data.get('tralbum', {}).get('trackinfo', [{}])[0].get('file', {}).get('mp3-128')
     except AttributeError:
         info['is_playable'] = False
 
-    info['item_id'] = track_data.get('tralbum', {}).get('current', {}).get('id', '')
-    lyrics = track_data.get('tralbum', {}).get('current', {}).get('lyrics', '')
-    info['lyrics'] = lyrics if lyrics and not config.get('only_synced_lyrics') else ''
+    info['item_id'] = track_data.get('tralbum', {}).get('current', {}).get('id')
+    lyrics = track_data.get('tralbum', {}).get('current', {}).get('lyrics')
+    info['lyrics'] = lyrics if lyrics and not config.get('only_download_synced_lyrics') else ''
     info['genre'] = conv_list_format(album_data.get('keywords', []))
     info['image_url'] = thumbnail_url
 

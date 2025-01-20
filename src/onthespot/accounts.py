@@ -9,6 +9,7 @@ from .api.spotify import spotify_login_user, spotify_get_token
 from .api.tidal import tidal_login_user, tidal_get_token
 from .api.youtube_music import youtube_music_login_user
 from .api.generic import generic_login_user
+from .api.crunchyroll import crunchyroll_login_user, crunchyroll_get_token
 from .otsconfig import config
 from .runtimedata import get_logger, account_pool
 
@@ -51,15 +52,15 @@ class FillAccountPool(QThread):
 def get_account_token(item_service):
     if item_service in ('bandcamp', 'youtube_music', 'generic'):
         return
-    parsing_index = config.get('parsing_acc_sn')
+    parsing_index = config.get('active_account_number')
     account_service = account_pool[parsing_index]['service']
-    if item_service == account_service and not config.get("rotate_acc_sn"):
+    if item_service == account_service and not config.get("rotate_active_account_number"):
         return globals()[f"{item_service}_get_token"](parsing_index)
     else:
         for i in range(parsing_index + 1, parsing_index + len(account_pool) + 1):
             index = i % len(account_pool)
             if item_service == account_pool[index]['service']:
-                if config.get("rotate_acc_sn"):
-                    config.set_('parsing_acc_sn', index)
+                if config.get("rotate_active_account_number"):
+                    config.set('active_account_number', index)
                     #config.update()
                 return globals()[f"{item_service}_get_token"](index)

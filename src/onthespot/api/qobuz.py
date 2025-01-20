@@ -109,7 +109,7 @@ def qobuz_add_account(email, password):
             }
         }
         cfg_copy.append(new_user)
-        config.set_('accounts', cfg_copy)
+        config.set('accounts', cfg_copy)
         config.update()
 
     except Exception as e:
@@ -181,11 +181,11 @@ def qobuz_get_search_results(token, search_term, content_types):
                 search_results.append({
                     'item_id': track['id'],
                     'item_name': track['title'],
-                    'item_by': track.get('performer', '').get('name', ''),
+                    'item_by': track.get('performer').get('name'),
                     'item_type': "track",
                     'item_service': "qobuz",
                     'item_url': f'https://play.qobuz.com/track/{track["id"]}',
-                    'item_thumbnail_url': track.get("album", {}).get("image", {}).get("small", "")
+                    'item_thumbnail_url': track.get("album", {}).get("image", {}).get("small")
                 })
 
     if 'album' in content_types:
@@ -195,7 +195,7 @@ def qobuz_get_search_results(token, search_term, content_types):
                 search_results.append({
                     'item_id': album['id'],
                     'item_name': album['title'],
-                    'item_by': album.get('artist', '').get('name', ''),
+                    'item_by': album.get('artist').get('name'),
                     'item_type': "album",
                     'item_service': "qobuz",
                     'item_url': f'https://play.qobuz.com/album/{album["id"]}',
@@ -208,8 +208,8 @@ def qobuz_get_search_results(token, search_term, content_types):
             if artist:
                 search_results.append({
                     'item_id': artist['id'],
-                    'item_name': artist.get('name', ''),
-                    'item_by': artist.get('name', ''),
+                    'item_name': artist.get('name'),
+                    'item_by': artist.get('name'),
                     'item_type': "artist",
                     'item_service': "qobuz",
                     'item_url': f'https://play.qobuz.com/artist/{artist["id"]}',
@@ -226,8 +226,8 @@ def qobuz_get_search_results(token, search_term, content_types):
                     thumbnail = ''
                 search_results.append({
                     'item_id': playlist['id'],
-                    'item_name': playlist.get('name', ''),
-                    'item_by': playlist.get('owner', '').get('name', 'Qobuz'),
+                    'item_name': playlist.get('name'),
+                    'item_by': playlist.get('owner').get('name', 'Qobuz'),
                     'item_type': "playlist",
                     'item_service': "qobuz",
                     'item_url': f'https://play.qobuz.com/playlist/{playlist["id"]}',
@@ -244,49 +244,49 @@ def qobuz_get_track_metadata(token, item_id):
 
     try:
         track_data = make_call(f'{BASE_URL}/track/get?track_id={item_id}', headers=headers)
-        album_data = make_call(f'{BASE_URL}/album/get?album_id={track_data.get("album", {}).get("id", "")}', headers=headers)
+        album_data = make_call(f'{BASE_URL}/album/get?album_id={track_data.get("album", {}).get("id")}', headers=headers)
     except Exception:
         return
 
     # Artists
     artists = []
-    for artist in track_data.get('album', {}).get('artists', ''):
-        artists.append(artist.get('name', ''))
+    for artist in track_data.get('album', {}).get('artists'):
+        artists.append(artist.get('name'))
     if not artists:
-        artists = [track_data.get('album', {}).get('artist', {}).get('name', '')]
+        artists = [track_data.get('album', {}).get('artist', {}).get('name')]
 
     # Track Number
     track_number = None
     for i, track in enumerate(album_data.get('tracks').get('items', [])):
-        if track.get('id', '') == track_data.get('id', ''):
+        if track.get('id') == track_data.get('id'):
             track_number = i + 1
             break
     if not track_number:
-        track_number = track_data.get('album', {}).get('track_number', '')
+        track_number = track_data.get('album', {}).get('track_number')
 
     info = {}
-    info['copyright'] = track_data.get('copyright', '')
-    info['performers'] = track_data.get('performers', '')
-    info['album_artists'] = track_data.get('album', {}).get('artist', {}).get('name', '')
+    info['copyright'] = track_data.get('copyright')
+    info['performers'] = track_data.get('performers')
+    info['album_artists'] = track_data.get('album', {}).get('artist', {}).get('name')
     info['artists'] = conv_list_format(artists)
 
-    info['image_url'] = track_data.get('album', {}).get('image', {}).get('large', '')
-    info['upc'] = track_data.get('album', {}).get('upc', '')
-    info['label'] = track_data.get('album', {}).get('label', {}).get('name', '')
-    info['album_name'] = track_data.get('album', {}).get('title', '')
-    info['total_tracks'] = track_data.get('album', {}).get('tracks_count', '')
+    info['image_url'] = track_data.get('album', {}).get('image', {}).get('large')
+    info['upc'] = track_data.get('album', {}).get('upc')
+    info['label'] = track_data.get('album', {}).get('label', {}).get('name')
+    info['album_name'] = track_data.get('album', {}).get('title')
+    info['total_tracks'] = track_data.get('album', {}).get('tracks_count')
     info['genre'] = conv_list_format(track_data.get('album', {}).get('genres_list', [])[-1].split('→'))
-    info['release_year'] = track_data.get('album', {}).get('release_date_original', '').split("-")[0]
-    info['description'] = track_data.get('album', {}).get('description', '')
-    info['total_discs'] = track_data.get('album', {}).get('media_count', '')
+    info['release_year'] = track_data.get('album', {}).get('release_date_original').split("-")[0]
+    info['description'] = track_data.get('album', {}).get('description')
+    info['total_discs'] = track_data.get('album', {}).get('media_count')
 
-    info['isrc'] = track_data.get('isrc', '')
-    info['title'] = track_data.get('title', '')
-    info['length'] = str(track_data.get('duration', '')) + '000'
-    #info['track_number'] = track_data.get('track_number', '')
+    info['isrc'] = track_data.get('isrc')
+    info['title'] = track_data.get('title')
+    info['length'] = str(track_data.get('duration')) + '000'
+    #info['track_number'] = track_data.get('track_number')
     info['track_number'] = track_number
-    info['disc_number'] = track_data.get('media_number', '')
-    info['is_playable'] = track_data.get('streamable', '')
+    info['disc_number'] = track_data.get('media_number')
+    info['is_playable'] = track_data.get('streamable')
     info['item_url'] = f'https://play.qobuz.com/track/{item_id}'
 
     return info
@@ -325,7 +325,7 @@ def qobuz_get_artist_album_ids(token, artist_id):
 
     item_ids = []
     for album in album_data.get('items', []):
-        item_ids.append(album.get('id', ''))
+        item_ids.append(album.get('id'))
     return item_ids
 
 
@@ -343,7 +343,7 @@ def qobuz_get_label_album_ids(token, label_id):
 
     item_ids = []
     for album in album_data.get('albums', {}).get('items', []):
-        item_ids.append(album.get('id', ''))
+        item_ids.append(album.get('id'))
     return item_ids
 
 
@@ -359,7 +359,7 @@ def qobuz_get_playlist_data(token, playlist_id):
 
     playlist_data = make_call(f'{BASE_URL}/playlist/get?playlist_id={playlist_id}&extra=track_ids', headers=headers, params=params, skip_cache=True)
 
-    playlist_name = playlist_data.get('name', '')
+    playlist_name = playlist_data.get('name')
     playlist_by = playlist_data.get('owner', {}).get('name', 'Qobuz')
     track_ids = playlist_data.get('track_ids', [])
     return playlist_name, playlist_by, track_ids

@@ -47,7 +47,7 @@ def deezer_add_account(arl):
         }
     }
     cfg_copy.append(new_user)
-    config.set_('accounts', cfg_copy)
+    config.set('accounts', cfg_copy)
     config.update()
 
 
@@ -78,7 +78,7 @@ def deezer_get_playlist_data(_, playlist_id):
 
     track_ids = []
     for track in playlist_data.get("tracks", {}).get("data", ''):
-        track_ids.append(track.get('id', ''))
+        track_ids.append(track.get('id'))
     return playlist_name, playlist_by, track_ids
 
 
@@ -86,56 +86,56 @@ def deezer_get_track_metadata(_, item_id):
     logger.info(f"Get track info for: '{item_id}'")
 
     track_data = make_call(f"{BASE_URL}/track/{item_id}")
-    album_data = make_call(f"{BASE_URL}/album/{track_data.get('album', {}).get('id', '')}?limit=10000")
-    album_tracks = make_call(f"{BASE_URL}/album/{track_data.get('album', {}).get('id', '')}/tracks?limit=10000")
-    #album_page = make_call(f"https://www.deezer.com/album/{track_data.get('album', {}).get('id', '')}", text=True)
+    album_data = make_call(f"{BASE_URL}/album/{track_data.get('album', {}).get('id')}?limit=10000")
+    album_tracks = make_call(f"{BASE_URL}/album/{track_data.get('album', {}).get('id')}/tracks?limit=10000")
+    #album_page = make_call(f"https://www.deezer.com/album/{track_data.get('album', {}).get('id')}", text=True)
 
     # Fetch track_number
     track_number = None
     for i, track in enumerate(album_data.get('tracks', {}).get('data', [])):
-        if track.get('id', '') == int(item_id):
+        if track.get('id') == int(item_id):
             track_number = i + 1
             break
     if not track_number:
-        track_number = track_data.get('track_position', '')
+        track_number = track_data.get('track_position')
 
     # Total Discs
     try:
-        total_discs = album_tracks.get('data', [])[-1].get('disk_number', '')
+        total_discs = album_tracks.get('data', [])[-1].get('disk_number')
     except Exception:
-        total_discs = track_data.get('disk_number', '')
+        total_discs = track_data.get('disk_number')
 
     # Artists
     artists = []
-    for artist in track_data.get('contributors', ''):
-        artists.append(artist.get('name', ''))
+    for artist in track_data.get('contributors'):
+        artists.append(artist.get('name'))
 
     info = {}
-    info['title'] = track_data.get('title', '')
-    info['isrc'] = track_data.get('isrc', '')
-    info['item_url'] = track_data.get('link', '')
-    info['length'] = str(track_data.get('duration', '')) + '000'
+    info['title'] = track_data.get('title')
+    info['isrc'] = track_data.get('isrc')
+    info['item_url'] = track_data.get('link')
+    info['length'] = str(track_data.get('duration')) + '000'
     # Deezer api does not return total_tracks only position so on a
     # second disc the number will be, for instance, 1/24 instead of 13/24.
     # I opted to iterate through the list instead as seen above.
-    #info['track_number'] = track_data.get('track_position', '')
+    #info['track_number'] = track_data.get('track_position')
     info['track_number'] = track_number
     info['total_tracks'] = len(album_data.get("tracks", {}).get("data", []))
     # Deezer returns disc number but not total discs
     # so it is scraped from the album_tracks, can
     # alternatively scrape album page.
-    info['disc_number'] = track_data.get('disk_number', '')
+    info['disc_number'] = track_data.get('disk_number')
     info['total_discs'] = total_discs
-    info['release_year'] = track_data.get('release_date', '').split('-')[0]
-    info['explicit'] = track_data.get('explicit_lyrics', '')
-    info['bpm'] = track_data.get('bpm', '')
+    info['release_year'] = track_data.get('release_date').split('-')[0]
+    info['explicit'] = track_data.get('explicit_lyrics')
+    info['bpm'] = track_data.get('bpm')
     info['artists'] = conv_list_format(artists)
-    info['image_url'] = track_data.get('album', {}).get('cover_xl', '')
-    info['album_artists'] = album_data.get('artist', {}).get('name', '')
-    info['album_name'] = track_data.get('album', {}).get('title', '')
-    info['album_type'] = album_data.get('record_type', '')
-    info['is_playable'] = track_data.get('readable', '')
-    info['item_id'] = track_data.get('id', '')
+    info['image_url'] = track_data.get('album', {}).get('cover_xl')
+    info['album_artists'] = album_data.get('artist', {}).get('name')
+    info['album_name'] = track_data.get('album', {}).get('title')
+    info['album_type'] = album_data.get('record_type')
+    info['is_playable'] = track_data.get('readable')
+    info['item_id'] = track_data.get('id')
 
     return info
 

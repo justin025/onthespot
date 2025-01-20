@@ -14,9 +14,10 @@ from .api.bandcamp import bandcamp_get_track_metadata
 from .api.deezer import deezer_get_track_metadata, deezer_add_account
 from .api.qobuz import qobuz_get_track_metadata
 from .api.soundcloud import soundcloud_get_track_metadata
-from .api.spotify import MirrorSpotifyPlayback, spotify_new_session, spotify_get_track_metadata, spotify_get_episode_metadata
+from .api.spotify import MirrorSpotifyPlayback, spotify_new_session, spotify_get_track_metadata, spotify_get_podcast_episode_metadata
 from .api.tidal import tidal_get_track_metadata
 from .api.youtube_music import youtube_music_get_track_metadata
+from .api.crunchyroll import crunchyroll_get_episode_metadata
 from .downloader import DownloadWorker, RetryWorker
 from .otsconfig import config_dir, config
 from .parse_item import parsingworker, parse_url
@@ -53,9 +54,9 @@ class QueueWorker(threading.Thread):
                                 "item_name": item_metadata["title"],
                                 "item_by": item_metadata["artists"],
                                 'parent_category': item['parent_category'],
-                                'playlist_name': item.get('playlist_name', ''),
-                                'playlist_by': item.get('playlist_by', ''),
-                                'playlist_number': item.get('playlist_number', '')
+                                'playlist_name': item.get('playlist_name'),
+                                'playlist_by': item.get('playlist_by'),
+                                'playlist_number': item.get('playlist_number')
                                 }
                 else:
                     time.sleep(0.2)
@@ -122,7 +123,7 @@ class CLI(Cmd):
         if arg == "list_accounts":
             print('\033[32mLegend:\033[0m\n\033[34m>\033[0mSelected: Service, Status\n\n\033[32mAccounts:\033[0m')
             for index, item in enumerate(account_pool):
-                print(f"{'\033[34m>\033[0m' if config.get('parsing_acc_sn') == index else ' '}[{index}] {item['username']}: {item['service']}, {item['status']}")
+                print(f"{'\033[34m>\033[0m' if config.get('active_account_number') == index else ' '}[{index}] {item['username']}: {item['service']}, {item['status']}")
             return
 
         elif arg == "add_account":
@@ -137,7 +138,7 @@ class CLI(Cmd):
                 session = spotify_new_session
                 if session == True:
                     print("\033[32mAccount added, please restart the app.\033[0m")
-                    config.set_('parsing_acc_sn', config.get('parsing_acc_sn') + 1)
+                    config.set('active_account_number', config.get('active_account_number') + 1)
                     config.update()
                 elif session == False:
                     print("\033[32mAccount already exists.\033[0m")
@@ -158,7 +159,7 @@ class CLI(Cmd):
         elif len(parts) == 2 and parts[0] == "select_account":
             try:
                 account_number = int(parts[1])
-                config.set_('parsing_acc_sn', account_number)
+                config.set('active_account_number', account_number)
                 config.update()
                 print(f"\033[32mSelected account number: {account_number}\033[0m")
             except ValueError:
@@ -169,7 +170,7 @@ class CLI(Cmd):
                 account_number = int(parts[1])
                 accounts = config.get('accounts').copy()
                 del accounts[account_number]
-                config.set_('accounts', accounts)
+                config.set('accounts', accounts)
                 config.update()
                 del account_pool[account_number]
                 print(f"\033[32mDeleted account number: {account_number}\033[0m")
@@ -409,7 +410,7 @@ def update_header(win, score):
 def display_game_over(win, score):
     win.clear()
     if score > config.get('snake_high_score', 0):
-        config.set_('snake_high_score', score)
+        config.set('snake_high_score', score)
         config.update()
     win.addstr(win.getmaxyx()[0] // 2 - 1, win.getmaxyx()[1] // 2 - 10, 'Game Over!', curses.color_pair(1))
     win.addstr(win.getmaxyx()[0] // 2, win.getmaxyx()[1] // 2 - 10, f'Score: {score}', curses.A_BOLD)

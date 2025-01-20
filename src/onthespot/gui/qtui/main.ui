@@ -18,10 +18,10 @@
   </property>
   <property name="windowIcon">
    <iconset>
-    <normaloff>../../resources/icon.png</normaloff>../../resources/icon.png</iconset>
+    <normaloff>../../../../../../../../resources/icon.png</normaloff>../../../../../../../../resources/icon.png</iconset>
   </property>
   <property name="styleSheet">
-   <string notr="true">QGroupBox #group_login_form_3, #gb0_0, #gb0_1, #gb0_2, #gb0_3, #gb0_4, #gb0_5, #gb0_6, #gb0_7, #gb1_0, #gb1_1, #gb1_2, #gb1_3, #gb1_4, #gb1_5, #gb1_6, #gb1_7, #gb1_8, #gb1_9, #gb1_10, #gb1_11, #gb1_12, #gb1_13, #gb1_14, #gb1_29, #gb2_0, #gb2_1, #gb2_2, #gb2_3, #gb2_4, #gb2_5, #gb2_6, #gb2_7, #gb2_8, #gb2_9, #gb2_10, #gb2_11, #gb2_12, #gb2_13, #gb2_14, #gb2_15, #gb2_16, #gb2_17, #gb2_18, #gb3_0, #gb3_1 { border: 0;}</string>
+   <string notr="true">QGroupBox #group_login_form_3, #gb0_0, #gb0_1, #gb0_2, #gb0_3, #gb0_4, #gb0_5, #gb0_6, #gb0_7, #gb1_0, #gb1_1, #gb1_2, #gb1_3, #gb1_4, #gb1_5, #gb1_6, #gb1_7, #gb1_8, #gb1_9, #gb1_10, #gb1_11, #gb1_12, #gb1_13, #gb1_14, #gb1_29, #gb2_0, #gb2_1, #gb2_2, #gb2_3, #gb2_4, #gb2_5, #gb2_6, #gb2_7, #gb2_8, #gb2_9, #gb2_10, #gb2_11, #gb2_12, #gb2_13, #gb2_14, #gb2_15, #gb2_16, #gb2_17, #gb2_18, #gb3_0, #gb3_1, #gb3_2, #gb3_3, #gb3_4, #gb3_5, #gb3_6 { border: 0;}</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <property name="styleSheet">
@@ -108,7 +108,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QLineEdit" name="inp_search_term">
+               <widget class="QLineEdit" name="search_term">
                 <property name="text">
                  <string/>
                 </property>
@@ -186,7 +186,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QCheckBox" name="inp_enable_search_tracks">
+               <widget class="QCheckBox" name="enable_search_tracks">
                 <property name="text">
                  <string>Tracks</string>
                 </property>
@@ -196,7 +196,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QCheckBox" name="inp_enable_search_albums">
+               <widget class="QCheckBox" name="enable_search_albums">
                 <property name="text">
                  <string>Albums</string>
                 </property>
@@ -206,7 +206,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QCheckBox" name="inp_enable_search_artists">
+               <widget class="QCheckBox" name="enable_search_artists">
                 <property name="text">
                  <string>Artists</string>
                 </property>
@@ -216,7 +216,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QCheckBox" name="inp_enable_search_playlists">
+               <widget class="QCheckBox" name="enable_search_playlists">
                 <property name="text">
                  <string>Playlist</string>
                 </property>
@@ -226,7 +226,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QCheckBox" name="inp_enable_search_episodes">
+               <widget class="QCheckBox" name="enable_search_episodes">
                 <property name="text">
                  <string>Episodes</string>
                 </property>
@@ -236,7 +236,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QCheckBox" name="inp_enable_search_shows">
+               <widget class="QCheckBox" name="enable_search_podcasts">
                 <property name="text">
                  <string>Podcasts</string>
                 </property>
@@ -246,7 +246,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QCheckBox" name="inp_enable_search_audiobooks">
+               <widget class="QCheckBox" name="enable_search_audiobooks">
                 <property name="text">
                  <string>Audiobooks</string>
                 </property>
@@ -297,7 +297,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QLineEdit" name="inp_tmp_dl_root"/>
+               <widget class="QLineEdit" name="tmp_dl_root"/>
               </item>
               <item>
                <widget class="QPushButton" name="btn_download_tmp_browse">
@@ -569,7 +569,7 @@
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_236">
            <item>
-            <widget class="QCheckBox" name="inp_download_queue_show_waiting">
+            <widget class="QCheckBox" name="download_queue_show_waiting">
              <property name="text">
               <string>Show Waiting</string>
              </property>
@@ -579,7 +579,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="inp_download_queue_show_failed">
+            <widget class="QCheckBox" name="download_queue_show_failed">
              <property name="text">
               <string>Show Failed</string>
              </property>
@@ -589,7 +589,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="inp_download_queue_show_cancelled">
+            <widget class="QCheckBox" name="download_queue_show_cancelled">
              <property name="text">
               <string>Show Cancelled</string>
              </property>
@@ -599,7 +599,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="inp_download_queue_show_unavailable">
+            <widget class="QCheckBox" name="download_queue_show_unavailable">
              <property name="text">
               <string>Show Unavailable</string>
              </property>
@@ -609,7 +609,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="inp_download_queue_show_completed">
+            <widget class="QCheckBox" name="download_queue_show_completed">
              <property name="text">
               <string>Show Completed</string>
              </property>
@@ -660,42 +660,42 @@
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_76">
            <item>
-            <widget class="QSpinBox" name="inp_settings_scrollarea_value">
+            <widget class="QSpinBox" name="settings_scrollarea_value">
              <property name="maximum">
               <number>9999999</number>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="inp_settings_bookmark_accounts">
+            <widget class="QPushButton" name="settings_bookmark_accounts">
              <property name="text">
               <string>Accounts</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="inp_settings_bookmark_general">
+            <widget class="QPushButton" name="settings_bookmark_general">
              <property name="text">
               <string>General</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="inp_settings_bookmark_audio_downloads">
+            <widget class="QPushButton" name="settings_bookmark_audio_downloads">
              <property name="text">
               <string>Audio Downloads</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="inp_settings_bookmark_audio_metadata">
+            <widget class="QPushButton" name="settings_bookmark_audio_metadata">
              <property name="text">
               <string>Audio Metadata</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="inp_settings_bookmark_video_downloads">
+            <widget class="QPushButton" name="settings_bookmark_video_downloads">
              <property name="text">
               <string>Video Downloads</string>
              </property>
@@ -716,9 +716,9 @@
            <property name="geometry">
             <rect>
              <x>0</x>
-             <y>0</y>
+             <y>-3692</y>
              <width>627</width>
-             <height>3842</height>
+             <height>4061</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_16">
@@ -831,7 +831,7 @@
                  </property>
                  <layout class="QHBoxLayout" name="horizontalLayout_50">
                   <item>
-                   <widget class="QComboBox" name="inp_login_service">
+                   <widget class="QComboBox" name="login_service">
                     <property name="maximumSize">
                      <size>
                       <width>45</width>
@@ -848,7 +848,7 @@
                    </widget>
                   </item>
                   <item>
-                   <widget class="QLineEdit" name="inp_login_username">
+                   <widget class="QLineEdit" name="login_username">
                     <property name="sizePolicy">
                      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                       <horstretch>0</horstretch>
@@ -874,7 +874,7 @@
                    </widget>
                   </item>
                   <item>
-                   <widget class="QLineEdit" name="inp_login_password">
+                   <widget class="QLineEdit" name="login_password">
                     <property name="sizePolicy">
                      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                       <horstretch>0</horstretch>
@@ -935,7 +935,7 @@
               <property name="checkable">
                <bool>false</bool>
               </property>
-              <layout class="QVBoxLayout" name="verticalLayout_26">
+              <layout class="QVBoxLayout" name="verticalLayout_7">
                <item>
                 <widget class="QGroupBox" name="gb0_4">
                  <property name="title">
@@ -952,14 +952,14 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_114">
                      <item>
-                      <widget class="QLabel" name="lb_chunk_size_6">
+                      <widget class="QLabel" name="lb_download_chunk_size_6">
                        <property name="text">
                         <string>Language</string>
                        </property>
                       </widget>
                      </item>
                      <item>
-                      <widget class="QComboBox" name="inp_language">
+                      <widget class="QComboBox" name="language">
                        <property name="focusPolicy">
                         <enum>Qt::WheelFocus</enum>
                        </property>
@@ -982,7 +982,7 @@
                       </spacer>
                      </item>
                      <item>
-                      <widget class="QLabel" name="lb_chunk_size_7">
+                      <widget class="QLabel" name="lb_download_chunk_size_7">
                        <property name="text">
                         <string>Theme</string>
                        </property>
@@ -1016,7 +1016,7 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QLineEdit" name="inp_explicit_label"/>
+                      <widget class="QLineEdit" name="explicit_label"/>
                      </item>
                     </layout>
                    </widget>
@@ -1049,35 +1049,35 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_39">
                      <item>
-                      <widget class="QLabel" name="lb_chunk_size_5">
+                      <widget class="QLabel" name="lb_download_chunk_size_5">
                        <property name="text">
                         <string> Download Buttons</string>
                        </property>
                       </widget>
                      </item>
                      <item>
-                      <widget class="QCheckBox" name="inp_download_copy_btn">
+                      <widget class="QCheckBox" name="download_copy_btn">
                        <property name="text">
                         <string>Copy</string>
                        </property>
                       </widget>
                      </item>
                      <item>
-                      <widget class="QCheckBox" name="inp_download_open_btn">
+                      <widget class="QCheckBox" name="download_open_btn">
                        <property name="text">
                         <string>Open</string>
                        </property>
                       </widget>
                      </item>
                      <item>
-                      <widget class="QCheckBox" name="inp_download_locate_btn">
+                      <widget class="QCheckBox" name="download_locate_btn">
                        <property name="text">
                         <string>Locate</string>
                        </property>
                       </widget>
                      </item>
                      <item>
-                      <widget class="QCheckBox" name="inp_download_delete_btn">
+                      <widget class="QCheckBox" name="download_delete_btn">
                        <property name="text">
                         <string>Delete</string>
                        </property>
@@ -1118,7 +1118,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_113">
                      <item>
-                      <widget class="QCheckBox" name="inp_show_search_thumbnails">
+                      <widget class="QCheckBox" name="show_search_thumbnails">
                        <property name="toolTip">
                         <string/>
                        </property>
@@ -1153,7 +1153,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_116">
                      <item>
-                      <widget class="QCheckBox" name="inp_show_download_thumbnails">
+                      <widget class="QCheckBox" name="show_download_thumbnails">
                        <property name="toolTip">
                         <string/>
                        </property>
@@ -1203,7 +1203,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_108">
                      <item>
-                      <widget class="QLabel" name="lb_search_thumb_height">
+                      <widget class="QLabel" name="lb_thumbnail_size">
                        <property name="text">
                         <string>Thumbnail Size</string>
                        </property>
@@ -1223,7 +1223,7 @@
                       </spacer>
                      </item>
                      <item>
-                      <widget class="QSpinBox" name="inp_search_thumb_height">
+                      <widget class="QSpinBox" name="thumbnail_size">
                        <property name="minimumSize">
                         <size>
                          <width>0</width>
@@ -1268,7 +1268,7 @@
                       </spacer>
                      </item>
                      <item>
-                      <widget class="QSpinBox" name="inp_max_search_results">
+                      <widget class="QSpinBox" name="max_search_results">
                        <property name="minimumSize">
                         <size>
                          <width>80</width>
@@ -1305,7 +1305,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_20">
                      <item>
-                      <widget class="QCheckBox" name="inp_disable_bulk_popup">
+                      <widget class="QCheckBox" name="disable_download_popups">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -1340,7 +1340,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_81">
                      <item>
-                      <widget class="QCheckBox" name="inp_windows_explorer_thumbnails">
+                      <widget class="QCheckBox" name="windows_10_explorer_thumbnails">
                        <property name="toolTip">
                         <string/>
                        </property>
@@ -1387,7 +1387,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_23">
                      <item>
-                      <widget class="QCheckBox" name="inp_mirror_spotify_playback">
+                      <widget class="QCheckBox" name="mirror_spotify_playback">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -1419,7 +1419,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_82">
                      <item>
-                      <widget class="QCheckBox" name="inp_close_to_tray">
+                      <widget class="QCheckBox" name="close_to_tray">
                        <property name="toolTip">
                         <string/>
                        </property>
@@ -1451,14 +1451,14 @@
                 </widget>
                </item>
                <item>
-                <widget class="QGroupBox" name="gb0_6">
+                <widget class="QGroupBox" name="gb1_4">
                  <property name="title">
                   <string/>
                  </property>
                  <property name="flat">
                   <bool>true</bool>
                  </property>
-                 <layout class="QHBoxLayout" name="horizontalLayout_100">
+                 <layout class="QHBoxLayout" name="horizontalLayout_32">
                   <item>
                    <widget class="QGroupBox" name="group_playlist_cfg_m3u_7">
                     <property name="title">
@@ -1466,7 +1466,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_80">
                      <item>
-                      <widget class="QCheckBox" name="inp_check_for_updates">
+                      <widget class="QCheckBox" name="check_for_updates">
                        <property name="toolTip">
                         <string/>
                        </property>
@@ -1495,17 +1495,410 @@
                    </widget>
                   </item>
                   <item>
-                   <spacer name="horizontalSpacer_40">
-                    <property name="orientation">
-                     <enum>Qt::Horizontal</enum>
+                   <widget class="QGroupBox" name="group_lyrics_cfg_only_synced_3">
+                    <property name="title">
+                     <string/>
                     </property>
-                    <property name="sizeHint" stdset="0">
-                     <size>
-                      <width>40</width>
-                      <height>20</height>
-                     </size>
+                    <layout class="QHBoxLayout" name="horizontalLayout_48">
+                     <item>
+                      <widget class="QLabel" name="lb_illegal_character_replacement">
+                       <property name="text">
+                        <string>Illegal Character Replacement</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QLineEdit" name="illegal_character_replacement"/>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="gb0_6">
+                 <property name="title">
+                  <string/>
+                 </property>
+                 <property name="flat">
+                  <bool>true</bool>
+                 </property>
+                 <layout class="QHBoxLayout" name="horizontalLayout_12">
+                  <item>
+                   <widget class="QGroupBox" name="groupBox_132">
+                    <property name="title">
+                     <string/>
                     </property>
-                   </spacer>
+                    <layout class="QHBoxLayout" name="horizontalLayout_241">
+                     <item>
+                      <widget class="QCheckBox" name="raw_media_download">
+                       <property name="toolTip">
+                        <string/>
+                       </property>
+                       <property name="layoutDirection">
+                        <enum>Qt::RightToLeft</enum>
+                       </property>
+                       <property name="text">
+                        <string>Raw Media Download</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <spacer name="horizontalSpacer_50">
+                       <property name="orientation">
+                        <enum>Qt::Horizontal</enum>
+                       </property>
+                       <property name="sizeHint" stdset="0">
+                        <size>
+                         <width>40</width>
+                         <height>20</height>
+                        </size>
+                       </property>
+                      </spacer>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QGroupBox" name="groupBox_25">
+                    <property name="title">
+                     <string/>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_31">
+                     <item>
+                      <widget class="QCheckBox" name="rotate_active_account_number">
+                       <property name="layoutDirection">
+                        <enum>Qt::RightToLeft</enum>
+                       </property>
+                       <property name="text">
+                        <string>Rotate Active Account</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <spacer name="horizontalSpacer_17">
+                       <property name="orientation">
+                        <enum>Qt::Horizontal</enum>
+                       </property>
+                       <property name="sizeHint" stdset="0">
+                        <size>
+                         <width>40</width>
+                         <height>20</height>
+                        </size>
+                       </property>
+                      </spacer>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="gb1_10">
+                 <property name="title">
+                  <string/>
+                 </property>
+                 <property name="flat">
+                  <bool>true</bool>
+                 </property>
+                 <layout class="QHBoxLayout" name="horizontalLayout_240">
+                  <item>
+                   <widget class="QGroupBox" name="groupBox_128">
+                    <property name="title">
+                     <string/>
+                    </property>
+                    <property name="flat">
+                     <bool>false</bool>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_235">
+                     <item>
+                      <widget class="QLabel" name="lb_download_chunk_size_3">
+                       <property name="text">
+                        <string>Download Delay (s)</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <spacer name="horizontalSpacer_46">
+                       <property name="orientation">
+                        <enum>Qt::Horizontal</enum>
+                       </property>
+                       <property name="sizeHint" stdset="0">
+                        <size>
+                         <width>40</width>
+                         <height>20</height>
+                        </size>
+                       </property>
+                      </spacer>
+                     </item>
+                     <item>
+                      <widget class="QSpinBox" name="download_delay">
+                       <property name="minimumSize">
+                        <size>
+                         <width>80</width>
+                         <height>0</height>
+                        </size>
+                       </property>
+                       <property name="minimum">
+                        <number>1</number>
+                       </property>
+                       <property name="maximum">
+                        <number>999999</number>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QGroupBox" name="groupBox_8">
+                    <property name="title">
+                     <string/>
+                    </property>
+                    <property name="flat">
+                     <bool>false</bool>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_19">
+                     <item>
+                      <widget class="QLabel" name="lb_download_chunk_size">
+                       <property name="text">
+                        <string> Download Chunk Size (b)</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <spacer name="horizontalSpacer_2">
+                       <property name="orientation">
+                        <enum>Qt::Horizontal</enum>
+                       </property>
+                       <property name="sizeHint" stdset="0">
+                        <size>
+                         <width>40</width>
+                         <height>20</height>
+                        </size>
+                       </property>
+                      </spacer>
+                     </item>
+                     <item>
+                      <widget class="QSpinBox" name="download_chunk_size">
+                       <property name="minimumSize">
+                        <size>
+                         <width>0</width>
+                         <height>0</height>
+                        </size>
+                       </property>
+                       <property name="minimum">
+                        <number>10000</number>
+                       </property>
+                       <property name="maximum">
+                        <number>10000000</number>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="gb1_11">
+                 <property name="title">
+                  <string/>
+                 </property>
+                 <property name="flat">
+                  <bool>true</bool>
+                 </property>
+                 <layout class="QHBoxLayout" name="horizontalLayout_231">
+                  <item>
+                   <widget class="QGroupBox" name="groupBox_130">
+                    <property name="title">
+                     <string/>
+                    </property>
+                    <property name="flat">
+                     <bool>false</bool>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_238">
+                     <item>
+                      <widget class="QLabel" name="lb_download_chunk_size_8">
+                       <property name="text">
+                        <string>Maximum Queue Workers</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <spacer name="horizontalSpacer_48">
+                       <property name="orientation">
+                        <enum>Qt::Horizontal</enum>
+                       </property>
+                       <property name="sizeHint" stdset="0">
+                        <size>
+                         <width>40</width>
+                         <height>20</height>
+                        </size>
+                       </property>
+                      </spacer>
+                     </item>
+                     <item>
+                      <widget class="QSpinBox" name="maximum_queue_workers">
+                       <property name="minimumSize">
+                        <size>
+                         <width>80</width>
+                         <height>0</height>
+                        </size>
+                       </property>
+                       <property name="minimum">
+                        <number>1</number>
+                       </property>
+                       <property name="maximum">
+                        <number>999999</number>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QGroupBox" name="groupBox_129">
+                    <property name="title">
+                     <string/>
+                    </property>
+                    <property name="flat">
+                     <bool>false</bool>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_237">
+                     <item>
+                      <widget class="QLabel" name="lb_download_chunk_size_4">
+                       <property name="text">
+                        <string>Maximum Download Workers</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <spacer name="horizontalSpacer_47">
+                       <property name="orientation">
+                        <enum>Qt::Horizontal</enum>
+                       </property>
+                       <property name="sizeHint" stdset="0">
+                        <size>
+                         <width>40</width>
+                         <height>20</height>
+                        </size>
+                       </property>
+                      </spacer>
+                     </item>
+                     <item>
+                      <widget class="QSpinBox" name="maximum_download_workers">
+                       <property name="minimumSize">
+                        <size>
+                         <width>80</width>
+                         <height>0</height>
+                        </size>
+                       </property>
+                       <property name="minimum">
+                        <number>1</number>
+                       </property>
+                       <property name="maximum">
+                        <number>999999</number>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="gb1_14">
+                 <property name="title">
+                  <string/>
+                 </property>
+                 <property name="flat">
+                  <bool>true</bool>
+                 </property>
+                 <layout class="QHBoxLayout" name="horizontalLayout_242">
+                  <item>
+                   <widget class="QGroupBox" name="groupBox_26">
+                    <property name="title">
+                     <string/>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_41">
+                     <item>
+                      <widget class="QCheckBox" name="enable_retry_worker">
+                       <property name="layoutDirection">
+                        <enum>Qt::RightToLeft</enum>
+                       </property>
+                       <property name="text">
+                        <string>Enable Retry Worker</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <spacer name="horizontalSpacer_15">
+                       <property name="orientation">
+                        <enum>Qt::Horizontal</enum>
+                       </property>
+                       <property name="sizeHint" stdset="0">
+                        <size>
+                         <width>40</width>
+                         <height>20</height>
+                        </size>
+                       </property>
+                      </spacer>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QGroupBox" name="groupBox_133">
+                    <property name="title">
+                     <string/>
+                    </property>
+                    <property name="flat">
+                     <bool>false</bool>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_243">
+                     <item>
+                      <widget class="QLabel" name="lb_download_chunk_size_9">
+                       <property name="text">
+                        <string>Retry Delay (m)</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <spacer name="horizontalSpacer_52">
+                       <property name="orientation">
+                        <enum>Qt::Horizontal</enum>
+                       </property>
+                       <property name="sizeHint" stdset="0">
+                        <size>
+                         <width>40</width>
+                         <height>20</height>
+                        </size>
+                       </property>
+                      </spacer>
+                     </item>
+                     <item>
+                      <widget class="QSpinBox" name="retry_worker_delay">
+                       <property name="minimumSize">
+                        <size>
+                         <width>80</width>
+                         <height>0</height>
+                        </size>
+                       </property>
+                       <property name="minimum">
+                        <number>1</number>
+                       </property>
+                       <property name="maximum">
+                        <number>999999</number>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
                   </item>
                  </layout>
                 </widget>
@@ -1541,14 +1934,14 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_265">
                      <item>
-                      <widget class="QLabel" name="lb_download_root">
+                      <widget class="QLabel" name="lb_audio_download_path">
                        <property name="text">
                         <string>Audio Download Path</string>
                        </property>
                       </widget>
                      </item>
                      <item>
-                      <widget class="QLineEdit" name="inp_download_root">
+                      <widget class="QLineEdit" name="audio_download_path">
                        <property name="sizePolicy">
                         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                          <horstretch>0</horstretch>
@@ -1564,7 +1957,7 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QPushButton" name="btn_download_root_browse">
+                      <widget class="QPushButton" name="btn_audio_download_path_browse">
                        <property name="text">
                         <string/>
                        </property>
@@ -1592,14 +1985,14 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_26">
                      <item>
-                      <widget class="QLabel" name="lm_media_format">
+                      <widget class="QLabel" name="lm_track_file_format">
                        <property name="text">
                         <string> Track Format</string>
                        </property>
                       </widget>
                      </item>
                      <item>
-                      <widget class="QLineEdit" name="inp_media_format"/>
+                      <widget class="QLineEdit" name="track_file_format"/>
                      </item>
                     </layout>
                    </widget>
@@ -1621,7 +2014,7 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QLineEdit" name="inp_track_formatter"/>
+                      <widget class="QLineEdit" name="track_path_formatter"/>
                      </item>
                     </layout>
                    </widget>
@@ -1650,12 +2043,12 @@
                         <string/>
                        </property>
                        <property name="text">
-                        <string> Episode Format</string>
+                        <string> Podcast Format</string>
                        </property>
                       </widget>
                      </item>
                      <item>
-                      <widget class="QLineEdit" name="inp_podcast_media_format"/>
+                      <widget class="QLineEdit" name="podcast_file_format"/>
                      </item>
                     </layout>
                    </widget>
@@ -1675,12 +2068,12 @@
                         <string/>
                        </property>
                        <property name="text">
-                        <string>Episode Path</string>
+                        <string>Podcast Path</string>
                        </property>
                       </widget>
                      </item>
                      <item>
-                      <widget class="QLineEdit" name="inp_podcast_path_formatter"/>
+                      <widget class="QLineEdit" name="podcast_path_formatter"/>
                      </item>
                     </layout>
                    </widget>
@@ -1704,7 +2097,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_45">
                      <item>
-                      <widget class="QCheckBox" name="inp_use_playlist_path">
+                      <widget class="QCheckBox" name="use_playlist_path">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -1756,7 +2149,7 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QLineEdit" name="inp_playlist_path_formatter"/>
+                      <widget class="QLineEdit" name="playlist_path_formatter"/>
                      </item>
                     </layout>
                    </widget>
@@ -1783,7 +2176,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_42">
                      <item>
-                      <widget class="QCheckBox" name="inp_create_playlists">
+                      <widget class="QCheckBox" name="create_m3u_file">
                        <property name="enabled">
                         <bool>true</bool>
                        </property>
@@ -1818,7 +2211,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_43">
                      <item>
-                      <widget class="QLabel" name="lb_m3u_name_formatter">
+                      <widget class="QLabel" name="lb_m3u_path_formatter">
                        <property name="enabled">
                         <bool>true</bool>
                        </property>
@@ -1828,7 +2221,7 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QLineEdit" name="inp_m3u_name_formatter">
+                      <widget class="QLineEdit" name="m3u_path_formatter">
                        <property name="enabled">
                         <bool>true</bool>
                        </property>
@@ -1859,7 +2252,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_52">
                      <item>
-                      <widget class="QLabel" name="lb_ext_seperator">
+                      <widget class="QLabel" name="lb_extinf_separator">
                        <property name="enabled">
                         <bool>true</bool>
                        </property>
@@ -1869,7 +2262,7 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QLineEdit" name="inp_ext_seperator">
+                      <widget class="QLineEdit" name="extinf_separator">
                        <property name="enabled">
                         <bool>true</bool>
                        </property>
@@ -1885,7 +2278,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_51">
                      <item>
-                      <widget class="QLabel" name="lb_ext_path">
+                      <widget class="QLabel" name="lb_extinf_label">
                        <property name="enabled">
                         <bool>true</bool>
                        </property>
@@ -1895,7 +2288,7 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QLineEdit" name="inp_ext_path">
+                      <widget class="QLineEdit" name="extinf_label">
                        <property name="enabled">
                         <bool>true</bool>
                        </property>
@@ -1933,7 +2326,7 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QLineEdit" name="inp_file_bitrate"/>
+                      <widget class="QLineEdit" name="file_bitrate"/>
                      </item>
                     </layout>
                    </widget>
@@ -1968,7 +2361,7 @@
                       </spacer>
                      </item>
                      <item>
-                      <widget class="QSpinBox" name="inp_file_hertz">
+                      <widget class="QSpinBox" name="file_hertz">
                        <property name="minimumSize">
                         <size>
                          <width>0</width>
@@ -2008,7 +2401,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_46">
                      <item>
-                      <widget class="QCheckBox" name="inp_save_album_cover">
+                      <widget class="QCheckBox" name="save_album_cover">
                        <property name="toolTip">
                         <string>This feature requires a premium account.</string>
                        </property>
@@ -2050,7 +2443,7 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QLineEdit" name="inp_album_cover_format"/>
+                      <widget class="QLineEdit" name="album_cover_format"/>
                      </item>
                     </layout>
                    </widget>
@@ -2068,25 +2461,6 @@
                  </property>
                  <layout class="QHBoxLayout" name="horizontalLayout_13">
                   <item>
-                   <widget class="QGroupBox" name="group_lyrics_cfg_only_synced_3">
-                    <property name="title">
-                     <string/>
-                    </property>
-                    <layout class="QHBoxLayout" name="horizontalLayout_48">
-                     <item>
-                      <widget class="QLabel" name="lb_illegal_character_replacement">
-                       <property name="text">
-                        <string>Illegal Character Replacement</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QLineEdit" name="inp_illegal_character_replacement"/>
-                     </item>
-                    </layout>
-                   </widget>
-                  </item>
-                  <item>
                    <widget class="QGroupBox" name="group_lyrics_cfg_lyricsenable">
                     <property name="title">
                      <string/>
@@ -2096,7 +2470,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_33">
                      <item>
-                      <widget class="QCheckBox" name="inp_enable_lyrics">
+                      <widget class="QCheckBox" name="download_lyrics">
                        <property name="toolTip">
                         <string>This feature requires a premium account.</string>
                        </property>
@@ -2124,18 +2498,6 @@
                     </layout>
                    </widget>
                   </item>
-                 </layout>
-                </widget>
-               </item>
-               <item>
-                <widget class="QGroupBox" name="gb1_3">
-                 <property name="title">
-                  <string/>
-                 </property>
-                 <property name="flat">
-                  <bool>true</bool>
-                 </property>
-                 <layout class="QHBoxLayout" name="horizontalLayout_84">
                   <item>
                    <widget class="QGroupBox" name="group_lyrics_cfg_only_synced">
                     <property name="title">
@@ -2143,7 +2505,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_34">
                      <item>
-                      <widget class="QCheckBox" name="inp_only_synced_lyrics">
+                      <widget class="QCheckBox" name="only_download_synced_lyrics">
                        <property name="toolTip">
                         <string>This feature requires a premium account.</string>
                        </property>
@@ -2171,6 +2533,18 @@
                     </layout>
                    </widget>
                   </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="gb1_3">
+                 <property name="title">
+                  <string/>
+                 </property>
+                 <property name="flat">
+                  <bool>true</bool>
+                 </property>
+                 <layout class="QHBoxLayout" name="horizontalLayout_84">
                   <item>
                    <widget class="QGroupBox" name="group_playlist_cfg_m3u_11">
                     <property name="title">
@@ -2178,7 +2552,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_86">
                      <item>
-                      <widget class="QCheckBox" name="inp_use_lrc_file">
+                      <widget class="QCheckBox" name="save_lrc_file">
                        <property name="toolTip">
                         <string>This feature requires a premium account.</string>
                        </property>
@@ -2206,413 +2580,14 @@
                     </layout>
                    </widget>
                   </item>
-                 </layout>
-                </widget>
-               </item>
-               <item>
-                <widget class="QGroupBox" name="gb1_4">
-                 <property name="title">
-                  <string/>
-                 </property>
-                 <property name="flat">
-                  <bool>true</bool>
-                 </property>
-                 <layout class="QHBoxLayout" name="horizontalLayout_32">
                   <item>
-                   <widget class="QGroupBox" name="groupBox_25">
-                    <property name="title">
-                     <string/>
-                    </property>
-                    <layout class="QHBoxLayout" name="horizontalLayout_31">
-                     <item>
-                      <widget class="QCheckBox" name="inp_rotate_acc_sn">
-                       <property name="layoutDirection">
-                        <enum>Qt::RightToLeft</enum>
-                       </property>
-                       <property name="text">
-                        <string>Rotate Active Account</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <spacer name="horizontalSpacer_9">
-                       <property name="orientation">
-                        <enum>Qt::Horizontal</enum>
-                       </property>
-                       <property name="sizeHint" stdset="0">
-                        <size>
-                         <width>40</width>
-                         <height>20</height>
-                        </size>
-                       </property>
-                      </spacer>
-                     </item>
-                    </layout>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QGroupBox" name="groupBox_132">
-                    <property name="title">
-                     <string/>
-                    </property>
-                    <layout class="QHBoxLayout" name="horizontalLayout_241">
-                     <item>
-                      <widget class="QCheckBox" name="inp_raw_download">
-                       <property name="toolTip">
-                        <string/>
-                       </property>
-                       <property name="layoutDirection">
-                        <enum>Qt::RightToLeft</enum>
-                       </property>
-                       <property name="text">
-                        <string>Raw Media Download</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <spacer name="horizontalSpacer_50">
-                       <property name="orientation">
-                        <enum>Qt::Horizontal</enum>
-                       </property>
-                       <property name="sizeHint" stdset="0">
-                        <size>
-                         <width>40</width>
-                         <height>20</height>
-                        </size>
-                       </property>
-                      </spacer>
-                     </item>
-                    </layout>
-                   </widget>
-                  </item>
-                 </layout>
-                </widget>
-               </item>
-               <item>
-                <widget class="QGroupBox" name="gb1_10">
-                 <property name="title">
-                  <string/>
-                 </property>
-                 <property name="flat">
-                  <bool>true</bool>
-                 </property>
-                 <layout class="QHBoxLayout" name="horizontalLayout_240">
-                  <item>
-                   <widget class="QGroupBox" name="groupBox_128">
-                    <property name="title">
-                     <string/>
-                    </property>
-                    <property name="flat">
-                     <bool>false</bool>
-                    </property>
-                    <layout class="QHBoxLayout" name="horizontalLayout_235">
-                     <item>
-                      <widget class="QLabel" name="lb_chunk_size_3">
-                       <property name="text">
-                        <string>Download Delay (s)</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <spacer name="horizontalSpacer_46">
-                       <property name="orientation">
-                        <enum>Qt::Horizontal</enum>
-                       </property>
-                       <property name="sizeHint" stdset="0">
-                        <size>
-                         <width>40</width>
-                         <height>20</height>
-                        </size>
-                       </property>
-                      </spacer>
-                     </item>
-                     <item>
-                      <widget class="QSpinBox" name="inp_download_delay">
-                       <property name="minimumSize">
-                        <size>
-                         <width>80</width>
-                         <height>0</height>
-                        </size>
-                       </property>
-                       <property name="minimum">
-                        <number>1</number>
-                       </property>
-                       <property name="maximum">
-                        <number>999999</number>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QGroupBox" name="groupBox_8">
-                    <property name="title">
-                     <string/>
-                    </property>
-                    <property name="flat">
-                     <bool>false</bool>
-                    </property>
-                    <layout class="QHBoxLayout" name="horizontalLayout_19">
-                     <item>
-                      <widget class="QLabel" name="lb_chunk_size">
-                       <property name="text">
-                        <string> Download Chunk Size (b)</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <spacer name="horizontalSpacer_2">
-                       <property name="orientation">
-                        <enum>Qt::Horizontal</enum>
-                       </property>
-                       <property name="sizeHint" stdset="0">
-                        <size>
-                         <width>40</width>
-                         <height>20</height>
-                        </size>
-                       </property>
-                      </spacer>
-                     </item>
-                     <item>
-                      <widget class="QSpinBox" name="inp_chunk_size">
-                       <property name="minimumSize">
-                        <size>
-                         <width>0</width>
-                         <height>0</height>
-                        </size>
-                       </property>
-                       <property name="minimum">
-                        <number>10000</number>
-                       </property>
-                       <property name="maximum">
-                        <number>10000000</number>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </widget>
-                  </item>
-                 </layout>
-                </widget>
-               </item>
-               <item>
-                <widget class="QGroupBox" name="gb1_11">
-                 <property name="title">
-                  <string/>
-                 </property>
-                 <property name="flat">
-                  <bool>true</bool>
-                 </property>
-                 <layout class="QHBoxLayout" name="horizontalLayout_231">
-                  <item>
-                   <widget class="QGroupBox" name="groupBox_130">
-                    <property name="title">
-                     <string/>
-                    </property>
-                    <property name="flat">
-                     <bool>false</bool>
-                    </property>
-                    <layout class="QHBoxLayout" name="horizontalLayout_238">
-                     <item>
-                      <widget class="QLabel" name="lb_chunk_size_8">
-                       <property name="text">
-                        <string>Maximum Queue Workers</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <spacer name="horizontalSpacer_48">
-                       <property name="orientation">
-                        <enum>Qt::Horizontal</enum>
-                       </property>
-                       <property name="sizeHint" stdset="0">
-                        <size>
-                         <width>40</width>
-                         <height>20</height>
-                        </size>
-                       </property>
-                      </spacer>
-                     </item>
-                     <item>
-                      <widget class="QSpinBox" name="inp_maximum_queue_workers">
-                       <property name="minimumSize">
-                        <size>
-                         <width>80</width>
-                         <height>0</height>
-                        </size>
-                       </property>
-                       <property name="minimum">
-                        <number>1</number>
-                       </property>
-                       <property name="maximum">
-                        <number>999999</number>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QGroupBox" name="groupBox_129">
-                    <property name="title">
-                     <string/>
-                    </property>
-                    <property name="flat">
-                     <bool>false</bool>
-                    </property>
-                    <layout class="QHBoxLayout" name="horizontalLayout_237">
-                     <item>
-                      <widget class="QLabel" name="lb_chunk_size_4">
-                       <property name="text">
-                        <string>Maximum Download Workers</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <spacer name="horizontalSpacer_47">
-                       <property name="orientation">
-                        <enum>Qt::Horizontal</enum>
-                       </property>
-                       <property name="sizeHint" stdset="0">
-                        <size>
-                         <width>40</width>
-                         <height>20</height>
-                        </size>
-                       </property>
-                      </spacer>
-                     </item>
-                     <item>
-                      <widget class="QSpinBox" name="inp_maximum_download_workers">
-                       <property name="minimumSize">
-                        <size>
-                         <width>80</width>
-                         <height>0</height>
-                        </size>
-                       </property>
-                       <property name="minimum">
-                        <number>1</number>
-                       </property>
-                       <property name="maximum">
-                        <number>999999</number>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </widget>
-                  </item>
-                 </layout>
-                </widget>
-               </item>
-               <item>
-                <widget class="QGroupBox" name="gb1_14">
-                 <property name="title">
-                  <string/>
-                 </property>
-                 <property name="flat">
-                  <bool>true</bool>
-                 </property>
-                 <layout class="QHBoxLayout" name="horizontalLayout_242">
-                  <item>
-                   <widget class="QGroupBox" name="groupBox_26">
-                    <property name="title">
-                     <string/>
-                    </property>
-                    <layout class="QHBoxLayout" name="horizontalLayout_41">
-                     <item>
-                      <widget class="QCheckBox" name="inp_enable_retry_worker">
-                       <property name="layoutDirection">
-                        <enum>Qt::RightToLeft</enum>
-                       </property>
-                       <property name="text">
-                        <string>Enable Retry Worker</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <spacer name="horizontalSpacer_15">
-                       <property name="orientation">
-                        <enum>Qt::Horizontal</enum>
-                       </property>
-                       <property name="sizeHint" stdset="0">
-                        <size>
-                         <width>40</width>
-                         <height>20</height>
-                        </size>
-                       </property>
-                      </spacer>
-                     </item>
-                    </layout>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QGroupBox" name="groupBox_133">
-                    <property name="title">
-                     <string/>
-                    </property>
-                    <property name="flat">
-                     <bool>false</bool>
-                    </property>
-                    <layout class="QHBoxLayout" name="horizontalLayout_243">
-                     <item>
-                      <widget class="QLabel" name="lb_chunk_size_9">
-                       <property name="text">
-                        <string>Retry Delay (m)</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <spacer name="horizontalSpacer_52">
-                       <property name="orientation">
-                        <enum>Qt::Horizontal</enum>
-                       </property>
-                       <property name="sizeHint" stdset="0">
-                        <size>
-                         <width>40</width>
-                         <height>20</height>
-                        </size>
-                       </property>
-                      </spacer>
-                     </item>
-                     <item>
-                      <widget class="QSpinBox" name="inp_retry_worker_delay">
-                       <property name="minimumSize">
-                        <size>
-                         <width>80</width>
-                         <height>0</height>
-                        </size>
-                       </property>
-                       <property name="minimum">
-                        <number>1</number>
-                       </property>
-                       <property name="maximum">
-                        <number>999999</number>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </widget>
-                  </item>
-                 </layout>
-                </widget>
-               </item>
-               <item>
-                <widget class="QGroupBox" name="gb1_12">
-                 <property name="title">
-                  <string/>
-                 </property>
-                 <property name="flat">
-                  <bool>true</bool>
-                 </property>
-                 <layout class="QHBoxLayout" name="horizontalLayout_232">
-                  <item>
-                   <widget class="QGroupBox" name="inp_translate_file_path_2">
+                   <widget class="QGroupBox" name="translate_file_path_2">
                     <property name="title">
                      <string/>
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_79">
                      <item>
-                      <widget class="QCheckBox" name="inp_translate_file_path">
+                      <widget class="QCheckBox" name="translate_file_path">
                        <property name="toolTip">
                         <string/>
                        </property>
@@ -2639,19 +2614,6 @@
                      </item>
                     </layout>
                    </widget>
-                  </item>
-                  <item>
-                   <spacer name="horizontalSpacer_4">
-                    <property name="orientation">
-                     <enum>Qt::Horizontal</enum>
-                    </property>
-                    <property name="sizeHint" stdset="0">
-                     <size>
-                      <width>40</width>
-                      <height>20</height>
-                     </size>
-                    </property>
-                   </spacer>
                   </item>
                  </layout>
                 </widget>
@@ -2694,7 +2656,7 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QLineEdit" name="inp_metadata_seperator"/>
+                      <widget class="QLineEdit" name="metadata_separator"/>
                      </item>
                     </layout>
                    </widget>
@@ -2706,7 +2668,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_112">
                      <item>
-                      <widget class="QCheckBox" name="inp_overwrite_existing_metadata">
+                      <widget class="QCheckBox" name="overwrite_existing_metadata">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -2750,7 +2712,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_110">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_branding">
+                      <widget class="QCheckBox" name="embed_branding">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -2782,7 +2744,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_132">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_cover">
+                      <widget class="QCheckBox" name="embed_cover">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -2826,7 +2788,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_128">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_artist">
+                      <widget class="QCheckBox" name="embed_artist">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -2858,7 +2820,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_129">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_album">
+                      <widget class="QCheckBox" name="embed_album">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -2902,7 +2864,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_131">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_albumartist">
+                      <widget class="QCheckBox" name="embed_albumartist">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -2934,7 +2896,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_111">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_name">
+                      <widget class="QCheckBox" name="embed_name">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -2978,7 +2940,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_115">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_year">
+                      <widget class="QCheckBox" name="embed_year">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -3010,7 +2972,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_125">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_discnumber">
+                      <widget class="QCheckBox" name="embed_discnumber">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -3054,7 +3016,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_126">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_tracknumber">
+                      <widget class="QCheckBox" name="embed_tracknumber">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -3086,7 +3048,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_140">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_genre">
+                      <widget class="QCheckBox" name="embed_genre">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -3130,7 +3092,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_141">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_performers">
+                      <widget class="QCheckBox" name="embed_performers">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -3162,7 +3124,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_137">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_producers">
+                      <widget class="QCheckBox" name="embed_producers">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -3206,7 +3168,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_138">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_writers">
+                      <widget class="QCheckBox" name="embed_writers">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -3238,7 +3200,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_134">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_label">
+                      <widget class="QCheckBox" name="embed_label">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -3282,7 +3244,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_135">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_copyright">
+                      <widget class="QCheckBox" name="embed_copyright">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -3314,7 +3276,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_146">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_description">
+                      <widget class="QCheckBox" name="embed_description">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -3358,7 +3320,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_147">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_language">
+                      <widget class="QCheckBox" name="embed_language">
                        <property name="toolTip">
                         <string>This feature requires a premium account.</string>
                        </property>
@@ -3393,7 +3355,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_121">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_url">
+                      <widget class="QCheckBox" name="embed_url">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -3437,7 +3399,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_151">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_key">
+                      <widget class="QCheckBox" name="embed_key">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -3469,7 +3431,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_143">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_isrc">
+                      <widget class="QCheckBox" name="embed_isrc">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -3513,7 +3475,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_144">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_length">
+                      <widget class="QCheckBox" name="embed_length">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -3545,7 +3507,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_156">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_bpm">
+                      <widget class="QCheckBox" name="embed_bpm">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -3589,7 +3551,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_154">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_compilation">
+                      <widget class="QCheckBox" name="embed_compilation">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -3621,7 +3583,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_120">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_lyrics">
+                      <widget class="QCheckBox" name="embed_lyrics">
                        <property name="toolTip">
                         <string>This feature requires a premium account.</string>
                        </property>
@@ -3668,7 +3630,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_149">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_explicit">
+                      <widget class="QCheckBox" name="embed_explicit">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -3700,7 +3662,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_163">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_upc">
+                      <widget class="QCheckBox" name="embed_upc">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -3744,7 +3706,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_150">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_service_id">
+                      <widget class="QCheckBox" name="embed_service_id">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -3776,7 +3738,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_152">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_timesignature">
+                      <widget class="QCheckBox" name="embed_timesignature">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -3820,7 +3782,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_157">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_acousticness">
+                      <widget class="QCheckBox" name="embed_acousticness">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -3852,7 +3814,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_153">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_danceability">
+                      <widget class="QCheckBox" name="embed_danceability">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -3896,7 +3858,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_158">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_energy">
+                      <widget class="QCheckBox" name="embed_energy">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -3928,7 +3890,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_162">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_instrumentalness">
+                      <widget class="QCheckBox" name="embed_instrumentalness">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -3972,7 +3934,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_155">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_liveness">
+                      <widget class="QCheckBox" name="embed_liveness">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -4004,7 +3966,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_159">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_loudness">
+                      <widget class="QCheckBox" name="embed_loudness">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -4048,7 +4010,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_160">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_speechiness">
+                      <widget class="QCheckBox" name="embed_speechiness">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -4080,7 +4042,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_161">
                      <item>
-                      <widget class="QCheckBox" name="inp_embed_valence">
+                      <widget class="QCheckBox" name="embed_valence">
                        <property name="layoutDirection">
                         <enum>Qt::RightToLeft</enum>
                        </property>
@@ -4119,7 +4081,7 @@
               <property name="title">
                <string>Video Downloads</string>
               </property>
-              <layout class="QVBoxLayout" name="verticalLayout_13">
+              <layout class="QVBoxLayout" name="verticalLayout_6">
                <item>
                 <widget class="QGroupBox" name="gb3_0">
                  <property name="title">
@@ -4130,20 +4092,20 @@
                  </property>
                  <layout class="QVBoxLayout" name="verticalLayout_5">
                   <item>
-                   <widget class="QGroupBox" name="groupbox_generic_download_root">
+                   <widget class="QGroupBox" name="groupbox_generic_audio_download_path">
                     <property name="title">
                      <string/>
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_7">
                      <item>
-                      <widget class="QLabel" name="lb_download_root_2">
+                      <widget class="QLabel" name="lb_audio_download_path_2">
                        <property name="text">
                         <string>Video Download Path</string>
                        </property>
                       </widget>
                      </item>
                      <item>
-                      <widget class="QLineEdit" name="inp_generic_download_root">
+                      <widget class="QLineEdit" name="video_download_path">
                        <property name="sizePolicy">
                         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                          <horstretch>0</horstretch>
@@ -4159,11 +4121,117 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QPushButton" name="btn_generic_download_root_browse">
+                      <widget class="QPushButton" name="btn_generic_audio_download_path_browse">
                        <property name="text">
                         <string/>
                        </property>
                       </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="gb3_2">
+                 <property name="title">
+                  <string/>
+                 </property>
+                 <property name="flat">
+                  <bool>true</bool>
+                 </property>
+                 <layout class="QHBoxLayout" name="horizontalLayout_10">
+                  <item>
+                   <widget class="QGroupBox" name="groupBox_33">
+                    <property name="title">
+                     <string/>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_49">
+                     <item>
+                      <widget class="QLabel" name="lm_track_file_format_4">
+                       <property name="text">
+                        <string>Movie Format</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QLineEdit" name="movie_file_format"/>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QGroupBox" name="groupBox_11">
+                    <property name="title">
+                     <string/>
+                    </property>
+                    <property name="flat">
+                     <bool>false</bool>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_53">
+                     <item>
+                      <widget class="QLabel" name="lb_track_formatter_5">
+                       <property name="text">
+                        <string>Movie Path</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QLineEdit" name="movie_path_formatter"/>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="gb3_3">
+                 <property name="title">
+                  <string/>
+                 </property>
+                 <property name="flat">
+                  <bool>true</bool>
+                 </property>
+                 <layout class="QHBoxLayout" name="horizontalLayout_8">
+                  <item>
+                   <widget class="QGroupBox" name="groupBox_30">
+                    <property name="title">
+                     <string/>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_27">
+                     <item>
+                      <widget class="QLabel" name="lm_track_file_format_2">
+                       <property name="text">
+                        <string>Show Format</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QLineEdit" name="show_file_format"/>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QGroupBox" name="groupBox_9">
+                    <property name="title">
+                     <string/>
+                    </property>
+                    <property name="flat">
+                     <bool>false</bool>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_25">
+                     <item>
+                      <widget class="QLabel" name="lb_track_formatter_3">
+                       <property name="text">
+                        <string>Show Path</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QLineEdit" name="show_path_formatter"/>
                      </item>
                     </layout>
                    </widget>
@@ -4181,41 +4249,6 @@
                  </property>
                  <layout class="QHBoxLayout" name="horizontalLayout_6">
                   <item>
-                   <widget class="QGroupBox" name="group_playlist_cfg_m3u_13">
-                    <property name="title">
-                     <string/>
-                    </property>
-                    <layout class="QHBoxLayout" name="horizontalLayout_103">
-                     <item>
-                      <widget class="QCheckBox" name="inp_download_youtube_videos">
-                       <property name="toolTip">
-                        <string/>
-                       </property>
-                       <property name="layoutDirection">
-                        <enum>Qt::RightToLeft</enum>
-                       </property>
-                       <property name="text">
-                        <string>Download Youtube Videos</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <spacer name="horizontalSpacer_23">
-                       <property name="orientation">
-                        <enum>Qt::Horizontal</enum>
-                       </property>
-                       <property name="sizeHint" stdset="0">
-                        <size>
-                         <width>40</width>
-                         <height>20</height>
-                        </size>
-                       </property>
-                      </spacer>
-                     </item>
-                    </layout>
-                   </widget>
-                  </item>
-                  <item>
                    <widget class="QGroupBox" name="groupBox_136">
                     <property name="title">
                      <string/>
@@ -4225,7 +4258,7 @@
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_247">
                      <item>
-                      <widget class="QLabel" name="lb_maximum_generic_resolution">
+                      <widget class="QLabel" name="lb_preferred_video_resolution">
                        <property name="text">
                         <string>Preferred Video Resolution</string>
                        </property>
@@ -4245,7 +4278,7 @@
                       </spacer>
                      </item>
                      <item>
-                      <widget class="QSpinBox" name="inp_maximum_generic_resolution">
+                      <widget class="QSpinBox" name="preferred_video_resolution">
                        <property name="minimumSize">
                         <size>
                          <width>0</width>
@@ -4262,6 +4295,173 @@
                         <number>10000000</number>
                        </property>
                       </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QGroupBox" name="group_playlist_cfg_m3u_14">
+                    <property name="title">
+                     <string/>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_104">
+                     <item>
+                      <widget class="QCheckBox" name="download_subtitles">
+                       <property name="toolTip">
+                        <string/>
+                       </property>
+                       <property name="layoutDirection">
+                        <enum>Qt::RightToLeft</enum>
+                       </property>
+                       <property name="text">
+                        <string>Download Subtitles</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <spacer name="horizontalSpacer_27">
+                       <property name="orientation">
+                        <enum>Qt::Horizontal</enum>
+                       </property>
+                       <property name="sizeHint" stdset="0">
+                        <size>
+                         <width>40</width>
+                         <height>20</height>
+                        </size>
+                       </property>
+                      </spacer>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="gb3_6">
+                 <property name="title">
+                  <string/>
+                 </property>
+                 <property name="flat">
+                  <bool>true</bool>
+                 </property>
+                 <layout class="QHBoxLayout" name="horizontalLayout_15">
+                  <item>
+                   <widget class="QGroupBox" name="groupBox_35">
+                    <property name="title">
+                     <string/>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_54">
+                     <item>
+                      <widget class="QLabel" name="lm_track_file_format_6">
+                       <property name="text">
+                        <string>Preferred Audio Language</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QLineEdit" name="preferred_audio_language"/>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QGroupBox" name="groupBox_32">
+                    <property name="title">
+                     <string/>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_29">
+                     <item>
+                      <widget class="QLabel" name="lm_track_file_format_3">
+                       <property name="text">
+                        <string>Preferred Subtitle Language</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QLineEdit" name="preferred_subtitle_language"/>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="gb3_4">
+                 <property name="title">
+                  <string/>
+                 </property>
+                 <property name="flat">
+                  <bool>true</bool>
+                 </property>
+                 <layout class="QHBoxLayout" name="horizontalLayout_9">
+                  <item>
+                   <widget class="QGroupBox" name="group_playlist_cfg_m3u_15">
+                    <property name="title">
+                     <string/>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_105">
+                     <item>
+                      <widget class="QCheckBox" name="download_all_available_audio">
+                       <property name="toolTip">
+                        <string/>
+                       </property>
+                       <property name="layoutDirection">
+                        <enum>Qt::RightToLeft</enum>
+                       </property>
+                       <property name="text">
+                        <string>Download All Available Audio</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <spacer name="horizontalSpacer_30">
+                       <property name="orientation">
+                        <enum>Qt::Horizontal</enum>
+                       </property>
+                       <property name="sizeHint" stdset="0">
+                        <size>
+                         <width>40</width>
+                         <height>20</height>
+                        </size>
+                       </property>
+                      </spacer>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QGroupBox" name="group_playlist_cfg_m3u_16">
+                    <property name="title">
+                     <string/>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_106">
+                     <item>
+                      <widget class="QCheckBox" name="download_all_available_subtitles">
+                       <property name="toolTip">
+                        <string/>
+                       </property>
+                       <property name="layoutDirection">
+                        <enum>Qt::RightToLeft</enum>
+                       </property>
+                       <property name="text">
+                        <string>Download All Available Subtitles</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <spacer name="horizontalSpacer_31">
+                       <property name="orientation">
+                        <enum>Qt::Horizontal</enum>
+                       </property>
+                       <property name="sizeHint" stdset="0">
+                        <size>
+                         <width>40</width>
+                         <height>20</height>
+                        </size>
+                       </property>
+                      </spacer>
                      </item>
                     </layout>
                    </widget>
@@ -4383,7 +4583,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QLineEdit" name="inp_version">
+            <widget class="QLineEdit" name="version">
              <property name="enabled">
               <bool>false</bool>
              </property>
@@ -4409,7 +4609,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QLineEdit" name="inp_session_uuid">
+            <widget class="QLineEdit" name="session_uuid">
              <property name="enabled">
               <bool>false</bool>
              </property>
@@ -4425,7 +4625,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="inp_export_logs">
+            <widget class="QPushButton" name="export_logs">
              <property name="text">
               <string>Export Logs</string>
              </property>

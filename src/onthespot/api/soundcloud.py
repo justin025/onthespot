@@ -70,7 +70,7 @@ def soundcloud_login_user(account):
                 if account["uuid"] == "public_soundcloud":
                     account['login']['client_id'] = client_id
                     account['login']['app_version'] = app_version
-            config.set_('accounts', cfg_copy)
+            config.set('accounts', cfg_copy)
             config.update()
 
             account_pool.append({
@@ -118,7 +118,7 @@ def soundcloud_add_account():
         }
     }
     cfg_copy.append(new_user)
-    config.set_('accounts', cfg_copy)
+    config.set('accounts', cfg_copy)
     config.update()
 
 
@@ -216,13 +216,13 @@ def soundcloud_get_track_metadata(token, item_id):
     # Artists
     artists = []
     try:
-        for item in track_data.get('publisher_metadata', {}).get('artist', '').split(','):
+        for item in track_data.get('publisher_metadata', {}).get('artist').split(','):
             artists.append(item.strip())
     except AttributeError:
         pass
     artists = conv_list_format(artists)
     if not artists:
-        artists = track_data.get('user', {}).get('username', '')
+        artists = track_data.get('user', {}).get('username')
     # Track Number
     try:
         total_tracks = album_data['track_count']
@@ -248,16 +248,16 @@ def soundcloud_get_track_metadata(token, item_id):
         if album_name.startswith("Users who like"):
             album_name = track_data['title']
     # Copyright
-    publisher_metadata = track_data.get('publisher_metadata', '')
+    publisher_metadata = track_data.get('publisher_metadata')
     if publisher_metadata and publisher_metadata.get('c_line'):
-        copyright_list = [item.strip() for item in publisher_metadata.get('c_line', '').split(',')]
+        copyright_list = [item.strip() for item in publisher_metadata.get('c_line').split(',')]
     else:
         copyright_list = ''
     copyright_data = conv_list_format(copyright_list)
 
     info = {}
-    info['image_url'] = track_data.get("artwork_url", "")
-    info['description'] = str(track_data.get("description", ""))
+    info['image_url'] = track_data.get("artwork_url")
+    info['description'] = str(track_data.get("description"))
     info['genre'] = conv_list_format([track_data.get('genre', [])])
 
     label = track_data.get('label_name', "")
@@ -265,22 +265,22 @@ def soundcloud_get_track_metadata(token, item_id):
         info['label'] = label
     info['item_url'] = track_data.get('permalink_url', "")
 
-    release_date = track_data.get("release_date", "")
-    last_modified = track_data.get("last_modified", "")
+    release_date = track_data.get("release_date")
+    last_modified = track_data.get("last_modified")
     info['release_year'] = release_date.split("-")[0] if release_date else last_modified.split("-")[0]
 
-    info['title'] = track_data.get("title", "")
+    info['title'] = track_data.get("title")
     info['track_number'] = track_number
     info['total_tracks'] = total_tracks
-    #info['file_url'] = track_file.get("url", "")
+    #info['file_url'] = track_file.get("url")
     info['length'] = str(track_data.get("media", {}).get("transcodings", [{}])[0].get("duration", 0))
     info['artists'] = artists
     info['album_name'] = album_name
     info['album_type'] = album_type
-    info['album_artists'] = track_data.get('user', {}).get('username', '')
+    info['album_artists'] = track_data.get('user', {}).get('username')
     info['explicit'] = publisher_metadata.get('explicit', False) if publisher_metadata else False
     info['copyright'] = copyright_data
-    info['is_playable'] = track_data.get('streamable', '')
-    info['item_id'] = track_data.get('id', '')
+    info['is_playable'] = track_data.get('streamable')
+    info['item_id'] = track_data.get('id')
 
     return info

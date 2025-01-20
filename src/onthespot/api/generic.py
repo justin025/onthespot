@@ -28,7 +28,7 @@ def generic_add_account():
         "active": True,
     }
     cfg_copy.append(new_user)
-    config.set_('accounts', cfg_copy)
+    config.set('accounts', cfg_copy)
     config.update()
 
 
@@ -61,12 +61,12 @@ def generic_get_track_metadata(_, url):
             return False
 
     info = {}
-    info['title'] = info_dict.get('title', '')
-    info['artists'] = info_dict.get('extractor', '')
-    info['image_url'] = info_dict.get('thumbnail', '')
+    info['title'] = info_dict.get('title')
+    info['artists'] = info_dict.get('extractor')
+    info['image_url'] = info_dict.get('thumbnail')
     info['item_url'] = url
     info['is_playable'] = True
-    #info['item_id'] = info_dict.get('id', '')
+    #info['item_id'] = info_dict.get('id')
 
     return info
 

@@ -15,13 +15,14 @@ from .api.bandcamp import bandcamp_get_track_metadata
 from .api.deezer import deezer_get_track_metadata, get_song_info_from_deezer_website, genurlkey, calcbfkey, decryptfile
 from .api.qobuz import qobuz_get_track_metadata, qobuz_get_file_url
 from .api.soundcloud import soundcloud_get_track_metadata
-from .api.spotify import spotify_get_track_metadata, spotify_get_episode_metadata, spotify_get_lyrics
+from .api.spotify import spotify_get_track_metadata, spotify_get_podcast_episode_metadata, spotify_get_lyrics
 from .api.tidal import tidal_get_track_metadata, tidal_get_lyrics, tidal_get_file_url
 from .api.youtube_music import youtube_music_get_track_metadata
+from .api.crunchyroll import crunchyroll_get_episode_metadata, crunchyroll_get_decryption_key
 from .api.generic import generic_get_track_metadata
 from .otsconfig import config
 from .runtimedata import get_logger, download_queue, download_queue_lock, account_pool, temp_download_path
-from .utils import format_track_path, convert_audio_format, embed_metadata, set_music_thumbnail, fix_mp3_metadata, add_to_m3u_file, strip_metadata
+from .utils import format_item_path, convert_audio_format, embed_metadata, set_music_thumbnail, fix_mp3_metadata, add_to_m3u_file, strip_metadata, convert_video_format
 
 logger = get_logger("downloader")
 
@@ -148,10 +149,10 @@ class DownloadWorker(QObject):
                     item_metadata = globals()[f"{item_service}_get_{item_type}_metadata"](token, item_id)
 
                     # album number shim from enumerated items, i hate youtube
-                    if item_service == 'youtube_music' and item.get('parent_category', '') == 'album':
+                    if item_service == 'youtube_music' and item.get('parent_category') == 'album':
                         item_metadata.update({'track_number': item['playlist_number']})
 
-                    item_path = format_track_path(item, item_metadata)
+                    item_path = format_item_path(item, item_metadata)
                 except (Exception, KeyError) as e:
                     logger.error(f"Failed to fetch metadata for '{item_id}', Error: {str(e)}\nTraceback: {traceback.format_exc()}")
                     item['item_status'] = "Failed"
@@ -164,7 +165,10 @@ class DownloadWorker(QObject):
                 temp_file_path = ''
                 file_path = ''
                 if item_service != 'generic':
-                    dl_root = config.get("download_root")
+                    if item_type in ['track', 'podcast_episode']:
+                        dl_root = config.get("audio_download_path")
+                    elif item_type in ['movie', 'episode']:
+                        dl_root = config.get("video_download_path")
                     if temp_download_path:
                         dl_root = temp_download_path[0]
                     file_path = os.path.join(dl_root, item_path)
@@ -196,49 +200,49 @@ class DownloadWorker(QObject):
                         full_path = os.path.join(file_directory, entry)  # Construct the full file path
 
                         # Check if the entry is a file and if its name matches the base filename
-                        if os.path.isfile(full_path) and os.path.splitext(entry)[0] == base_filename and os.path.splitext(entry)[1] != '.lrc':
+                        if os.path.isfile(full_path) and os.path.splitext(entry)[0] == base_filename and os.path.splitext(entry)[1] not in ['.lrc', '.ass', '.srt', '.vtt']:
 
                             item['file_path'] = os.path.join(file_directory, entry)
+                            if item_type in ['track', 'podcast_episode']:
+                                if config.get('overwrite_existing_metadata'):
 
-                            if config.get('overwrite_existing_metadata'):
+                                    logger.info('Overwriting Existing Metadata')
 
-                                logger.info('Overwriting Existing Metadata')
+                                    # Lyrics
+                                    if item_service in ("spotify", "tidal"):
+                                        item['item_status'] = 'Getting Lyrics'
+                                        if self.gui:
+                                            self.progress.emit(item, self.tr("Getting Lyrics"), 99)
+                                        extra_metadata = globals()[f"{item_service}_get_lyrics"](token, item_id, item_type, item_metadata, file_path)
+                                        if isinstance(extra_metadata, dict):
+                                            item_metadata.update(extra_metadata)
 
-                                # Lyrics
-                                if item_service in ("spotify", "tidal"):
-                                    item['item_status'] = 'Getting Lyrics'
+                                    if not config.get('raw_media_download'):
+                                        strip_metadata(item)
+                                        embed_metadata(item, item_metadata)
+
+                                        # Thumbnail
+                                        if config.get('save_album_cover') or config.get('embed_cover'):
+                                            item['item_status'] = 'Setting Thumbnail'
+                                            if self.gui:
+                                                self.progress.emit(item, self.tr("Setting Thumbnail"), 99)
+                                            set_music_thumbnail(item['file_path'], item_metadata)
+
+                                        if os.path.splitext(item['file_path'])[1] == '.mp3':
+                                            fix_mp3_metadata(item['file_path'])
+                                    else:
+                                        if config.get('save_album_cover'):
+                                            item['item_status'] = 'Setting Thumbnail'
+                                            if self.gui:
+                                                self.progress.emit(item, self.tr("Setting Thumbnail"), 99)
+                                            set_music_thumbnail(file_path, item_metadata)
+
+                                # M3U
+                                if config.get('create_m3u_file') and item.get('parent_category') == 'playlist':
+                                    item['item_status'] = 'Adding To M3U'
                                     if self.gui:
-                                        self.progress.emit(item, self.tr("Getting Lyrics"), 99)
-                                    extra_metadata = globals()[f"{item_service}_get_lyrics"](token, item_id, item_type, item_metadata, file_path)
-                                    if isinstance(extra_metadata, dict):
-                                        item_metadata.update(extra_metadata)
-
-                                if not config.get('force_raw'):
-                                    strip_metadata(item)
-                                    embed_metadata(item, item_metadata)
-
-                                    # Thumbnail
-                                    if config.get('save_album_cover') or config.get('embed_cover'):
-                                        item['item_status'] = 'Setting Thumbnail'
-                                        if self.gui:
-                                            self.progress.emit(item, self.tr("Setting Thumbnail"), 99)
-                                        set_music_thumbnail(item['file_path'], item_metadata)
-
-                                    if os.path.splitext(item['file_path'])[1] == '.mp3':
-                                        fix_mp3_metadata(item['file_path'])
-                                else:
-                                    if config.get('save_album_cover'):
-                                        item['item_status'] = 'Setting Thumbnail'
-                                        if self.gui:
-                                            self.progress.emit(item, self.tr("Setting Thumbnail"), 99)
-                                        set_music_thumbnail(file_path, item_metadata)
-
-                            # M3U
-                            if config.get('create_m3u_playlists') and item.get('parent_category') == 'playlist':
-                                item['item_status'] = 'Adding To M3U'
-                                if self.gui:
-                                    self.progress.emit(item, self.tr("Adding To M3U"), 1)
-                                    add_to_m3u_file(item, item_metadata)
+                                        self.progress.emit(item, self.tr("Adding To M3U"), 1)
+                                        add_to_m3u_file(item, item_metadata)
 
                             if self.gui and item['item_status'] in ('Downloading', 'Setting Thumbnail', 'Adding To M3U'):
                                 self.progress.emit(item, self.tr("Already Exists"), 100)
@@ -263,13 +267,14 @@ class DownloadWorker(QObject):
                 # Could at some point just update the item manually inside the api file by passing
                 # item['gui']['progressbar'] and self.gui into a download_track function.
                 try:
+                    # Audio
                     if item_service == "spotify":
 
                         default_format = ".ogg"
                         temp_file_path += default_format
                         if item_type == "track":
                             audio_key = TrackId.from_base62(item_id)
-                        elif item_type == "episode":
+                        elif item_type == "podcast_episode":
                             audio_key = EpisodeId.from_base62(item_id)
 
                         quality = AudioQuality.HIGH
@@ -285,7 +290,7 @@ class DownloadWorker(QObject):
                             while downloaded < total_size:
                                 if item['item_status'] == 'Cancelled':
                                    raise Exception("Download cancelled by user.")
-                                data = stream.input_stream.stream().read(config.get("chunk_size"))
+                                data = stream.input_stream.stream().read(config.get("download_chunk_size"))
                                 downloaded += len(data)
                                 if len(data) != 0:
                                     file.write(data)
@@ -361,7 +366,7 @@ class DownloadWorker(QObject):
                             downloaded = 0
                             data_chunks = b''  # empty bytes object
 
-                            for data in file.iter_content(chunk_size=config.get("chunk_size")):
+                            for data in file.iter_content(chunk_size=config.get("download_chunk_size")):
                                 downloaded += len(data)
                                 data_chunks += data
 
@@ -387,21 +392,22 @@ class DownloadWorker(QObject):
 
 
                     elif item_service in ("soundcloud", "youtube_music"):
-                        if item_service == "soundcloud":
-                            default_format = ".mp3"
-                            bitrate = "128k"
-                            item_url = item_metadata['item_url']
-                        elif item_service == "youtube_music":
-                            default_format = '.opus'
-                            bitrate = "256k"
-                            item_url = f'https://music.youtube.com/watch?v={item["item_id"]}'
                         ydl_opts = {}
                         ydl_opts['quiet'] = True
                         ydl_opts['no_warnings'] = True
                         ydl_opts['noprogress'] = True
                         ydl_opts['extract_audio'] = True
-                        ydl_opts['format'] = 'bestaudio'
                         ydl_opts['outtmpl'] = temp_file_path
+                        if item_service == "soundcloud":
+                            item_url = item_metadata['item_url']
+                            default_format = ".mp3"
+                            bitrate = "128k"
+                            ydl_opts['format'] = 'bestaudio[ext=mp3]'
+                        elif item_service == "youtube_music":
+                            item_url = f'https://music.youtube.com/watch?v={item["item_id"]}'
+                            default_format = '.m4a'
+                            bitrate = "256k"
+                            ydl_opts['format'] = 'bestaudio[ext=m4a]'
                         if self.gui:
                             ydl_opts['progress_hooks'] = [lambda d: self.yt_dlp_progress_hook(item, d)]
                         with YoutubeDL(ydl_opts) as video:
@@ -422,7 +428,7 @@ class DownloadWorker(QObject):
                         downloaded = 0
                         data_chunks = b''
                         with open(temp_file_path, 'wb') as file:
-                            for data in response.iter_content(chunk_size=config.get("chunk_size", 1024)):
+                            for data in response.iter_content(chunk_size=config.get("download_chunk_size", 1024)):
                                 if data:
                                     downloaded += len(data)
                                     data_chunks += data
@@ -487,19 +493,80 @@ class DownloadWorker(QObject):
                             os.remove(temp_file_path)
                         os.rename(decrypted_temp_file_path, temp_file_path)
 
+                    # Video
+                    elif item_service == "crunchyroll":
+                        file_formats = ['.m4a', '.mp4']
+
+                        decryption_key = crunchyroll_get_decryption_key(token, item_id)
+
+                        ydl_opts = {}
+                        ydl_opts['username'] = token['email']
+                        ydl_opts['password'] = token['password']
+                        ydl_opts['quiet'] = True
+                        ydl_opts['no_warnings'] = True
+                        ydl_opts['outtmpl'] = temp_file_path + '~.%(ext)s'
+                        ydl_opts['allow_unplayable_formats'] = True
+                        ydl_opts['fixup'] = 'never'
+                        ydl_opts['noprogress'] = True
+                        if self.gui:
+                            ydl_opts['progress_hooks'] = [lambda d: self.yt_dlp_progress_hook(item, d)]
+
+                        # I would prefer to download video and audio together but yt-dlp
+                        # appends a format string when ext is used together.
+                        if self.gui:
+                            self.progress.emit(item, self.tr("Downloading Video"), 1)
+                        ydl_video_opts = ydl_opts
+                        ydl_video_opts['format'] = (f'(bestvideo[height<={config.get("preferred_video_resolution")}][ext=mp4]/bestvideo)')
+                        with YoutubeDL(ydl_video_opts) as video:
+                            video.download(item_metadata['item_url'])
+
+                        if self.gui:
+                            self.progress.emit(item, self.tr("Downloading Audio"), 1)
+                        ydl_audio_opts = ydl_opts
+                        ydl_audio_opts['format'] = ('(bestaudio[ext=m4a]/bestaudio)')
+                        with YoutubeDL(ydl_audio_opts) as video:
+                            video.download(item_metadata['item_url'])
+
+                        if self.gui:
+                            self.progress.emit(item, self.tr("Decrypting"), 99)
+
+                        video_file_parts = []
+                        for ext in file_formats:
+                            decrypted_temp_file_path = file_path + ext
+                            video_file_parts.append(decrypted_temp_file_path)
+
+                            command = [
+                                config.get('_ffmpeg_bin_path'),
+                                "-loglevel", "error",
+                                "-y",
+                                "-decryption_key", decryption_key,
+                                "-i", temp_file_path + f'~{ext}',
+                                "-c", "copy",
+                                "-movflags",
+                                "+faststart",
+                                decrypted_temp_file_path
+                            ]
+                            if os.name == 'nt':
+                                subprocess.check_call(command, shell=False, creationflags=subprocess.CREATE_NO_WINDOW)
+                            else:
+                                subprocess.check_call(command, shell=False)
+
+                            if os.path.exists(temp_file_path + f"~{ext}"):
+                                os.remove(temp_file_path + f"~{ext}")
+
                     elif item_service == 'generic':
                         temp_file_path = ''
                         ydl_opts = {}
                         # Prefer bestvideo in mp4 with specified resolution, then
                         # just best video with specified resolution, and if neither
                         # exist just go with best.
-                        ydl_opts['format'] = (f'(bestvideo[height<={config.get("maximum_generic_resolution")}][ext=mp4]+bestaudio[ext=m4a])/'
-                                            f'(bestvideo[height<={config.get("maximum_generic_resolution")}]+bestaudio)/'
+                        ydl_opts['format'] = (f'(bestvideo[height<={config.get("preferred_video_resolution")}][ext=mp4]+bestaudio[ext=m4a])/'
+                                            f'(bestvideo[height<={config.get("preferred_video_resolution")}]+bestaudio)/'
                                             f'best')
                         ydl_opts['quiet'] = True
                         ydl_opts['no_warnings'] = True
                         ydl_opts['noprogress'] = True
-                        ydl_opts['outtmpl'] = config.get('generic_download_root') + os.path.sep + '%(title)s.%(ext)s'
+                        ydl_opts['outtmpl'] = config.get('generic_audio_download_path') + os.path.sep + '%(title)s.%(ext)s'
                         ydl_opts['ffmpeg_location'] = config.get('_ffmpeg_bin_path')
                         ydl_opts['postprocessors'] = [{
                             'key': 'FFmpegMetadata',  # Enables embedding metadata
@@ -519,29 +586,29 @@ class DownloadWorker(QObject):
                     self.readd_item_to_download_queue(item)
                     continue
 
-                # Lyrics
-                if item_service in ("apple_music", "spotify", "tidal"):
-                    item['item_status'] = 'Getting Lyrics'
-                    if self.gui:
-                        self.progress.emit(item, self.tr("Getting Lyrics"), 99)
-                    extra_metadata = globals()[f"{item_service}_get_lyrics"](token, item_id, item_type, item_metadata, file_path)
-                    if isinstance(extra_metadata, dict):
-                        item_metadata.update(extra_metadata)
+                # Audio Formatting
+                if item_type in ('track', 'podcast_episode'):
+                    # Lyrics
+                    if item_service in ("apple_music", "spotify", "tidal"):
+                        item['item_status'] = 'Getting Lyrics'
+                        if self.gui:
+                            self.progress.emit(item, self.tr("Getting Lyrics"), 99)
+                        extra_metadata = globals()[f"{item_service}_get_lyrics"](token, item_id, item_type, item_metadata, file_path)
+                        if isinstance(extra_metadata, dict):
+                            item_metadata.update(extra_metadata)
 
-                if item_service != 'generic':
-                    if config.get('force_raw'):
+                    if config.get('raw_media_download'):
                         file_path += default_format
                     elif item_type == "track":
-                        file_path += "." + config.get("media_format")
-                    elif item_type == "episode":
-                        file_path += "." + config.get("podcast_media_format")
+                        file_path += "." + config.get("track_file_format")
+                    elif item_type == "podcast_episode":
+                        file_path += "." + config.get("podcast_file_format")
 
                     os.rename(temp_file_path, file_path)
                     item['file_path'] = file_path
 
-                if item_service != 'generic':
                     # Convert file format and embed metadata
-                    if not config.get('force_raw'):
+                    if not config.get('raw_media_download'):
                         item['item_status'] = 'Converting'
                         if self.gui:
                             self.progress.emit(item, self.tr("Converting"), 99)
@@ -567,11 +634,49 @@ class DownloadWorker(QObject):
                             set_music_thumbnail(file_path, item_metadata)
 
                     # M3U
-                    if config.get('create_m3u_playlists') and item.get('parent_category') == 'playlist':
+                    if config.get('create_m3u_file') and item.get('parent_category') == 'playlist':
                         item['item_status'] = 'Adding To M3U'
                         if self.gui:
                             self.progress.emit(item, self.tr("Adding To M3U"), 1)
                             add_to_m3u_file(item, item_metadata)
+
+                # Video Formatting
+                elif item_type in ('movie', 'episode'):
+                    subtitle_files = []
+                    if config.get("download_subtitles"):
+                        item['item_status'] = 'Getting Subtitles'
+                        if self.gui:
+                            self.progress.emit(item, self.tr("Getting Subtitles"), 99)
+
+
+                        subtitle_dict = item_metadata.get("subtitle_urls")
+                        if config.get("download_all_available_subtitles"):
+                            for key in subtitle_dict:
+                                subtitle_data = requests.get(subtitle_dict[key].get("url")).text
+                                subtitle_file = file_path + f".{key}." + subtitle_dict[key].get("ext")
+                                with open(subtitle_file, "w") as file:
+                                    file.write(subtitle_data)
+                                subtitle_files.append(subtitle_file)
+                        else:
+                            lang = config.get("preferred_subtitle_language")
+                            subtitle_data = requests.get(subtitle_dict[lang].get("url")).text
+                            subtitle_file = file_path + f".{lang}." + subtitle_dict[lang].get("ext")
+                            with open(subtitle_file, "w") as file:
+                                file.write(subtitle_data)
+                            subtitle_files.append(subtitle_file)
+
+                    if not config.get("raw_media_format"):
+                        item['item_status'] = 'Converting'
+                        if self.gui:
+                            self.progress.emit(item, self.tr("Converting"), 99)
+                        if item_type == "episode":
+                            output_format = config.get("show_file_format")
+                        elif item_type == "movie":
+                            output_format = config.get("movie_file_format")
+                        convert_video_format(file_path, output_format, video_file_parts, subtitle_files)
+                        item['file_path'] = file_path + '.' + output_format
+                    else:
+                        item['file_path'] = file_path + '.mp4'
 
                 item['item_status'] = 'Downloaded'
                 logger.info("Item Successfully Downloaded")

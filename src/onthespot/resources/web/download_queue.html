@@ -77,7 +77,7 @@
 
                                 const showThumbnails = {{ config.show_download_thumbnails|tojson }};
                                 const itemImage = showThumbnails && item.item_thumbnail
-                                ? `<img src="${item.item_thumbnail}" style="width: {{ config.search_thumb_height }}px; height: {{ config.search_thumb_height }}px;">`
+                                ? `<img src="${item.item_thumbnail}" style="width: {{ config.thumbnail_size }}px; height: {{ config.thumbnail_size }}px;">`
                                 : '';
 
                                 const serviceIcon = item.item_service ? `<img src="/icons/${item.item_service}.png" style="width: 20px; height: 20px; margin-right: 5px;">` : '';

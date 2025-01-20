@@ -41,7 +41,8 @@
                 <tr>
                     <td>
                         <label>
-                            <input type="radio" name="parsing_acc_sn" value="{{ loop.index - 1 }}" onclick="updateSettings()" {% if loop.index - 1==config.parsing_acc_sn %} checked {% endif %}>
+                            <input type="radio" name="active_account_number" value="{{ loop.index - 1 }}" onclick="updateSettings()"
+                            {% if loop.index - 1 == config.active_account_number %} checked {% endif %}>
                         </label>
                     </td>
                     <td style="max-width: 10px; overflow: hidden; text-overflow: ellipsis;">{{ account.username }}{% if account.username|length > 20 %}...{% endif %}</td>
@@ -64,290 +65,321 @@
 
         <h2>Web UI</h2>
 
-        <label for="use_webui_login">Enable Web UI Login</label>
+        <label for="use_webui_login">Enable Web UI Login Page:</label>
         <input type="checkbox" id="use_webui_login" {% if config.use_webui_login %}checked{% endif %}><br><br>
 
         <label for="webui_username">Web UI Username:</label>
-        <input type="text" id="webui_username" value="{{ config.webui_username }}" placeholder="Change current username"><br><br>
+        <input type="text" id="webui_username" value="{{ config.webui_username }}" placeholder="Enter your username"><br><br>
 
         <label for="webui_password">Web UI Password:</label>
-        <input type="password" id="webui_password" value="{{ config.webui_password }}" placeholder="Change current password"><br><br>
+        <input type="password" id="webui_password" value="{{ config.webui_password }}" placeholder="Enter your password"><br><br>
 
         <h2>General</h2>
-
-        <label for="download_copy_btn">Download Copy Button</label>
-        <input type="checkbox" id="download_copy_btn" {% if config.download_copy_btn %}checked{% endif %}><br><br>
-
-        <label for="download_open_btn">Download Open Button</label>
-        <input type="checkbox" id="download_open_btn" {% if config.download_open_btn %}checked{% endif %}><br><br>
-
-        <label for="download_locate_btn">Download Locate Button</label>
-        <input type="checkbox" id="download_locate_btn" {% if config.download_locate_btn %}checked{% endif %}><br><br>
-
-        <label for="download_delete_btn">Download Delete Button</label>
-        <input type="checkbox" id="download_delete_btn" {% if config.download_delete_btn %}checked{% endif %}><br><br>
-
-        <label for="show_search_thumbnails">Show Search Thumbnails</label>
-        <input type="checkbox" id="show_search_thumbnails" {% if config.show_search_thumbnails %}checked{% endif %}><br><br>
-
-        <label for="show_download_thumbnails">Show Download Thumbnails:</label>
-        <input type="checkbox" id="show_download_thumbnails" {% if config.show_download_thumbnails %}checked{% endif %}><br><br>
-
-        <label for="search_thumb_height">Thumbnail Size:</label>
-        <input type="number" id="search_thumb_height" value="{{ config.search_thumb_height }}" placeholder="Enter search thumbnail height"><br><br>
-
-        <label for="max_search_results">Max Search Results:</label>
-        <input type="number" id="max_search_results" value="{{ config.max_search_results }}" placeholder="Enter max search results"><br><br>
 
         <label for="explicit_label">Explicit Label:</label>
         <input type="text" id="explicit_label" value="{{ config.explicit_label }}" placeholder="Enter explicit label"><br><br>
 
-        <label for="mirror_spotify_playback">Mirror Spotify Playback</label>
-        <input type="checkbox" id="mirror_spotify_playback" {% if config.mirror_spotify_playback %}checked{% endif %}><br><br>
+        <label for="download_copy_btn">Add Copy Button to Downloads:</label>
+        <input type="checkbox" id="download_copy_btn" {% if config.download_copy_btn %}checked{% endif %}><br><br>
 
-        <label for="windows_10_explorer_thumbnails">Windows 10 Explorer Thumbnails:</label>
+        <label for="download_open_btn">Add Open Button to Downloads:</label>
+        <input type="checkbox" id="download_open_btn" {% if config.download_open_btn %}checked{% endif %}><br><br>
+
+        <label for="download_locate_btn">Add Locate Button to Downloads:</label>
+        <input type="checkbox" id="download_locate_btn" {% if config.download_locate_btn %}checked{% endif %}><br><br>
+
+        <label for="download_delete_btn">Add Delete Button to Downloads:</label>
+        <input type="checkbox" id="download_delete_btn" {% if config.download_delete_btn %}checked{% endif %}><br><br>
+
+        <label for="show_search_thumbnails">Show Thumbnails in Search View:</label>
+        <input type="checkbox" id="show_search_thumbnails" {% if config.show_search_thumbnails %}checked{% endif %}><br><br>
+
+        <label for="show_download_thumbnails">Show Thumbnails in Download View:</label>
+        <input type="checkbox" id="show_download_thumbnails" {% if config.show_download_thumbnails %}checked{% endif %}><br><br>
+
+        <label for="thumbnail_size">Thumbnail Size (px):</label>
+        <input type="number" id="thumbnail_size" value="{{ config.thumbnail_size }}" placeholder="Enter thumbnail size"><br><br>
+
+        <label for="max_search_results">Max Search Results:</label>
+        <input type="number" id="max_search_results" value="{{ config.max_search_results }}" placeholder="Enter max search results"><br><br>
+
+        <label for="disable_download_popups">Hide Download Popups:</label>
+        <input type="checkbox" id="disable_download_popups" {% if config.disable_download_popups %}checked{% endif %}><br><br>
+
+        <label for="windows_10_explorer_thumbnails">Use Old ID3 Format for Windows 10 Explorer:</label>
         <input type="checkbox" id="windows_10_explorer_thumbnails" {% if config.windows_10_explorer_thumbnails %}checked{% endif %}><br><br>
 
-        <label for="check_for_updates">Check for Updates</label>
+        <label for="mirror_spotify_playback">Mirror Spotify Playback:</label>
+        <input type="checkbox" id="mirror_spotify_playback" {% if config.mirror_spotify_playback %}checked{% endif %}><br><br>
+
+        <label for="close_to_tray">Close Application to Tray:</label>
+        <input type="checkbox" id="close_to_tray" {% if config.close_to_tray %}checked{% endif %}><br><br>
+
+        <label for="check_for_updates">Check for Updates:</label>
         <input type="checkbox" id="check_for_updates" {% if config.check_for_updates %}checked{% endif %}><br><br>
 
-        <label for="enable_search_tracks">Enable Search Tracks</label>
+        <label for="illegal_character_replacement">Illegal Character Replacement:</label>
+        <input type="text" id="illegal_character_replacement" value="{{ config.illegal_character_replacement }}" placeholder="Enter character for replacement"><br><br>
+
+        <label for="raw_media_download">Skip Media Conversion:</label>
+        <input type="checkbox" id="raw_media_download" {% if config.raw_media_download %}checked{% endif %}><br><br>
+
+        <label for="rotate_active_account_number">Rotate Active Account:</label>
+        <input type="checkbox" id="rotate_active_account_number" {% if config.rotate_active_account_number %}checked{% endif %}><br><br>
+
+        <label for="download_delay">Download Delay (seconds):</label>
+        <input type="number" id="download_delay" value="{{ config.download_delay }}" placeholder="Enter download delay"><br><br>
+
+        <label for="download_chunk_size">Download Chunk Size (bytes):</label>
+        <input type="number" id="download_chunk_size" value="{{ config.download_chunk_size }}" placeholder="Enter chunk size"><br><br>
+
+        <label for="maximum_queue_workers">Maximum Queue Workers:</label>
+        <input type="number" id="maximum_queue_workers" value="{{ config.maximum_queue_workers }}" placeholder="Enter max queue workers"><br><br>
+
+        <label for="maximum_download_workers">Maximum Download Workers:</label>
+        <input type="number" id="maximum_download_workers" value="{{ config.maximum_download_workers }}" placeholder="Enter max download workers"><br><br>
+
+        <label for="enable_retry_worker">Enable Retry Worker:</label>
+        <input type="checkbox" id="enable_retry_worker" {% if config.enable_retry_worker %}checked{% endif %}><br><br>
+
+        <label for="retry_worker_delay">Retry Worker Delay (minutes):</label>
+        <input type="number" id="retry_worker_delay" value="{{ config.retry_worker_delay }}" placeholder="Enter retry delay"><br><br>
+
+        <h2>Search Settings</h2>
+
+        <label for="enable_search_tracks">Enable Search for Tracks:</label>
         <input type="checkbox" id="enable_search_tracks" {% if config.enable_search_tracks %}checked{% endif %}><br><br>
 
-        <label for="enable_search_albums">Enable Search Albums</label>
+        <label for="enable_search_albums">Enable Search for Albums:</label>
         <input type="checkbox" id="enable_search_albums" {% if config.enable_search_albums %}checked{% endif %}><br><br>
 
-        <label for="enable_search_artists">Enable Search Artists</label>
-        <input type="checkbox" id="enable_search_artists" {% if config.enable_search_artists %}checked{% endif %}><br><br>
-
-        <label for="enable_search_playlists">Enable Search Playlists</label>
+        <label for="enable_search_playlists">Enable Search for Playlists:</label>
         <input type="checkbox" id="enable_search_playlists" {% if config.enable_search_playlists %}checked{% endif %}><br><br>
 
-        <label for="enable_search_episodes">Enable Search Episodes</label>
+        <label for="enable_search_artists">Enable Search for Artists:</label>
+        <input type="checkbox" id="enable_search_artists" {% if config.enable_search_artists %}checked{% endif %}><br><br>
+
+        <label for="enable_search_episodes">Enable Search for Episodes:</label>
         <input type="checkbox" id="enable_search_episodes" {% if config.enable_search_episodes %}checked{% endif %}><br><br>
 
-        <label for="enable_search_shows">Enable Search Shows</label>
-        <input type="checkbox" id="enable_search_shows" {% if config.enable_search_shows %}checked{% endif %}><br><br>
+        <label for="enable_search_podcasts">Enable Search for Podcasts:</label>
+        <input type="checkbox" id="enable_search_podcasts" {% if config.enable_search_podcasts %}checked{% endif %}><br><br>
 
-        <label for="enable_search_audiobooks">Enable Search Audiobooks</label>
+        <label for="enable_search_audiobooks">Enable Search for Audiobooks:</label>
         <input type="checkbox" id="enable_search_audiobooks" {% if config.enable_search_audiobooks %}checked{% endif %}><br><br>
-
 
         <h2>Audio Downloads</h2>
 
-        <label for="download_root">Audio Download Path:</label>
-        <input type="text" id="download_root" value="{{ config.download_root }}" placeholder="Enter download path"><br><br>
+        <label for="audio_download_path">Audio Download Path:</label>
+        <input type="text" id="audio_download_path" value="{{ config.audio_download_path }}" placeholder="Enter audio download path"><br><br>
 
-        <label for="media_format">Media Format:</label>
-        <input type="text" id="media_format" value="{{ config.media_format }}" placeholder="Enter media format"><br><br>
+        <label for="track_file_format">Track File Format:</label>
+        <input type="text" id="track_file_format" value="{{ config.track_file_format }}" placeholder="Enter track file format"><br><br>
 
         <label for="track_path_formatter">Track Path Formatter:</label>
-        <input type="text" id="track_path_formatter" value="{{ config.track_path_formatter }}" placeholder="Enter track path formatter"><br><br>
+        <input type="text" id="track_path_formatter" value="{{ config.track_path_formatter }}" placeholder="Enter track path format"><br><br>
 
-        <label for="podcast_media_format">Podcast Media Format:</label>
-        <input type="text" id="podcast_media_format" value="{{ config.podcast_media_format }}" placeholder="Enter podcast media format"><br><br>
+        <label for="podcast_file_format">Podcast File Format:</label>
+        <input type="text" id="podcast_file_format" value="{{ config.podcast_file_format }}" placeholder="Enter podcast file format"><br><br>
 
         <label for="podcast_path_formatter">Podcast Path Formatter:</label>
-        <input type="text" id="podcast_path_formatter" value="{{ config.podcast_path_formatter }}" placeholder="Enter podcast path formatter"><br><br>
+        <input type="text" id="podcast_path_formatter" value="{{ config.podcast_path_formatter }}" placeholder="Enter podcast path format"><br><br>
 
-        <label for="use_playlist_path">Use Playlist Path</label>
+        <label for="use_playlist_path">Use Playlist Path:</label>
         <input type="checkbox" id="use_playlist_path" {% if config.use_playlist_path %}checked{% endif %}><br><br>
 
         <label for="delete_removed">Clear Folder Before Download</label>
         <input type="checkbox" id="delete_removed" {% if config.delete_removed %}checked{% endif %}><br><br>
 
         <label for="playlist_path_formatter">Playlist Path Formatter:</label>
-        <input type="text" id="playlist_path_formatter" value="{{ config.playlist_path_formatter }}" placeholder="Enter playlist path formatter"><br><br>
+        <input type="text" id="playlist_path_formatter" value="{{ config.playlist_path_formatter }}" placeholder="Enter playlist path format"><br><br>
 
-        <label for="create_m3u_playlists">Create M3U Playlists</label>
-        <input type="checkbox" id="create_m3u_playlists" {% if config.create_m3u_playlists %}checked{% endif %}><br><br>
+        <label for="create_m3u_file">Create M3U File:</label>
+        <input type="checkbox" id="create_m3u_file" {% if config.create_m3u_file %}checked{% endif %}><br><br>
 
-        <label for="m3u_name_formatter">M3U Name Formatter:</label>
-        <input type="text" id="m3u_name_formatter" value="{{ config.m3u_name_formatter }}" placeholder="Enter M3U name formatter"><br><br>
+        <label for="m3u_path_formatter">M3U Path Formatter:</label>
+        <input type="text" id="m3u_path_formatter" value="{{ config.m3u_path_formatter }}" placeholder="Enter M3U path format"><br><br>
 
-        <label for="ext_seperator">Extension Separator:</label>
-        <input type="text" id="ext_seperator" value="{{ config.ext_seperator }}" placeholder="Enter extension separator"><br><br>
+        <label for="extinf_separator">EXTINF Separator:</label>
+        <input type="text" id="extinf_separator" value="{{ config.extinf_separator }}" placeholder="Enter EXTINF metadata separator"><br><br>
 
-        <label for="ext_path">Extension Path:</label>
-        <input type="text" id="ext_path" value="{{ config.ext_path }}" placeholder="Enter extension path"><br><br>
-
-        <label for="save_album_cover">Save Album Cover</label>
-        <input type="checkbox" id="save_album_cover" {% if config.save_album_cover %}checked{% endif %}><br><br>
-
-        <label for="album_cover_format">Album Cover Format:</label>
-        <input type="text" id="album_cover_format" value="{{ config.album_cover_format }}" placeholder="Enter album cover format"><br><br>
-
-        <label for="illegal_character_replacement">Illegal Character Replacement:</label>
-        <input type="text" id="illegal_character_replacement" value="{{ config.illegal_character_replacement }}" placeholder="Enter illegal character replacement"><br><br>
-
-        <label for="inp_enable_lyrics">Enable Lyrics</label>
-        <input type="checkbox" id="inp_enable_lyrics" {% if config.inp_enable_lyrics %}checked{% endif %}><br><br>
-
-        <label for="only_synced_lyrics">Only Synced Lyrics</label>
-        <input type="checkbox" id="only_synced_lyrics" {% if config.only_synced_lyrics %}checked{% endif %}><br><br>
-
-        <label for="use_lrc_file">Use LRC File</label>
-        <input type="checkbox" id="use_lrc_file" {% if config.use_lrc_file %}checked{% endif %}><br><br>
+        <label for="extinf_label">EXTINF Label:</label>
+        <input type="text" id="extinf_label" value="{{ config.extinf_label }}" placeholder="Enter EXTINF label format"><br><br>
 
         <label for="file_bitrate">File Bitrate:</label>
         <input type="text" id="file_bitrate" value="{{ config.file_bitrate }}" placeholder="Enter file bitrate"><br><br>
 
         <label for="file_hertz">File Hertz:</label>
-        <input type="text" id="file_hertz" value="{{ config.file_hertz }}" placeholder="Enter file hertz"><br><br>
+        <input type="number" id="file_hertz" value="{{ config.file_hertz }}" placeholder="Enter file hertz"><br><br>
 
-        <label for="rotate_acc_sn">Rotate Account SN</label>
-        <input type="checkbox" id="rotate_acc_sn" {% if config.rotate_acc_sn %}checked{% endif %}><br><br>
+        <label for="save_album_cover">Save Album Cover:</label>
+        <input type="checkbox" id="save_album_cover" {% if config.save_album_cover %}checked{% endif %}><br><br>
 
-        <label for="force_raw">Force Raw Download</label>
-        <input type="checkbox" id="force_raw" {% if config.force_raw %}checked{% endif %}><br><br>
+        <label for="album_cover_format">Album Cover Format:</label>
+        <input type="text" id="album_cover_format" value="{{ config.album_cover_format }}" placeholder="Enter album cover format"><br><br>
 
-        <label for="download_delay">Download Delay (s):</label>
-        <input type="number" id="download_delay" value="{{ config.download_delay }}" placeholder="Enter download delay"><br><br>
+        <label for="download_lyrics">Enable Lyrics Download:</label>
+        <input type="checkbox" id="download_lyrics" {% if config.download_lyrics %}checked{% endif %}><br><br>
 
-        <label for="chunk_size">Chunk Size (b):</label>
-        <input type="number" id="chunk_size" value="{{ config.chunk_size }}" placeholder="Enter chunk size"><br><br>
+        <label for="save_lrc_file">Save LRC File:</label>
+        <input type="checkbox" id="save_lrc_file" {% if config.save_lrc_file %}checked{% endif %}><br><br>
 
-        <label for="maximum_queue_workers">Maximum Queue Workers:</label>
-        <input type="text" id="maximum_queue_workers" value="{{ config.maximum_queue_workers }}" placeholder="Enter maximum download workers"><br><br>
+        <label for="only_download_synced_lyrics">Only Download Synced Lyrics:</label>
+        <input type="checkbox" id="only_download_synced_lyrics" {% if config.only_download_synced_lyrics %}checked{% endif %}><br><br>
 
-        <label for="maximum_download_workers">Maximum Download Workers:</label>
-        <input type="text" id="maximum_download_workers" value="{{ config.maximum_download_workers }}" placeholder="Enter maximum download workers"><br><br>
-
-        <label for="enable_retry_worker">Enable Retry Worker</label>
-        <input type="checkbox" id="enable_retry_worker" {% if config.enable_retry_worker %}checked{% endif %}><br><br>
-
-        <label for="retry_worker_delay">Retry Worker Delay (m):</label>
-        <input type="text" id="retry_worker_delay" value="{{ config.retry_worker_delay }}" placeholder="Enter retry worker delay"><br><br>
-
-        <label for="translate_file_path">Translate File Path</label>
+        <label for="translate_file_path">Translate File Path:</label>
         <input type="checkbox" id="translate_file_path" {% if config.translate_file_path %}checked{% endif %}><br><br>
 
         <h2>Audio Metadata</h2>
 
-        <label for="metadata_seperator">Metadata Separator:</label>
-        <input type="text" id="metadata_seperator" value="{{ config.metadata_seperator }}" placeholder="Enter metadata separator"><br><br>
+        <label for="metadata_separator">Metadata Separator:</label>
+        <input type="text" id="metadata_separator" value="{{ config.metadata_separator }}" placeholder="Enter metadata separator"><br><br>
 
         <label for="overwrite_existing_metadata">Overwrite Existing Metadata:</label>
         <input type="checkbox" id="overwrite_existing_metadata" {% if config.overwrite_existing_metadata %}checked{% endif %}><br><br>
 
-        <label for="embed_cover">Embed Cover</label>
-        <input type="checkbox" id="embed_cover" {% if config.embed_cover %}checked{% endif %}><br><br>
-
-        <label for="embed_branding">Embed Branding</label>
+        <label for="embed_branding">Embed Branding:</label>
         <input type="checkbox" id="embed_branding" {% if config.embed_branding %}checked{% endif %}><br><br>
 
-        <label for="embed_artist">Embed Artist</label>
+        <label for="embed_cover">Embed Cover:</label>
+        <input type="checkbox" id="embed_cover" {% if config.embed_cover %}checked{% endif %}><br><br>
+
+        <label for="embed_artist">Embed Artist:</label>
         <input type="checkbox" id="embed_artist" {% if config.embed_artist %}checked{% endif %}><br><br>
 
-        <label for="embed_album">Embed Album</label>
+        <label for="embed_album">Embed Album:</label>
         <input type="checkbox" id="embed_album" {% if config.embed_album %}checked{% endif %}><br><br>
 
-        <label for="embed_albumartist">Embed Album Artist</label>
+        <label for="embed_albumartist">Embed Album Artist:</label>
         <input type="checkbox" id="embed_albumartist" {% if config.embed_albumartist %}checked{% endif %}><br><br>
 
-        <label for="embed_name">Embed Name</label>
+        <label for="embed_name">Embed Name:</label>
         <input type="checkbox" id="embed_name" {% if config.embed_name %}checked{% endif %}><br><br>
 
-        <label for="embed_year">Embed Year</label>
+        <label for="embed_year">Embed Year:</label>
         <input type="checkbox" id="embed_year" {% if config.embed_year %}checked{% endif %}><br><br>
 
-        <label for="embed_discnumber">Embed Disc Number</label>
+        <label for="embed_discnumber">Embed Disc Number:</label>
         <input type="checkbox" id="embed_discnumber" {% if config.embed_discnumber %}checked{% endif %}><br><br>
 
-        <label for="embed_tracknumber">Embed Track Number</label>
+        <label for="embed_tracknumber">Embed Track Number:</label>
         <input type="checkbox" id="embed_tracknumber" {% if config.embed_tracknumber %}checked{% endif %}><br><br>
 
-        <label for="embed_genre">Embed Genre</label>
+        <label for="embed_genre">Embed Genre:</label>
         <input type="checkbox" id="embed_genre" {% if config.embed_genre %}checked{% endif %}><br><br>
 
-        <label for="embed_performers">Embed Performers</label>
+        <label for="embed_performers">Embed Performers:</label>
         <input type="checkbox" id="embed_performers" {% if config.embed_performers %}checked{% endif %}><br><br>
 
-        <label for="embed_producers">Embed Producers</label>
+        <label for="embed_producers">Embed Producers:</label>
         <input type="checkbox" id="embed_producers" {% if config.embed_producers %}checked{% endif %}><br><br>
 
-        <label for="embed_writers">Embed Writers</label>
+        <label for="embed_writers">Embed Writers:</label>
         <input type="checkbox" id="embed_writers" {% if config.embed_writers %}checked{% endif %}><br><br>
 
-        <label for="embed_label">Embed Label</label>
+        <label for="embed_label">Embed Label:</label>
         <input type="checkbox" id="embed_label" {% if config.embed_label %}checked{% endif %}><br><br>
 
-        <label for="embed_copyright">Embed Copyright</label>
+        <label for="embed_copyright">Embed Copyright:</label>
         <input type="checkbox" id="embed_copyright" {% if config.embed_copyright %}checked{% endif %}><br><br>
 
-        <label for="embed_description">Embed Description</label>
+        <label for="embed_description">Embed Description:</label>
         <input type="checkbox" id="embed_description" {% if config.embed_description %}checked{% endif %}><br><br>
 
-        <label for="embed_language">Embed Language</label>
+        <label for="embed_language">Embed Language:</label>
         <input type="checkbox" id="embed_language" {% if config.embed_language %}checked{% endif %}><br><br>
 
-        <label for="embed_isrc">Embed ISRC</label>
+        <label for="embed_isrc">Embed ISRC:</label>
         <input type="checkbox" id="embed_isrc" {% if config.embed_isrc %}checked{% endif %}><br><br>
 
-        <label for="embed_length">Embed Length</label>
+        <label for="embed_length">Embed Length:</label>
         <input type="checkbox" id="embed_length" {% if config.embed_length %}checked{% endif %}><br><br>
 
-        <label for="embed_key">Embed Key</label>
-        <input type="checkbox" id="embed_key" {% if config.embed_key %}checked{% endif %}><br><br>
-
-        <label for="embed_bpm">Embed BPM</label>
-        <input type="checkbox" id="embed_bpm" {% if config.embed_bpm %}checked{% endif %}><br><br>
-
-        <label for="embed_url">Embed URL</label>
+        <label for="embed_url">Embed URL:</label>
         <input type="checkbox" id="embed_url" {% if config.embed_url %}checked{% endif %}><br><br>
 
-        <label for="embed_lyrics">Embed Lyrics</label>
-        <input type="checkbox" id="embed_lyrics" {% if config.embed_lyrics %}checked{% endif %}><br><br>
+        <label for="embed_key">Embed Key:</label>
+        <input type="checkbox" id="embed_key" {% if config.embed_key %}checked{% endif %}><br><br>
 
-        <label for="embed_explicit">Embed Explicit</label>
-        <input type="checkbox" id="embed_explicit" {% if config.embed_explicit %}checked{% endif %}><br><br>
+        <label for="embed_bpm">Embed BPM:</label>
+        <input type="checkbox" id="embed_bpm" {% if config.embed_bpm %}checked{% endif %}><br><br>
 
-        <label for="embed_compilation">Embed Compilation</label>
+        <label for="embed_compilation">Embed Compilation:</label>
         <input type="checkbox" id="embed_compilation" {% if config.embed_compilation %}checked{% endif %}><br><br>
 
-        <label for="embed_upc">Embed UPC</label>
+        <label for="embed_lyrics">Embed Lyrics:</label>
+        <input type="checkbox" id="embed_lyrics" {% if config.embed_lyrics %}checked{% endif %}><br><br>
+
+        <label for="embed_explicit">Embed Explicit:</label>
+        <input type="checkbox" id="embed_explicit" {% if config.embed_explicit %}checked{% endif %}><br><br>
+
+        <label for="embed_upc">Embed UPC:</label>
         <input type="checkbox" id="embed_upc" {% if config.embed_upc %}checked{% endif %}><br><br>
 
         <label for="embed_service_id">Embed Service ID:</label>
         <input type="checkbox" id="embed_service_id" {% if config.embed_service_id %}checked{% endif %}><br><br>
 
-        <label for="embed_timesignature">Embed Time Signature</label>
+        <label for="embed_timesignature">Embed Time Signature:</label>
         <input type="checkbox" id="embed_timesignature" {% if config.embed_timesignature %}checked{% endif %}><br><br>
 
-        <label for="embed_acousticness">Embed Acousticness</label>
+        <label for="embed_acousticness">Embed Acousticness:</label>
         <input type="checkbox" id="embed_acousticness" {% if config.embed_acousticness %}checked{% endif %}><br><br>
 
-        <label for="embed_danceability">Embed Danceability</label>
+        <label for="embed_danceability">Embed Danceability:</label>
         <input type="checkbox" id="embed_danceability" {% if config.embed_danceability %}checked{% endif %}><br><br>
 
-        <label for="embed_energy">Embed Energy</label>
+        <label for="embed_energy">Embed Energy:</label>
         <input type="checkbox" id="embed_energy" {% if config.embed_energy %}checked{% endif %}><br><br>
 
-        <label for="embed_instrumentalness">Embed Instrumentalness</label>
+        <label for="embed_instrumentalness">Embed Instrumentalness:</label>
         <input type="checkbox" id="embed_instrumentalness" {% if config.embed_instrumentalness %}checked{% endif %}><br><br>
 
-        <label for="embed_liveness">Embed Liveness</label>
+        <label for="embed_liveness">Embed Liveness:</label>
         <input type="checkbox" id="embed_liveness" {% if config.embed_liveness %}checked{% endif %}><br><br>
 
-        <label for="embed_loudness">Embed Loudness</label>
+        <label for="embed_loudness">Embed Loudness:</label>
         <input type="checkbox" id="embed_loudness" {% if config.embed_loudness %}checked{% endif %}><br><br>
 
-        <label for="embed_speechiness">Embed Speechiness</label>
+        <label for="embed_speechiness">Embed Speechiness:</label>
         <input type="checkbox" id="embed_speechiness" {% if config.embed_speechiness %}checked{% endif %}><br><br>
 
-        <label for="embed_valence">Embed Valence</label>
+        <label for="embed_valence">Embed Valence:</label>
         <input type="checkbox" id="embed_valence" {% if config.embed_valence %}checked{% endif %}><br><br>
 
         <h2>Video Downloads</h2>
 
-        <label for="generic_download_root">Video Download Path:</label>
-        <input type="text" id="generic_download_root" value="{{ config.generic_download_root }}" placeholder="Enter download path"><br><br>
+        <label for="video_download_path">Video Download Path:</label>
+        <input type="text" id="video_download_path" value="{{ config.video_download_path }}" placeholder="Enter video download path"><br><br>
 
-        <label for="download_youtube_videos">Download Youtube Videos</label>
-        <input type="checkbox" id="download_youtube_videos" {% if config.download_youtube_videos %}checked{% endif %}><br><br>
+        <label for="movie_file_format">Movie File Format:</label>
+        <input type="text" id="movie_file_format" value="{{ config.movie_file_format }}" placeholder="Enter movie file format"><br><br>
 
-        <label for="maximum_generic_resolution">Maximum Generic Resolution:</label>
-        <input type="number" id="maximum_generic_resolution" value="{{ config.maximum_generic_resolution }}" placeholder="Enter maximum generic resolution"><br><br>
+        <label for="movie_path_formatter">Movie Path Formatter:</label>
+        <input type="text" id="movie_path_formatter" value="{{ config.movie_path_formatter }}" placeholder="Enter movie path format"><br><br>
+
+        <label for="show_file_format">Show File Format:</label>
+        <input type="text" id="show_file_format" value="{{ config.show_file_format }}" placeholder="Enter show file format"><br><br>
+
+        <label for="show_path_formatter">Show Path Formatter:</label>
+        <input type="text" id="show_path_formatter" value="{{ config.show_path_formatter }}" placeholder="Enter show path format"><br><br>
+
+        <label for="preferred_video_resolution">Preferred Video Resolution:</label>
+        <input type="number" id="preferred_video_resolution" value="{{ config.preferred_video_resolution }}" placeholder="Enter max video resolution"><br><br>
+
+        <label for="download_subtitles">Download Subtitles:</label>
+        <input type="checkbox" id="download_subtitles" {% if config.download_subtitles %}checked{% endif %}><br><br>
+
+        <label for="preferred_audio_language">Preferred Audio Language:</label>
+        <input type="text" id="preferred_audio_language" value="{{ config.preferred_audio_language }}" placeholder="Enter preferred audio language"><br><br>
+
+        <label for="preferred_subtitle_language">Preferred Subtitle Language:</label>
+        <input type="text" id="preferred_subtitle_language" value="{{ config.preferred_subtitle_language }}" placeholder="Enter preferred subtitle language"><br><br>
+
+        <label for="download_all_available_audio">Download All Available Audio:</label>
+        <input type="checkbox" id="download_all_available_audio" {% if config.download_all_available_audio %}checked{% endif %}><br><br>
+
+        <label for="download_all_available_subtitles">Download All Available Subtitles:</label>
+        <input type="checkbox" id="download_all_available_subtitles" {% if config.download_all_available_subtitles %}checked{% endif %}><br><br>
 
         <button type="button" onclick="updateSettings()">Save Settings</button>
     </form>
@@ -355,64 +387,73 @@
     <script>
         function updateSettings() {
             console.log('Success:');
-            const parsingAccSn = document.querySelector('input[name="parsing_acc_sn"]:checked')
-                ? document.querySelector('input[name="parsing_acc_sn"]:checked').value
+            const activeAccountNumber = document.querySelector('input[name="active_account_number"]:checked')
+                ? document.querySelector('input[name="active_account_number"]:checked').value
                 : '';
             const data = {
-                parsing_acc_sn: parsingAccSn,
+                // Account Settings
+                active_account_number: activeAccountNumber,
+                // Web UI Settings
                 use_webui_login: document.getElementById('use_webui_login').checked,
                 webui_username: document.getElementById('webui_username').value,
                 webui_password: document.getElementById('webui_password').value,
+                // General Settings
+                explicit_label: document.getElementById('explicit_label').value,
                 download_copy_btn: document.getElementById('download_copy_btn').checked,
                 download_open_btn: document.getElementById('download_open_btn').checked,
                 download_locate_btn: document.getElementById('download_locate_btn').checked,
                 download_delete_btn: document.getElementById('download_delete_btn').checked,
                 show_search_thumbnails: document.getElementById('show_search_thumbnails').checked,
                 show_download_thumbnails: document.getElementById('show_download_thumbnails').checked,
-                search_thumb_height: document.getElementById('search_thumb_height').value,
+                thumbnail_size: document.getElementById('thumbnail_size').value,
                 max_search_results: document.getElementById('max_search_results').value,
-                explicit_label: document.getElementById('explicit_label').value,
-                mirror_spotify_playback: document.getElementById('mirror_spotify_playback').checked,
+                disable_download_popups: document.getElementById('disable_download_popups').checked,
                 windows_10_explorer_thumbnails: document.getElementById('windows_10_explorer_thumbnails').checked,
+                mirror_spotify_playback: document.getElementById('mirror_spotify_playback').checked,
+                close_to_tray: document.getElementById('close_to_tray').checked,
                 check_for_updates: document.getElementById('check_for_updates').checked,
-                enable_search_tracks: document.getElementById('enable_search_tracks').checked,
-                enable_search_albums: document.getElementById('enable_search_albums').checked,
-                enable_search_artists: document.getElementById('enable_search_artists').checked,
-                enable_search_playlists: document.getElementById('enable_search_playlists').checked,
-                enable_search_episodes: document.getElementById('enable_search_episodes').checked,
-                enable_search_shows: document.getElementById('enable_search_shows').checked,
-                enable_search_audiobooks: document.getElementById('enable_search_audiobooks').checked,
-                download_root: document.getElementById('download_root').value,
-                media_format: document.getElementById('media_format').value,
-                track_path_formatter: document.getElementById('track_path_formatter').value,
-                podcast_media_format: document.getElementById('podcast_media_format').value,
-                podcast_path_formatter: document.getElementById('podcast_path_formatter').value,
-                use_playlist_path: document.getElementById('use_playlist_path').checked,
-                playlist_path_formatter: document.getElementById('playlist_path_formatter').value,
-                create_m3u_playlists: document.getElementById('create_m3u_playlists').checked,
-                m3u_name_formatter: document.getElementById('m3u_name_formatter').value,
-                ext_seperator: document.getElementById('ext_seperator').value,
-                ext_path: document.getElementById('ext_path').value,
-                save_album_cover: document.getElementById('save_album_cover').checked,
-                album_cover_format: document.getElementById('album_cover_format').value,
                 illegal_character_replacement: document.getElementById('illegal_character_replacement').value,
-                inp_enable_lyrics: document.getElementById('inp_enable_lyrics').checked,
-                only_synced_lyrics: document.getElementById('only_synced_lyrics').checked,
-                use_lrc_file: document.getElementById('use_lrc_file').checked,
-                file_bitrate: document.getElementById('file_bitrate').value,
-                file_hertz: document.getElementById('file_hertz').value,
-                rotate_acc_sn: document.getElementById('rotate_acc_sn').checked,
-                force_raw: document.getElementById('force_raw').checked,
+                raw_media_download: document.getElementById('raw_media_download').checked,
+                rotate_active_account_number: document.getElementById('rotate_active_account_number').checked,
                 download_delay: document.getElementById('download_delay').value,
-                translate_file_path: document.getElementById('translate_file_path').checked,
+                download_chunk_size: document.getElementById('download_chunk_size').value,
                 maximum_queue_workers: document.getElementById('maximum_queue_workers').value,
                 maximum_download_workers: document.getElementById('maximum_download_workers').value,
                 enable_retry_worker: document.getElementById('enable_retry_worker').checked,
                 retry_worker_delay: document.getElementById('retry_worker_delay').value,
-                metadata_separator: document.getElementById('metadata_seperator').value,
+                // Search Settings
+                enable_search_tracks: document.getElementById('enable_search_tracks').checked,
+                enable_search_albums: document.getElementById('enable_search_albums').checked,
+                enable_search_playlists: document.getElementById('enable_search_playlists').checked,
+                enable_search_artists: document.getElementById('enable_search_artists').checked,
+                enable_search_episodes: document.getElementById('enable_search_episodes').checked,
+                enable_search_podcasts: document.getElementById('enable_search_podcasts').checked,
+                enable_search_audiobooks: document.getElementById('enable_search_audiobooks').checked,
+                // Audio Download Settings
+                audio_download_path: document.getElementById('audio_download_path').value,
+                track_file_format: document.getElementById('track_file_format').value,
+                track_path_formatter: document.getElementById('track_path_formatter').value,
+                podcast_file_format: document.getElementById('podcast_file_format').value,
+                podcast_path_formatter: document.getElementById('podcast_path_formatter').value,
+                use_playlist_path: document.getElementById('use_playlist_path').checked,
+                playlist_path_formatter: document.getElementById('playlist_path_formatter').value,
+                create_m3u_file: document.getElementById('create_m3u_file').checked,
+                m3u_path_formatter: document.getElementById('m3u_path_formatter').value,
+                extinf_separator: document.getElementById('extinf_separator').value,
+                extinf_label: document.getElementById('extinf_label').value,
+                file_bitrate: document.getElementById('file_bitrate').value,
+                file_hertz: document.getElementById('file_hertz').value,
+                save_album_cover: document.getElementById('save_album_cover').checked,
+                album_cover_format: document.getElementById('album_cover_format').value,
+                download_lyrics: document.getElementById('download_lyrics').checked,
+                save_lrc_file: document.getElementById('save_lrc_file').checked,
+                only_download_synced_lyrics: document.getElementById('only_download_synced_lyrics').checked,
+                translate_file_path: document.getElementById('translate_file_path').checked,
+                // Audio Metadata Settings
+                metadata_separator: document.getElementById('metadata_separator').value,
                 overwrite_existing_metadata: document.getElementById('overwrite_existing_metadata').checked,
-                embed_cover: document.getElementById('embed_cover').checked,
                 embed_branding: document.getElementById('embed_branding').checked,
+                embed_cover: document.getElementById('embed_cover').checked,
                 embed_artist: document.getElementById('embed_artist').checked,
                 embed_album: document.getElementById('embed_album').checked,
                 embed_albumartist: document.getElementById('embed_albumartist').checked,
@@ -430,13 +471,13 @@
                 embed_language: document.getElementById('embed_language').checked,
                 embed_isrc: document.getElementById('embed_isrc').checked,
                 embed_length: document.getElementById('embed_length').checked,
+                embed_url: document.getElementById('embed_url').checked,
                 embed_key: document.getElementById('embed_key').checked,
                 embed_bpm: document.getElementById('embed_bpm').checked,
-                embed_url: document.getElementById('embed_url').checked,
+                embed_compilation: document.getElementById('embed_compilation').checked,
                 embed_lyrics: document.getElementById('embed_lyrics').checked,
                 embed_explicit: document.getElementById('embed_explicit').checked,
-                embed_compilation: document.getElementById('embed_compilation').checked,
-                embed_upc: document.getElementById('embed_service_id').checked,
+                embed_upc: document.getElementById('embed_upc').checked,
                 embed_service_id: document.getElementById('embed_service_id').checked,
                 embed_timesignature: document.getElementById('embed_timesignature').checked,
                 embed_acousticness: document.getElementById('embed_acousticness').checked,
@@ -447,9 +488,18 @@
                 embed_loudness: document.getElementById('embed_loudness').checked,
                 embed_speechiness: document.getElementById('embed_speechiness').checked,
                 embed_valence: document.getElementById('embed_valence').checked,
-                generic_download_root: document.getElementById('generic_download_root').value,
-                download_youtube_videos: document.getElementById('download_youtube_videos').checked,
-                maximum_generic_resolution: document.getElementById('maximum_generic_resolution').value
+                // Video Download Settings
+                video_download_path: document.getElementById('video_download_path').value,
+                movie_file_format: document.getElementById('movie_file_format').value,
+                movie_path_formatter: document.getElementById('movie_path_formatter').value,
+                show_file_format: document.getElementById('show_file_format').value,
+                show_path_formatter: document.getElementById('show_path_formatter').value,
+                preferred_video_resolution: document.getElementById('preferred_video_resolution').value,
+                download_subtitles: document.getElementById('download_subtitles').checked,
+                preferred_audio_language: document.getElementById('preferred_audio_language').value,
+                preferred_subtitle_language: document.getElementById('preferred_subtitle_language').value,
+                download_all_available_audio: document.getElementById('download_all_available_audio').checked,
+                download_all_available_subtitles: document.getElementById('download_all_available_subtitles').checked,
             };
 
             fetch('/update_settings', {

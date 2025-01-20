@@ -81,7 +81,7 @@ def is_latest_release():
     url = "https://api.github.com/repos/justin025/onthespot/releases/latest"
     response = requests.get(url)
     if response.status_code == 200:
-        current_version = str(config.get("version")).replace('v', '').replace('.', '')
+        current_version = config.get("version").replace('v', '').replace('.', '')
         latest_version = response.json()['name'].replace('v', '').replace('.', '')
         if int(latest_version) > int(current_version):
             logger.info(f"Update Available: {int(latest_version)} > {int(current_version)}")
@@ -132,44 +132,56 @@ def translate(string):
 def conv_list_format(items):
     if len(items) == 0:
         return ''
-    return (config.get('metadata_seperator')).join(items)
+    return (config.get('metadata_separator')).join(items)
 
 
-def format_track_path(item, item_metadata):
+def format_item_path(item, item_metadata):
     if config.get("translate_file_path"):
-        name = translate(item_metadata.get('title', ''))
-        album = translate(item_metadata.get('album_name', ''))
+        name = translate(item_metadata.get('title'))
+        album = translate(item_metadata.get('album_name'))
     else:
-        name = item_metadata.get('title', '')
-        album = item_metadata.get('album_name', '')
+        name = item_metadata.get('title')
+        album = item_metadata.get('album_name')
 
     if item['parent_category'] == 'playlist' and config.get("use_playlist_path"):
         path = config.get("playlist_path_formatter")
     elif item['item_type'] == 'track':
         path = config.get("track_path_formatter")
-    elif item['item_type'] == 'episode':
+    elif item['item_type'] == 'podcast_episode':
         path = config.get("podcast_path_formatter")
+    elif item['item_type'] == 'movie':
+        path = config.get("movie_path_formatter")
+    elif item['item_type'] == 'episode':
+        path = config.get("show_path_formatter")
 
     item_path = path.format(
-        service=sanitize_data(item.get('item_service', '')).title(),
-        service_id=str(item.get('item_id', '')),
-        artist=sanitize_data(item_metadata.get('artists', '')),
-        album=sanitize_data(album),
-        album_artist=sanitize_data(item_metadata.get('album_artists', '')),
-        album_type=item_metadata.get('album_type', 'single').title(),
+        # Universal
+        service=sanitize_data(item.get('item_service')).title(),
+        service_id=str(item_metadata.get('item_id')),
         name=sanitize_data(name),
-        year=sanitize_data(item_metadata.get('release_year', '')),
+        year=sanitize_data(item_metadata.get('release_year')),
+        explicit=sanitize_data(str(config.get('explicit_label')) if item_metadata.get('explicit') else ''),
+
+        # Audio
+        artist=sanitize_data(item_metadata.get('artists')),
+        album=sanitize_data(album),
+        album_artist=sanitize_data(item_metadata.get('album_artists')),
+        album_type=item_metadata.get('album_type', 'single').title(),
         disc_number=item_metadata.get('disc_number', 1),
         track_number=item_metadata.get('track_number', 1),
-        genre=sanitize_data(item_metadata.get('genre', '')),
-        label=sanitize_data(item_metadata.get('label', '')),
-        explicit=sanitize_data(str(config.get('explicit_label')) if item_metadata.get('explicit') else ''),
+        genre=sanitize_data(item_metadata.get('genre')),
+        label=sanitize_data(item_metadata.get('label')),
         trackcount=item_metadata.get('total_tracks', 1),
         disccount=item_metadata.get('total_discs', 1),
-        isrc=str(item_metadata.get('isrc', '')),
-        playlist_name=sanitize_data(item.get('playlist_name', '')),
-        playlist_owner=sanitize_data(item.get('playlist_by', '')),
-        playlist_number=sanitize_data(item.get('playlist_number', '')),
+        isrc=str(item_metadata.get('isrc')),
+        playlist_name=sanitize_data(item.get('playlist_name')),
+        playlist_owner=sanitize_data(item.get('playlist_by')),
+        playlist_number=sanitize_data(item.get('playlist_number')),
+
+        # Show
+        show_name=sanitize_data(item_metadata.get('show_name')),
+        season_number=sanitize_data(str(item_metadata.get('season_number'))),
+        episode_number=sanitize_data(str(item_metadata.get('episode_number'))),
     )
 
     return item_path
@@ -222,6 +234,57 @@ def convert_audio_format(filename, default_format):
         else:
             subprocess.check_call(command, shell=False)
         os.remove(temp_name)
+
+
+def convert_video_format(output_path, output_format, video_file_parts, subtitle_files):
+    target_path = os.path.abspath(output_path)
+    file_name = os.path.basename(target_path)
+    filetype = os.path.splitext(file_name)[1]
+    file_stem = os.path.splitext(file_name)[0]
+
+    temp_file_path = os.path.join(os.path.dirname(target_path), "~" + file_stem + filetype) + '.' + output_format
+
+    # Prepare default parameters
+    # Existing command initialization
+    command = [config.get('_ffmpeg_bin_path')]
+
+    for file in video_file_parts:
+        command += ['-i', file]
+
+    for file in subtitle_files:
+        command += ['-i', file]
+
+    # Set log level based on environment variable
+    if int(os.environ.get('SHOW_FFMPEG_OUTPUT', 0)) == 0:
+        command += ['-loglevel', 'error', '-hide_banner', '-nostats']
+
+    command += ['-c', 'copy']
+
+    # Add user defined parameters
+    for param in config.get('ffmpeg_args'):
+        command.append(param)
+
+    # Add output parameter at last
+    command += [temp_file_path]
+    logger.debug(
+        f'Converting media with ffmpeg. Built commandline {command}'
+        )
+    # Run subprocess with CREATE_NO_WINDOW flag on Windows
+    if os.name == 'nt':
+        subprocess.check_call(command, shell=False, creationflags=subprocess.CREATE_NO_WINDOW)
+    else:
+        subprocess.check_call(command, shell=False)
+
+    for file in video_file_parts:
+        if os.path.exists(file):
+            os.remove(file)
+
+    if output_format == "mkv":
+        for file in subtitle_files:
+            if os.path.exists(file):
+                os.remove(file)
+
+    os.rename(temp_file_path, output_path + '.' + output_format)
 
 
 def embed_metadata(item, metadata):
@@ -286,7 +349,7 @@ def embed_metadata(item, metadata):
                     command += ['-metadata', 'disc={}/{}'.format(value, metadata['total_discs'])]
 
             elif key in ['track_number', 'tracknumber'] and config.get("embed_tracknumber"):
-                command += ['-metadata', 'track={}/{}'.format(value, metadata.get('total_tracks', ''))]
+                command += ['-metadata', 'track={}/{}'.format(value, metadata.get('total_tracks'))]
 
             elif key == 'genre' and config.get("embed_genre"):
                 command += ['-metadata', 'genre={}'.format(value)]
@@ -448,7 +511,7 @@ def set_music_thumbnail(filename, metadata):
         with open(image_path, 'wb') as cover:
             cover.write(buf.read())
 
-        if not config.get('force_raw'):
+        if not config.get('raw_media_download'):
             # I have no idea why music tag manages to display covers
             # in file explorer but raw mutagen and ffmpeg do not.
             if config.get('embed_cover') and config.get('windows_10_explorer_thumbnails'):
@@ -547,7 +610,7 @@ def fix_mp3_metadata(filename):
 def add_to_m3u_file(item, item_metadata):
     logger.info(f"Adding {item['file_path']} to m3u")
 
-    path = config.get("m3u_name_formatter")
+    path = config.get("m3u_path_formatter")
 
     m3u_file = path.format(
         playlist_name=sanitize_data(item['playlist_name']),
@@ -555,7 +618,7 @@ def add_to_m3u_file(item, item_metadata):
     )
 
     m3u_file += "." + config.get("m3u_format")
-    dl_root = config.get("download_root")
+    dl_root = config.get("audio_download_path")
     m3u_path = os.path.join(dl_root, m3u_file)
 
     os.makedirs(os.path.dirname(m3u_path), exist_ok=True)
@@ -564,27 +627,27 @@ def add_to_m3u_file(item, item_metadata):
         with open(m3u_path, 'w', encoding='utf-8') as m3u_file:
             m3u_file.write("#EXTM3U\n")
 
-    EXTINF = config.get('ext_path').format(
-        service=item.get('item_service', '').title(),
-        service_id=str(item.get('item_id', '')),
-        artist=item_metadata.get('artists', ''),
-        album=item_metadata.get('album_name', ''),
-        album_artist=item_metadata.get('album_artists', ''),
+    EXTINF = config.get('extinf_label').format(
+        service=item.get('item_service').title(),
+        service_id=str(item.get('item_id')),
+        artist=item_metadata.get('artists'),
+        album=item_metadata.get('album_name'),
+        album_artist=item_metadata.get('album_artists'),
         album_type=item_metadata.get('album_type', 'single').title(),
-        name=item_metadata.get('title', ''),
-        year=item_metadata.get('release_year', ''),
+        name=item_metadata.get('title'),
+        year=item_metadata.get('release_year'),
         disc_number=item_metadata.get('disc_number', 1),
         track_number=item_metadata.get('track_number', 1),
-        genre=item_metadata.get('genre', ''),
-        label=item_metadata.get('label', ''),
-        explicit=str(config.get('explicit_label')) if item_metadata.get('explicit', '') else '',
+        genre=item_metadata.get('genre'),
+        label=item_metadata.get('label'),
+        explicit=str(config.get('explicit_label')) if item_metadata.get('explicit') else '',
         trackcount=item_metadata.get('total_tracks', 1),
         disccount=item_metadata.get('total_discs', 1),
-        isrc=str(item_metadata.get('isrc', '')),
-        playlist_name=item.get('playlist_name', ''),
-        playlist_owner=item.get('playlist_by', ''),
-        playlist_number=item.get('playlist_number', ''),
-    ).replace(config.get('metadata_seperator'), config.get('ext_seperator'))
+        isrc=str(item_metadata.get('isrc')),
+        playlist_name=item.get('playlist_name'),
+        playlist_owner=item.get('playlist_by'),
+        playlist_number=item.get('playlist_number'),
+    ).replace(config.get('metadata_separator'), config.get('extinf_separator'))
 
     # Check if the item_path is already in the M3U file
     with open(m3u_path, 'r', encoding='utf-8') as m3u_file:

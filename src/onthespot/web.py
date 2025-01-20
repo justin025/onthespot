@@ -14,9 +14,10 @@ from .api.bandcamp import bandcamp_get_track_metadata
 from .api.deezer import deezer_get_track_metadata, deezer_add_account
 from .api.qobuz import qobuz_get_track_metadata
 from .api.soundcloud import soundcloud_get_track_metadata
-from .api.spotify import MirrorSpotifyPlayback, spotify_new_session, spotify_get_track_metadata, spotify_get_episode_metadata
+from .api.spotify import MirrorSpotifyPlayback, spotify_new_session, spotify_get_track_metadata, spotify_get_podcast_episode_metadata
 from .api.tidal import tidal_get_track_metadata
 from .api.youtube_music import youtube_music_get_track_metadata
+from .api.crunchyroll import crunchyroll_get_episode_metadata
 from .downloader import DownloadWorker, RetryWorker
 from .otsconfig import config_dir, config
 from .parse_item import parsingworker, parse_url
@@ -58,9 +59,9 @@ class QueueWorker(threading.Thread):
                                 "item_name": item_metadata["title"],
                                 "item_by": item_metadata["artists"],
                                 'parent_category': item['parent_category'],
-                                'playlist_name': item.get('playlist_name', ''),
-                                'playlist_by': item.get('playlist_by', ''),
-                                'playlist_number': item.get('playlist_number', ''),
+                                'playlist_name': item.get('playlist_name'),
+                                'playlist_by': item.get('playlist_by'),
+                                'playlist_number': item.get('playlist_number'),
                                 'item_thumbnail': item_metadata["image_url"],
                                 'item_url': item_metadata["item_url"]
                             }
@@ -232,7 +233,7 @@ def about():
 @app.route('/search_results')
 @login_required
 def search_results():
-    query = request.args.get('q', '')
+    query = request.args.get('q')
 
     content_types = []
     if config.get('enable_search_tracks'):
@@ -243,7 +244,7 @@ def search_results():
         content_types.append('album')
     if config.get('enable_search_artists'):
         content_types.append('artist')
-    if config.get('enable_search_shows'):
+    if config.get('enable_search_podcasts'):
         content_types.append('show')
     if config.get('enable_search_episodes'):
         content_types.append('episode')
@@ -270,7 +271,7 @@ def update_settings():
     for key, value in data.items():
         if isinstance(value, str) and value.isdigit():
             value = int(value)
-        config.set_(key, value)
+        config.set(key, value)
         config.update()
     return jsonify(success=True)
 

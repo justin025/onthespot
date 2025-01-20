@@ -8,7 +8,7 @@ class LabelWithThumb(QWidget):
     def __init__(self, label, thumb_url):
         super().__init__()
 
-        self.aspect_ratio = config.get("search_thumb_height")
+        self.aspect_ratio = config.get("thumbnail_size")
 
         # Create a horizontal layout
         layout = QHBoxLayout(self)

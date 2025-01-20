@@ -1,3 +1,4 @@
+import asyncio
 import os
 import shutil
 import threading
@@ -14,10 +15,11 @@ from ..api.bandcamp import bandcamp_add_account, bandcamp_get_track_metadata
 from ..api.deezer import deezer_add_account, deezer_get_track_metadata
 from ..api.qobuz import qobuz_add_account, qobuz_get_track_metadata
 from ..api.soundcloud import soundcloud_add_account, soundcloud_get_token, soundcloud_get_track_metadata
-from ..api.spotify import MirrorSpotifyPlayback, spotify_get_token, spotify_get_track_metadata, spotify_get_episode_metadata, spotify_new_session
+from ..api.spotify import MirrorSpotifyPlayback, spotify_get_token, spotify_get_track_metadata, spotify_get_podcast_episode_metadata, spotify_new_session
 from ..api.tidal import tidal_add_account_pt1, tidal_add_account_pt2, tidal_get_track_metadata
 from ..api.youtube_music import youtube_music_add_account, youtube_music_get_track_metadata
 from ..api.generic import generic_add_account, generic_get_track_metadata, generic_list_extractors
+from ..api.crunchyroll import crunchyroll_add_account, crunchyroll_get_episode_metadata
 from ..downloader import DownloadWorker, RetryWorker
 from ..otsconfig import config, cache_dir
 from ..runtimedata import account_pool, download_queue, download_queue_lock, get_init_tray, parsing, pending, pending_lock, get_logger, temp_download_path
@@ -82,7 +84,7 @@ class MainWindow(QMainWindow):
 
     # Remove Later
     def contribute(self):
-        if self.inp_language.currentIndex() == self.inp_language.count() - 1:
+        if self.language.currentIndex() == self.language.count() - 1:
             url = "https://github.com/justin025/OnTheSpot/tree/main#contributing"
             open_item(url)
 
@@ -97,8 +99,8 @@ class MainWindow(QMainWindow):
         self.centralwidget.setStyleSheet(config.get('theme'))
 
         self.start_url = start_url
-        self.inp_version.setText(config.get("version"))
-        self.inp_session_uuid.setText(config.session_uuid)
+        self.version.setText(config.get("version"))
+        self.session_uuid.setText(config.session_uuid)
         logger.info(f"Initialising main window, logging session : {config.session_uuid}")
 
         # Fill the value from configs
@@ -110,7 +112,7 @@ class MainWindow(QMainWindow):
         # Start/create session builder and queue processor
         fillaccountpool = FillAccountPool(gui=True)
         fillaccountpool.finished.connect(self.session_load_done)
-        fillaccountpool.progress.connect(self.__show_popup_dialog)
+        fillaccountpool.progress.connect(self.show_popup_dialog)
         fillaccountpool.start()
 
         for i in range(config.get('maximum_queue_workers')):
@@ -166,7 +168,7 @@ class MainWindow(QMainWindow):
                 else:
                     # Light color, set dark font and progress bar
                     stylesheet = f'background-color: {color.name()}; color: black;'
-                config.set_('theme', stylesheet)
+                config.set('theme', stylesheet)
                 config.update()
                 self.centralwidget.setStyleSheet(stylesheet)
                 self.__splash_dialog.update_theme(stylesheet)
@@ -176,7 +178,7 @@ class MainWindow(QMainWindow):
         # Connect button click signals
         self.btn_search.clicked.connect(self.fill_search_table)
 
-        self.inp_login_service.currentIndexChanged.connect(self.set_login_fields)
+        self.login_service.currentIndexChanged.connect(self.set_login_fields)
 
         self.btn_save_config.clicked.connect(self.update_config)
         self.btn_reset_config.clicked.connect(self.reset_app_config)
@@ -185,12 +187,12 @@ class MainWindow(QMainWindow):
 
         self.btn_progress_retry_all.clicked.connect(self.retry_all_failed_downloads)
         self.btn_progress_cancel_all.clicked.connect(self.cancel_all_downloads)
-        self.btn_download_root_browse.clicked.connect(lambda: self.select_dir(self.inp_download_root))
-        self.btn_generic_download_root_browse.clicked.connect(lambda: self.select_dir(self.inp_generic_download_root))
+        self.btn_audio_download_path_browse.clicked.connect(lambda: self.select_dir(self.audio_download_path))
+        self.btn_generic_audio_download_path_browse.clicked.connect(lambda: self.select_dir(self.generic_audio_download_path))
 
-        self.btn_download_tmp_browse.clicked.connect(lambda: self.select_dir(self.inp_tmp_dl_root))
-        self.inp_tmp_dl_root.textChanged.connect(self.update_tmp_dir)
-        self.inp_search_term.returnPressed.connect(self.fill_search_table)
+        self.btn_download_tmp_browse.clicked.connect(lambda: self.select_dir(self.tmp_dl_root))
+        self.tmp_dl_root.textChanged.connect(self.update_tmp_dir)
+        self.search_term.returnPressed.connect(self.fill_search_table)
         self.btn_progress_clear_complete.clicked.connect(self.remove_completed_from_download_list)
 
         self.btn_search_filter_toggle.clicked.connect(lambda toggle: self.group_search_items.show() if self.group_search_items.isHidden() else self.group_search_items.hide())
@@ -198,30 +200,30 @@ class MainWindow(QMainWindow):
         self.btn_download_filter_toggle.clicked.connect(lambda toggle: self.group_download_items.show() if self.group_download_items.isHidden() else self.group_download_items.hide())
         self.btn_download_filter_toggle.clicked.connect(lambda switch: self.btn_download_filter_toggle.setIcon(self.get_icon('collapse_up')) if self.group_download_items.isHidden() else self.btn_download_filter_toggle.setIcon(self.get_icon('collapse_down')))
 
-        self.inp_download_queue_show_waiting.stateChanged.connect(self.update_table_visibility)
-        self.inp_download_queue_show_failed.stateChanged.connect(self.update_table_visibility)
-        self.inp_download_queue_show_unavailable.stateChanged.connect(self.update_table_visibility)
-        self.inp_download_queue_show_cancelled.stateChanged.connect(self.update_table_visibility)
-        self.inp_download_queue_show_completed.stateChanged.connect(self.update_table_visibility)
+        self.download_queue_show_waiting.stateChanged.connect(self.update_table_visibility)
+        self.download_queue_show_failed.stateChanged.connect(self.update_table_visibility)
+        self.download_queue_show_unavailable.stateChanged.connect(self.update_table_visibility)
+        self.download_queue_show_cancelled.stateChanged.connect(self.update_table_visibility)
+        self.download_queue_show_completed.stateChanged.connect(self.update_table_visibility)
 
-        self.inp_download_queue_show_waiting.stateChanged.connect(self.update_table_visibility)
-        self.inp_download_queue_show_failed.stateChanged.connect(self.update_table_visibility)
-        self.inp_download_queue_show_cancelled.stateChanged.connect(self.update_table_visibility)
-        self.inp_download_queue_show_unavailable.stateChanged.connect(self.update_table_visibility)
-        self.inp_download_queue_show_completed.stateChanged.connect(self.update_table_visibility)
+        self.download_queue_show_waiting.stateChanged.connect(self.update_table_visibility)
+        self.download_queue_show_failed.stateChanged.connect(self.update_table_visibility)
+        self.download_queue_show_cancelled.stateChanged.connect(self.update_table_visibility)
+        self.download_queue_show_unavailable.stateChanged.connect(self.update_table_visibility)
+        self.download_queue_show_completed.stateChanged.connect(self.update_table_visibility)
 
-        self.inp_mirror_spotify_playback.stateChanged.connect(self.manage_mirror_spotify_playback)
+        self.mirror_spotify_playback.stateChanged.connect(self.manage_mirror_spotify_playback)
 
-        self.inp_settings_bookmark_accounts.clicked.connect(lambda: self.settings_scroll_area.verticalScrollBar().setValue(0))
-        self.inp_settings_bookmark_general.clicked.connect(lambda: self.settings_scroll_area.verticalScrollBar().setValue(328))
-        self.inp_settings_bookmark_audio_downloads.clicked.connect(lambda: self.settings_scroll_area.verticalScrollBar().setValue(874))
-        self.inp_settings_bookmark_audio_metadata.clicked.connect(lambda: self.settings_scroll_area.verticalScrollBar().setValue(2006))
-        self.inp_settings_bookmark_video_downloads.clicked.connect(lambda: self.settings_scroll_area.verticalScrollBar().setValue(9999))
+        self.settings_bookmark_accounts.clicked.connect(lambda: self.settings_scroll_area.verticalScrollBar().setValue(0))
+        self.settings_bookmark_general.clicked.connect(lambda: self.settings_scroll_area.verticalScrollBar().setValue(328))
+        self.settings_bookmark_audio_downloads.clicked.connect(lambda: self.settings_scroll_area.verticalScrollBar().setValue(1160))
+        self.settings_bookmark_audio_metadata.clicked.connect(lambda: self.settings_scroll_area.verticalScrollBar().setValue(1930))
+        self.settings_bookmark_video_downloads.clicked.connect(lambda: self.settings_scroll_area.verticalScrollBar().setValue(9999))
 
-        self.inp_export_logs.clicked.connect(lambda: shutil.copy(
+        self.export_logs.clicked.connect(lambda: shutil.copy(
             os.path.join(cache_dir(), "onthespot", "logs", config.session_uuid, "onthespot.log"),
             os.path.join(os.path.expanduser("~"), "Downloads", "onthespot.log")) and
-            self.__show_popup_dialog(self.tr("Logs exported to '{0}'").format(os.path.join(os.path.expanduser("~"), "Downloads", "onthespot.log") or True))
+            self.show_popup_dialog(self.tr("Logs exported to '{0}'").format(os.path.join(os.path.expanduser("~"), "Downloads", "onthespot.log") or True))
             )
 
 
@@ -258,7 +260,7 @@ class MainWindow(QMainWindow):
 
     def reset_app_config(self):
         config.rollback()
-        self.__show_popup_dialog("The application setting was cleared successfully !\n Please restart the application.")
+        self.show_popup_dialog("The application setting was cleared successfully !\n Please restart the application.")
 
 
     def select_dir(self, output):
@@ -270,12 +272,12 @@ class MainWindow(QMainWindow):
 
     def update_tmp_dir(self):
         temp_download_path.clear()
-        new_path = self.inp_tmp_dl_root.text()
+        new_path = self.tmp_dl_root.text()
         if new_path:
             temp_download_path.append(new_path)
 
-    def __show_popup_dialog(self, txt, btn_hide=False, download=False):
-        if download and config.get('disable_bulk_dl_notices'):
+    def show_popup_dialog(self, txt, btn_hide=False, download=False):
+        if download and config.get('disable_download_popups'):
             return
         self.__splash_dialog.lb_main.setText(str(txt))
         if btn_hide:
@@ -293,13 +295,13 @@ class MainWindow(QMainWindow):
         if self.start_url.strip() != '':
             logger.info(f'Session was started with query of {self.start_url}')
             self.tabview.setCurrentIndex(1)
-            self.inp_search_term.setText(self.start_url.strip())
+            self.search_term.setText(self.start_url.strip())
             self.fill_search_table()
         self.start_url = ''
         # Update Checker
         if config.get("check_for_updates"):
             if not is_latest_release():
-                self.__show_popup_dialog(self.tr("<p>An update is available at the link below,<p><a style='color: #6495ed;' href='https://github.com/justin025/onthespot/releases/latest'>https://github.com/justin025/onthespot/releases/latest</a>"))
+                self.show_popup_dialog(self.tr("<p>An update is available at the link below,<p><a style='color: #6495ed;' href='https://github.com/justin025/onthespot/releases/latest'>https://github.com/justin025/onthespot/releases/latest</a>"))
 
 
     def fill_account_table(self):
@@ -312,8 +314,8 @@ class MainWindow(QMainWindow):
             rows = self.tbl_sessions.rowCount()
 
             radiobutton = QRadioButton()
-            radiobutton.clicked.connect(lambda: config.set_('parsing_acc_sn', self.tbl_sessions.currentRow()))
-            if sn == config.get("parsing_acc_sn") + 1:
+            radiobutton.clicked.connect(lambda: config.set('active_account_number', self.tbl_sessions.currentRow()))
+            if sn == config.get("active_account_number") + 1:
                 radiobutton.setChecked(True)
 
             remove_btn = QPushButton(self.tbl_sessions)
@@ -402,14 +404,17 @@ class MainWindow(QMainWindow):
             delete_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
             delete_btn.hide()
 
+        item_by = item_metadata.get('artists') if item_metadata.get('artists') else item_metadata.get('show_name')
+
         playlist_name = ''
         playlist_by = ''
         if item['parent_category'] == 'playlist':
             item_category = f'Playlist: {item["playlist_name"]}'
-            playlist_name = item.get('playlist_name', '')
-            playlist_by = item.get('playlist_by', '')
-        elif item['parent_category'] in ('album', 'show', 'audiobook'):
-            item_category = f'{item["parent_category"].title()}: {item_metadata["album_name"]}'
+            playlist_name = item.get('playlist_name')
+            playlist_by = item.get('playlist_by')
+        elif item['parent_category'] in ('album', 'show'):
+            parent_name = item_metadata.get("album_name") if item_metadata.get("album_name") else item_metadata.get("show_name")
+            item_category = f'{item["parent_category"].title()}: {parent_name}'
         else:
             item_category = f'{item["parent_category"].title()}: {item_metadata["title"]}'
 
@@ -423,20 +428,20 @@ class MainWindow(QMainWindow):
 
         rows = self.tbl_dl_progress.rowCount()
         self.tbl_dl_progress.insertRow(rows)
-        if item_metadata.get('explicit', ''):
-            title = config.get('explicit_label', '') + ' ' + item_metadata.get('title', '')
+        if item_metadata.get('explicit'):
+            title = config.get('explicit_label') + ' ' + item_metadata.get('title')
         else:
-            title = item_metadata.get('title', '')
-        if config.get('show_download_thumbnails') and item_metadata.get('image_url', ''):
-            self.tbl_dl_progress.setRowHeight(rows, config.get("search_thumb_height"))
-            item_label = LabelWithThumb(title, item_metadata.get('image_url', ''))
+            title = item_metadata.get('title')
+        if config.get('show_download_thumbnails') and item_metadata.get('image_url'):
+            self.tbl_dl_progress.setRowHeight(rows, config.get("thumbnail_size"))
+            item_label = LabelWithThumb(title, item_metadata.get('image_url'))
         else:
             item_label = QLabel(self.tbl_dl_progress)
             item_label.setText(title)
         # Add To List
         self.tbl_dl_progress.setItem(rows, 0, QTableWidgetItem(str(item['local_id'])))
         self.tbl_dl_progress.setCellWidget(rows, 1, item_label)
-        self.tbl_dl_progress.setItem(rows, 2, QTableWidgetItem(item_metadata.get('artists', '')))
+        self.tbl_dl_progress.setItem(rows, 2, QTableWidgetItem(item_by))
         self.tbl_dl_progress.setItem(rows, 3, QTableWidgetItem(item_category))
         self.tbl_dl_progress.setItem(rows, 4, service_label)
         self.tbl_dl_progress.setCellWidget(rows, 5, status_label)
@@ -457,7 +462,7 @@ class MainWindow(QMainWindow):
                 'parent_category': item['parent_category'],
                 'playlist_name': playlist_name,
                 'playlist_by': playlist_by,
-                'playlist_number': item.get('playlist_number', ''),
+                'playlist_number': item.get('playlist_number'),
                 "gui": {
                     "item_label": item_label,
                     "status_label": status_label,
@@ -574,19 +579,19 @@ class MainWindow(QMainWindow):
         del account_pool[index]
         accounts = config.get('accounts').copy()
         del accounts[index]
-        config.set_('accounts', accounts)
+        config.set('accounts', accounts)
         config.update()
 
         self.tbl_sessions.removeRow(index)
-        if config.get('parsing_acc_sn') == index or config.get('parsing_acc_sn') >= len(account_pool):
-            config.set_('parsing_acc_sn', 0)
+        if config.get('active_account_number') == index or config.get('active_account_number') >= len(account_pool):
+            config.set('active_account_number', 0)
             config.update()
             try:
                 self.tbl_sessions.cellWidget(0, 0).setChecked(True)
             except AttributeError:
                 # Account Table is empty
                 pass
-        self.__show_popup_dialog(self.tr("Account was removed successfully."))
+        self.show_popup_dialog(self.tr("Account was removed successfully."))
 
 
     def update_config(self):
@@ -597,108 +602,108 @@ class MainWindow(QMainWindow):
         self.lb_generic_extractors.hide()
 
         # Apple Music
-        if self.inp_login_service.currentIndex() == 0:
-            self.inp_login_password.setDisabled(False)
+        if self.login_service.currentIndex() == 1:
+            self.login_password.setDisabled(False)
             self.lb_login_username.hide()
-            self.inp_login_username.hide()
+            self.login_username.hide()
             self.lb_login_password.show()
-            self.inp_login_password.setPlaceholderText("Enter your apple music media-user-token")
+            self.login_password.setPlaceholderText("Enter your apple music media-user-token")
             self.lb_login_password.setText(self.tr("Media User Token"))
-            self.inp_login_password.show()
+            self.login_password.show()
             self.btn_login_add.clicked.disconnect()
             self.btn_login_add.show()
             self.btn_login_add.setIcon(QIcon())
             self.btn_login_add.setText(self.tr("Add Account"))
             self.btn_login_add.clicked.connect(lambda:
-                (self.__show_popup_dialog(self.tr("Account added, please restart the app.")) or True) and
-                apple_music_add_account(self.inp_login_password.text()) and
-                self.inp_login_password.clear()
+                (self.show_popup_dialog(self.tr("Account added, please restart the app.")) or True) and
+                apple_music_add_account(self.login_password.text()) and
+                self.login_password.clear()
                 )
 
         # Bandcamp
-        elif self.inp_login_service.currentIndex() == 1:
-            self.inp_login_password.setDisabled(False)
+        elif self.login_service.currentIndex() == 2:
+            self.login_password.setDisabled(False)
             self.lb_login_username.hide()
-            self.inp_login_username.hide()
+            self.login_username.hide()
             self.lb_login_password.hide()
-            self.inp_login_password.hide()
+            self.login_password.hide()
             self.btn_login_add.clicked.disconnect()
             self.btn_login_add.show()
             self.btn_login_add.setIcon(QIcon())
             self.btn_login_add.setText(self.tr("Add Bandcamp Account"))
             self.btn_login_add.clicked.connect(lambda:
-                (self.__show_popup_dialog(self.tr("Public account added, please restart the app.\nLogging into personal accounts is currently unsupported, if you have any premium purchases please consider lending it to the dev team.")) or True) and
+                (self.show_popup_dialog(self.tr("Public account added, please restart the app.\nLogging into personal accounts is currently unsupported, if you have any premium purchases please consider lending it to the dev team.")) or True) and
                 bandcamp_add_account()
                 )
 
         # Deezer
-        elif self.inp_login_service.currentIndex() == 2:
-            self.inp_login_password.setDisabled(False)
+        elif self.login_service.currentIndex() == 3:
+            self.login_password.setDisabled(False)
             self.lb_login_username.hide()
-            self.inp_login_username.hide()
+            self.login_username.hide()
             self.lb_login_password.show()
-            self.inp_login_password.setPlaceholderText("Enter your deezer arl")
+            self.login_password.setPlaceholderText("Enter your deezer arl")
             self.lb_login_password.setText(self.tr("ARL"))
-            self.inp_login_password.show()
+            self.login_password.show()
             self.btn_login_add.clicked.disconnect()
             self.btn_login_add.show()
             self.btn_login_add.setIcon(QIcon())
             self.btn_login_add.setText(self.tr("Add Account"))
             self.btn_login_add.clicked.connect(lambda:
-                (self.__show_popup_dialog(self.tr("Account added, please restart the app.")) or True) and
-                deezer_add_account(self.inp_login_password.text()) and
-                self.inp_login_password.clear()
+                (self.show_popup_dialog(self.tr("Account added, please restart the app.")) or True) and
+                deezer_add_account(self.login_password.text()) and
+                self.login_password.clear()
                 )
 
         # Qobuz
-        elif self.inp_login_service.currentIndex() == 3:
-            self.inp_login_password.setDisabled(False)
+        elif self.login_service.currentIndex() == 4:
+            self.login_password.setDisabled(False)
             self.lb_login_username.show()
             self.lb_login_username.setText(self.tr("Email"))
-            self.inp_login_username.show()
-            self.inp_login_username.setPlaceholderText("Enter your email")
+            self.login_username.show()
+            self.login_username.setPlaceholderText("Enter your email")
             self.lb_login_password.show()
             self.lb_login_password.setText(self.tr("Password"))
-            self.inp_login_password.show()
-            self.inp_login_password.setPlaceholderText("Enter your password")
+            self.login_password.show()
+            self.login_password.setPlaceholderText("Enter your password")
             self.btn_login_add.clicked.disconnect()
             self.btn_login_add.show()
             self.btn_login_add.setIcon(QIcon())
             self.btn_login_add.setText(self.tr("Add Account"))
             self.btn_login_add.clicked.connect(lambda:
-                qobuz_add_account(self.inp_login_username.text(), self.inp_login_password.text()) and
-                (self.__show_popup_dialog(self.tr("Account added, please restart the app.")) or True)
+                qobuz_add_account(self.login_username.text(), self.login_password.text()) and
+                (self.show_popup_dialog(self.tr("Account added, please restart the app.")) or True)
                 )
 
         # Soundcloud
-        elif self.inp_login_service.currentIndex() == 4:
-            self.inp_login_password.setDisabled(False)
+        elif self.login_service.currentIndex() == 5:
+            self.login_password.setDisabled(False)
             self.lb_login_username.hide()
-            self.inp_login_username.hide()
+            self.login_username.hide()
             self.lb_login_password.hide()
-            self.inp_login_password.hide()
+            self.login_password.hide()
             #self.lb_login_username.show()
             #self.lb_login_username.setText(self.tr("Client ID"))
-            #self.inp_login_username.show()
+            #self.login_username.show()
             #self.lb_login_password.show()
             #self.lb_login_password.setText(self.tr("App Version"))
-            #self.inp_login_password.show()
+            #self.login_password.show()
             self.btn_login_add.clicked.disconnect()
             self.btn_login_add.show()
             self.btn_login_add.setIcon(QIcon())
             self.btn_login_add.setText(self.tr("Add Soundcloud Account"))
             self.btn_login_add.clicked.connect(lambda:
-                (self.__show_popup_dialog(self.tr("Public account added, please restart the app.\nLogging into personal accounts is currently unsupported, if you have a GO+ account please consider lending it to the dev team.")) or True) and
+                (self.show_popup_dialog(self.tr("Public account added, please restart the app.\nLogging into personal accounts is currently unsupported, if you have a GO+ account please consider lending it to the dev team.")) or True) and
                 soundcloud_add_account()
                 )
 
         # Spotify
-        elif self.inp_login_service.currentIndex() == 5:
-            self.inp_login_password.setDisabled(False)
+        elif self.login_service.currentIndex() == 6:
+            self.login_password.setDisabled(False)
             self.lb_login_username.hide()
-            self.inp_login_username.hide()
+            self.login_username.hide()
             self.lb_login_password.hide()
-            self.inp_login_password.hide()
+            self.login_password.hide()
             try:
                 self.btn_login_add.clicked.disconnect()
             except TypeError:
@@ -710,12 +715,12 @@ class MainWindow(QMainWindow):
             self.btn_login_add.clicked.connect(self.add_spotify_account)
 
         # Tidal
-        elif self.inp_login_service.currentIndex() == 6:
-            self.inp_login_password.setDisabled(False)
+        elif self.login_service.currentIndex() == 7:
+            self.login_password.setDisabled(False)
             self.lb_login_username.hide()
-            self.inp_login_username.hide()
+            self.login_username.hide()
             self.lb_login_password.hide()
-            self.inp_login_password.hide()
+            self.login_password.hide()
             self.btn_login_add.clicked.disconnect()
             self.btn_login_add.show()
             self.btn_login_add.setIcon(QIcon())
@@ -723,47 +728,66 @@ class MainWindow(QMainWindow):
             self.btn_login_add.clicked.connect(self.add_tidal_account)
 
         # Youtube Music
-        elif self.inp_login_service.currentIndex() == 7:
-            self.inp_login_password.setDisabled(False)
+        elif self.login_service.currentIndex() == 8:
+            self.login_password.setDisabled(False)
             self.lb_login_username.hide()
-            self.inp_login_username.hide()
+            self.login_username.hide()
             self.lb_login_password.hide()
-            self.inp_login_password.hide()
+            self.login_password.hide()
             self.btn_login_add.clicked.disconnect()
             self.btn_login_add.show()
             self.btn_login_add.setIcon(QIcon())
             self.btn_login_add.setText(self.tr("Add Youtube Music Account"))
             self.btn_login_add.clicked.connect(lambda:
-                (self.__show_popup_dialog(self.tr("Public account added, please restart the app.")) or True) and
-                youtube_add_account()
+                (self.show_popup_dialog(self.tr("Public account added, please restart the app.")) or True) and
+                youtube_music_add_account()
+                )
+
+        # Crunchyroll
+        elif self.login_service.currentIndex() == 10:
+            self.login_password.setDisabled(False)
+            self.lb_login_username.show()
+            self.lb_login_username.setText(self.tr("Email"))
+            self.login_username.show()
+            self.login_username.setPlaceholderText("Enter your email")
+            self.lb_login_password.show()
+            self.lb_login_password.setText(self.tr("Password"))
+            self.login_password.show()
+            self.login_password.setPlaceholderText("Enter your password")
+            self.btn_login_add.clicked.disconnect()
+            self.btn_login_add.show()
+            self.btn_login_add.setIcon(QIcon())
+            self.btn_login_add.setText(self.tr("Add Account"))
+            self.btn_login_add.clicked.connect(lambda:
+                (self.show_popup_dialog(self.tr("Account added, please restart the app.")) or True) and
+                crunchyroll_add_account(self.login_username.text(), self.login_password.text())
                 )
 
         # Generic (yt-dlp)
-        elif self.inp_login_service.currentIndex() == 8:
-            self.groupbox_generic_download_root.show()
+        elif self.login_service.currentIndex() == 11:
+            self.groupbox_generic_audio_download_path.show()
             self.lb_generic_extractors.show()
-            self.lb_generic_extractors.setText(self.tr("<strong>The following services are officially supported by the Generic Downloader. Even if your website is not officially supported, generic downloader may be able to scrape media off it anyway.</strong><br>{0}").format('<br>'.join(generic_list_extractors())))
-            self.inp_login_password.setDisabled(False)
+            self.lb_generic_extractors.setText(self.tr("<strong>The following services are officially supported by the Generic Downloader. Even if your website is not officially supported, generic downloader may be able to download media off it anyway.</strong><br>{0}").format('<br>'.join(generic_list_extractors())))
+            self.login_password.setDisabled(False)
             self.lb_login_username.hide()
-            self.inp_login_username.hide()
+            self.login_username.hide()
             self.lb_login_password.hide()
-            self.inp_login_password.hide()
+            self.login_password.hide()
             self.btn_login_add.clicked.disconnect()
             self.btn_login_add.show()
             self.btn_login_add.setIcon(QIcon())
             self.btn_login_add.setText(self.tr("Add Generic Downloader"))
             self.btn_login_add.clicked.connect(lambda:
-                (self.__show_popup_dialog(self.tr("Generic Downloader added, please restart the app.")) or True) and
+                (self.show_popup_dialog(self.tr("Generic Downloader added, please restart the app.")) or True) and
                 generic_add_account()
                 )
-
 
     def add_spotify_account(self):
         logger.info('Add spotify account clicked ')
         self.btn_login_add.setText(self.tr("Waiting..."))
         self.btn_login_add.setDisabled(True)
-        self.inp_login_service.setDisabled(True)
-        self.__show_popup_dialog(self.tr("Login Service Started...\nSelect 'OnTheSpot' under devices in the Spotify Desktop App."))
+        self.login_service.setDisabled(True)
+        self.show_popup_dialog(self.tr("Login Service Started...\nSelect 'OnTheSpot' under devices in the Spotify Desktop App."))
         login_worker = threading.Thread(target=self.add_spotify_account_worker)
         login_worker.daemon = True
         login_worker.start()
@@ -771,12 +795,12 @@ class MainWindow(QMainWindow):
 
     def add_spotify_account_worker(self):
         if spotify_new_session():
-            self.__show_popup_dialog(self.tr("Account added, please restart the app."))
+            self.show_popup_dialog(self.tr("Account added, please restart the app."))
             self.btn_login_add.setText(self.tr("Please Restart The App"))
-            config.set_('parsing_acc_sn', len(account_pool))
+            config.set('active_account_number', len(account_pool))
             config.update()
         else:
-            self.__show_popup_dialog(self.tr("Account already exists."))
+            self.show_popup_dialog(self.tr("Account already exists."))
             self.btn_login_add.setText(self.tr("Add Account"))
             self.btn_login_add.setDisabled(False)
 
@@ -785,9 +809,9 @@ class MainWindow(QMainWindow):
         logger.info('Add spotify account clicked ')
         self.btn_login_add.setText(self.tr("Waiting..."))
         self.btn_login_add.setDisabled(True)
-        self.inp_login_service.setDisabled(True)
+        self.login_service.setDisabled(True)
         device_code, verification_url = tidal_add_account_pt1()
-        self.__show_popup_dialog(self.tr(f"Login Service Started head to <a style='color: #6495ed;' href='https://{verification_url}'>https://{verification_url}</a> to continue."))
+        self.show_popup_dialog(self.tr(f"Login Service Started head to <a style='color: #6495ed;' href='https://{verification_url}'>https://{verification_url}</a> to continue."))
         login_worker = threading.Thread(target=self.add_tidal_account_worker, args=(device_code,))
         login_worker.daemon = True
         login_worker.start()
@@ -795,12 +819,12 @@ class MainWindow(QMainWindow):
 
     def add_tidal_account_worker(self, device_code):
         if tidal_add_account_pt2(device_code):
-            self.__show_popup_dialog(self.tr("Account added, please restart the app."))
+            self.show_popup_dialog(self.tr("Account added, please restart the app."))
             self.btn_login_add.setText(self.tr("Please Restart The App"))
-            config.set_('parsing_acc_sn', len(account_pool))
+            config.set('active_account_number', len(account_pool))
             config.update()
         else:
-            self.__show_popup_dialog(self.tr("Account already exists."))
+            self.show_popup_dialog(self.tr("Account already exists."))
             self.btn_login_add.setText(self.tr("Add Account"))
             self.btn_login_add.setDisabled(False)
 
@@ -808,39 +832,39 @@ class MainWindow(QMainWindow):
     def fill_search_table(self):
         while self.tbl_search_results.rowCount() > 0:
             self.tbl_search_results.removeRow(0)
-        search_term = self.inp_search_term.text().strip()
+        search_term = self.search_term.text().strip()
         content_types = []
-        if self.inp_enable_search_tracks.isChecked():
+        if self.enable_search_tracks.isChecked():
             content_types.append('track')
-        if self.inp_enable_search_playlists.isChecked():
+        if self.enable_search_playlists.isChecked():
             content_types.append('playlist')
-        if self.inp_enable_search_albums.isChecked():
+        if self.enable_search_albums.isChecked():
             content_types.append('album')
-        if self.inp_enable_search_artists.isChecked():
+        if self.enable_search_artists.isChecked():
             content_types.append('artist')
-        if self.inp_enable_search_shows.isChecked():
+        if self.enable_search_podcasts.isChecked():
             content_types.append('show')
-        if self.inp_enable_search_episodes.isChecked():
+        if self.enable_search_episodes.isChecked():
             content_types.append('episode')
-        if self.inp_enable_search_audiobooks.isChecked():
+        if self.enable_search_audiobooks.isChecked():
             content_types.append('audiobook')
 
         results = get_search_results(search_term, content_types)
         if results is None:
-            self.__show_popup_dialog(self.tr("You need to login to at least one account to use this feature."))
-            self.inp_search_term.setText('')
+            self.show_popup_dialog(self.tr("You need to login to at least one account to use this feature."))
+            self.search_term.setText('')
             return
         elif results is True:
-            self.__show_popup_dialog(self.tr("Item is being parsed and will be added to the download queue shortly."))
-            self.inp_search_term.setText('')
+            self.show_popup_dialog(self.tr("Item is being parsed and will be added to the download queue shortly."))
+            self.search_term.setText('')
             return
-        elif results is False and account_pool[config.get('parsing_acc_sn')]['service'] == 'generic':
-            self.__show_popup_dialog(self.tr("Generic Downloader does not support search, please enter a supported url."))
-            self.inp_search_term.setText('')
+        elif results is False and account_pool[config.get('active_account_number')]['service'] == 'generic':
+            self.show_popup_dialog(self.tr("Generic Downloader does not support search, please enter a supported url."))
+            self.search_term.setText('')
             return
         elif results is False:
-            self.__show_popup_dialog(self.tr("Invalid item, please check your query or account settings"))
-            self.inp_search_term.setText('')
+            self.show_popup_dialog(self.tr("Invalid item, please check your query or account settings"))
+            self.search_term.setText('')
             return
 
         def download_btn_clicked(item_name, item_url, item_service, item_type, item_id):
@@ -850,11 +874,11 @@ class MainWindow(QMainWindow):
                 'item_type': item_type,
                 'item_id': item_id
             }
-            self.__show_popup_dialog(self.tr("{0} is being parsed and will be added to the download queue shortly.").format(f"{item_type.title()}: {item_name}"), download=True)
+            self.show_popup_dialog(self.tr("{0} is being parsed and will be added to the download queue shortly.").format(f"{item_type.title()}: {item_name}"), download=True)
 
         def copy_btn_clicked(item_url):
             QApplication.clipboard().setText(item_url)
-            self.__show_popup_dialog(self.tr("The URL has been copied to the clipboard."), download=True)
+            self.show_popup_dialog(self.tr("The URL has been copied to the clipboard."), download=True)
 
         for result in results:
             download_btn = QPushButton(self.tbl_search_results)
@@ -888,7 +912,7 @@ class MainWindow(QMainWindow):
             self.tbl_search_results.insertRow(rows)
 
             if config.get('show_search_thumbnails'):
-                self.tbl_search_results.setRowHeight(rows, config.get("search_thumb_height"))
+                self.tbl_search_results.setRowHeight(rows, config.get("thumbnail_size"))
                 item_label = LabelWithThumb(result['item_name'], result['item_thumbnail_url'])
             else:
                 item_label = QLabel(self.tbl_dl_progress)
@@ -896,20 +920,20 @@ class MainWindow(QMainWindow):
 
             self.tbl_search_results.setCellWidget(rows, 0, item_label)
             self.tbl_search_results.setItem(rows, 1, QTableWidgetItem(str(result['item_by'])))
-            self.tbl_search_results.setItem(rows, 2, QTableWidgetItem(result['item_type'].title()))
+            self.tbl_search_results.setItem(rows, 2, QTableWidgetItem(result['item_type'].replace('podcast_', '').title()))
             self.tbl_search_results.setItem(rows, 3, service)
             self.tbl_search_results.setCellWidget(rows, 4, btn_widget)
             self.tbl_search_results.horizontalHeader().resizeSection(0, 450)
 
-            self.inp_search_term.setText('')
+            self.search_term.setText('')
 
 
     def update_table_visibility(self):
-        show_waiting = self.inp_download_queue_show_waiting.isChecked()
-        show_failed = self.inp_download_queue_show_failed.isChecked()
-        show_unavailable = self.inp_download_queue_show_unavailable.isChecked()
-        show_cancelled = self.inp_download_queue_show_cancelled.isChecked()
-        show_completed = self.inp_download_queue_show_completed.isChecked()
+        show_waiting = self.download_queue_show_waiting.isChecked()
+        show_failed = self.download_queue_show_failed.isChecked()
+        show_unavailable = self.download_queue_show_unavailable.isChecked()
+        show_cancelled = self.download_queue_show_cancelled.isChecked()
+        show_completed = self.download_queue_show_completed.isChecked()
 
         for row in range(self.tbl_dl_progress.rowCount()):
             label = self.tbl_dl_progress.cellWidget(row, 5)  # Check the Status column
@@ -928,7 +952,7 @@ class MainWindow(QMainWindow):
 
 
     def manage_mirror_spotify_playback(self):
-        if self.inp_mirror_spotify_playback.isChecked():
+        if self.mirror_spotify_playback.isChecked():
             self.mirrorplayback.start()
         else:
             self.mirrorplayback.stop()

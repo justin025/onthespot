@@ -39,6 +39,8 @@ OnTheSpot supports various accounts and instructions for each are listed below, 
 
 - **Youtube Music**: Youtube Music offers public downloads and does not require an account, simply click 'Add Youtube Music Account' and restart the app.
 
+- **Crunchyroll**: To login to your Qobuz account simply enter your email and password, and restart the app.
+
 - **Generic Downloader**: Generic Downloader uses yt-dlp to rip any available music or videos from a given webpage. A list of supported services is available in the app or [here](https://github.com/yt-dlp/yt-dlp/tree/master/yt_dlp/extractor). Even if your given website is not listed the generic downloader may be able to rip media anyway, just paste your url in the search bar. To activate generic downloader simply click 'Add Generic Downloader'.
 
 
@@ -57,7 +59,6 @@ If a file path is provided the app will parse each line in the file for urls beg
 ### General Settings
 | **Option** | **Description** |
 | ------ | ------ |
-| **Download Path** | Root folder where all downloaded media will be saved. |
 | **Theme** | Choose the application theme (`light` or `dark`). |
 | **Explicit Label** | Customize how explicit content is labeled in file names and the app (default: 🅴). |
 | **Download Buttons** | Adds extra functionalities to the download queue. |
@@ -69,26 +70,7 @@ If a file path is provided the app will parse each line in the file for urls beg
 | **Windows 10 Explorer Thumbnails** | Embed thumbnails in a format that respects Windows 10 explorer and media player, this is an older format of ID3 and not widely supported. |
 | **Close To Tray** | Close application to tray on exit. |
 | **Check for Updates** | Automatically check for application updates. |
-
-### Audio Download Settings
-| **Option** | **Description** |
-| ------ | ------ |
-| **Track/Episode Format** | Select the file format to output your downloaded tracks or podcasts (e.g. `mp3`, `m4a`, `flac`, `ogg`, `wav`). For a complete list of supported codecs please see the following [list](https://ffmpeg.org/ffmpeg-formats.html). |
-| [**Track/Episode Path**](#trackplaylist-path-format) | Customize the file naming pattern for tracks, episodes, and playlists using variables like `{artist}`, `{album}`, etc. |
-| **Use Custom Playlist Path** | Enable the use of a custom path format for playlists. |
-| [**Playlist Path**](#trackplaylist-path-format) | Customize the file naming pattern for playlists using variables like `{artist}`, `{album}`, etc. |
-| **Create M3U Files for Playlists** | If enabled create an M3U file for downloaded tracks in a playlist. |
-| [**M3U Path**](#trackplaylist-path-format) | Customize the download path of created M3U files using variables like `{artist}`, `{album}`, etc. |
-| [**EXTINF Seperator**](#trackplaylist-path-format) | M3U EXTINF metadata / list seperator. |
-| [**EXTINF Path**](#trackplaylist-path-format) | Customize the M3U EXTINF label using variables like `{artist}`, `{album}`, etc. |
-| **File Bitrate** | Set the bitrate of a converted file, default value is 320k. This setting is not respected by some lossless codecs, results may vary depending on your chosen filetype. |
-| **File Hertz** | Set the hertz of a converted file, default value is 44100 |
-| **Save Album Cover** | Save album cover as an image with a default format of cover.png |
-| **Album Cover Format** | The image format to save album covers in (default: png) |
 | **Illegal Character Replacement** | Replace illegal characters in the filepath with the value specified (e.g., `/`, `\`, `<`, `>`, `*`, etc.). |
-| **Download Lyrics\*** | Enable downloading of lyrics for each track/episode. *This feature may require a premium account.* |
-| **Download Synced Lyrics Only\*** | Only download synced lyrics for tracks. *This feature may require a premium account.*|
-| **Save LRC File\*** | Save lyrics in an `.lrc` file alongside the track. *This feature may require a premium account.*|
 | **Rotate Active Account** | Automatically rotate between added accounts for downloading to minimize the chance of hitting rate limits. |
 | **Raw Media Download** | Downloads an unmodified file from whatever service is selected. With this enabled file conversion and the embedding of any metadata is skipped. Lyrics and cover art will still be downloaded. |
 | **Download Delay (s)** | The time,in seconds, to wait before initiating the next download. Helps prevent rate limits. |
@@ -97,6 +79,26 @@ If a file path is provided the app will parse each line in the file for urls beg
 | **Maximum Download Workers** | Set the maximum number of download workers. Only change this setting if you know what you're doing. Changes to this setting require you to restart the app to take effect. |
 | **Enable Retry Worker** | Creates a worker that automatically retries failed downloads after a specified amount of time. Changes to this setting require you to restart the app to take effect. |
 | **Retry Delay (m)** | The time, in minutes, for the retry worker to wait before retrying failed items. |
+
+### Audio Download Settings
+| **Option** | **Description** |
+| ------ | ------ |
+| **Audio Download Path** | Root folder where all downloaded audio will be saved. |
+| **Track/Episode Format** | Select the file format to output your downloaded tracks or podcasts (e.g. `mp3`, `m4a`, `flac`, `ogg`, `wav`). For a complete list of supported codecs please see the following [list](https://ffmpeg.org/ffmpeg-formats.html). |
+| [**Track/Episode Path**](#media-path-format) | Customize the file naming pattern for tracks, episodes, and playlists using variables like `{artist}`, `{album}`, etc. |
+| **Use Custom Playlist Path** | Enable the use of a custom path format for playlists. |
+| [**Playlist Path**](#media-path-format) | Customize the file naming pattern for playlists using variables like `{artist}`, `{album}`, etc. |
+| **Create M3U Files for Playlists** | If enabled create an M3U file for downloaded tracks in a playlist. |
+| [**M3U Path**](#media-path-format) | Customize the download path of created M3U files using variables like `{artist}`, `{album}`, etc. |
+| [**EXTINF Seperator**](#media-path-format) | M3U EXTINF metadata / list seperator. |
+| [**EXTINF Path**](#media-path-format) | Customize the M3U EXTINF label using variables like `{artist}`, `{album}`, etc. |
+| **File Bitrate** | Set the bitrate of a converted file, default value is 320k. This setting is not respected by some lossless codecs, results may vary depending on your chosen filetype. |
+| **File Hertz** | Set the hertz of a converted file, default value is 44100 |
+| **Save Album Cover** | Save album cover as an image with a default format of cover.png |
+| **Album Cover Format** | The image format to save album covers in (default: png) |
+| **Download Lyrics\*** | Enable downloading of lyrics for each track/episode. *This feature may require a premium account.* |
+| **Download Synced Lyrics Only\*** | Only download synced lyrics for tracks. *This feature may require a premium account.*|
+| **Save LRC File\*** | Save lyrics in an `.lrc` file alongside the track. *This feature may require a premium account.*|
 | **Translate File Path** | Translate file paths into the application language. |
 
 ### Metadata Settings
@@ -109,40 +111,55 @@ If a file path is provided the app will parse each line in the file for urls beg
 ### Video Download Settings
 | **Option** | **Description** |
 | ------ | ------ |
-| **Video Download Path** | Videos downloaded using the Generic Downloader account will be downloaded to the following path |
-| **Download Youtube Videos** | If this setting is enable OnTheSpot will download https://music.youtube.com/... as audio and https://www.youtube.com/... as a video. If this setting is disabled both will be downloaded using your Youtube Music account. |
-| **Preferred Video Resolution** | If available, videos downloaded using the Generic Downloader account will use the resolution specified. |
+| **Video Download Path** | Root folder where all downloaded video will be saved. |
+| **Movie/Episode Format** | Select the file format to output your downloaded movies or episodes (e.g. `mp4`, `mkv`). For a complete list of supported codecs please see the following [list](https://ffmpeg.org/ffmpeg-formats.html). |
+| [**Movie/Episode Path**](#media-path-format) | Customize the file naming pattern for movies and episodes using variables like `{artist}`, `{album}`, etc. |
+| **Preferred Video Resolution** | If available, videos downloaded  will use the resolution specified. |
+| **Download Subtitles** | Specify whether you would like to download subtitles if available. |
+| **Preferred Audio/Subtitle Language** | Preferred download language for the specified media format, formatted as en-US. |
+| **Download All Available Audio/Subtitles** | Download all available audio or subtitles for a given video. |
 
-### Track/Episode/Playlist Path Format
+### Media Path Format
 
 - **Customize File Names**
-  - Define how downloaded tracks are named using variables enclosed in `{}`.
+  - Define how downloaded media is named using variables enclosed in `{}`.
 
-- **Available Variables**
+- **Universal Variables**
    | **Variable**      | **Description**                                     |
    | ----------------- | --------------------------------------------------- |
    | `{service}`       | The music service used to download your file.       |
    | `{service_id}`    | The tracks native id on the selected music service. |
+   | `{name}`          | Name of the track.                                  |
+   | `{year}`          | Release year of the track.                          |
+   | `{explicit}`      | Displays 'Explicit Label' if the song is marked explicit (default: 🅴). |
+
+- **Audio Variables**
+   | **Variable**      | **Description**                                     |
+   | ----------------- | --------------------------------------------------- |
    | `{artist}`        | Name of the artist(s).                              |
    | `{album_artist}`  | Name of the album artist(s).                        |
    | `{album_type}`    | Name of the artist type (single, album, etc).       |
-   | `{name}`          | Name of the track.                                  |
-   | `{year}`          | Release year of the track.                          |
-   | `{track_number}`  | Track number on the album.                          |
-   | `{trackcount}`    | Total number of tracks in the album                 |
    | `{disc_number}`   | Disc number (if applicable).                        |
    | `{discccount}`    | Total number of discs in the album (if applicable). |
    | `{genre}`         | Genre of the song.                                  |
    | `{label}`         | Name of the record label.                           |
-   | `{explicit}`      | Displays 'Explicit Label' if the song is marked explicit (default: 🅴). |
+   | `{track_number}`  | Track number on the album.                          |
+   | `{trackcount}`    | Total number of tracks in the album                 |
    | `{isrc}`          | ISRC of the currently playing track.                |
    | `{playlist_name}` | Name of the playlist (if part of a playlist).       |
    | `{playlist_owner}`| Name of the playlist owner (if part of a playlist). |
    | `{playlist_number}`| Item number in a playlist (if part of a playlist). |
 
+- **Show Variables**
+   | **Variable**      | **Description**                                     |
+   | ----------------- | --------------------------------------------------- |
+   | `{show_name}` | Name of the playlist (if part of a playlist).           |
+   | `{season_number}`| Name of the playlist owner (if part of a playlist).  |
+   | `{episode_number}`| Item number in a playlist (if part of a playlist).  |
+
 > [!TIP]
 > **Example:**
-> Setting the format to `{artist} - {name}.mp3` will result in files named like `Artist Name - Song Title.mp3`.
+> Setting the format to `{artist} - {name}` will result in files named like `Artist Name - Song Title.mp3`.
 
 
 ## 6. Saving Your Configuration

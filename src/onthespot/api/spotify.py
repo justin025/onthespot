@@ -63,7 +63,7 @@ class MirrorSpotifyPlayback(QObject):
                         playlist_name = ''
                         playlist_by = ''
                         if data['context'] is not None:
-                            if data['context'].get('type', '') == 'playlist':
+                            if data['context'].get('type') == 'playlist':
                                 match = re.search(r'spotify:playlist:(\w+)', data['context']['uri'])
                                 if match:
                                     playlist_id = match.group(1)
@@ -72,11 +72,11 @@ class MirrorSpotifyPlayback(QObject):
                                 token = get_account_token('spotify')
                                 playlist_name, playlist_by = spotify_get_playlist_data(token.get("user-read-email"), playlist_id)
                                 parent_category = 'playlist'
-                            elif data['context'].get('type', '') == 'collection':
+                            elif data['context'].get('type') == 'collection':
                                 playlist_name = 'Liked Songs'
                                 playlist_by = 'me'
                                 parent_category = 'playlist'
-                            elif data['context'].get('type', '') in ('album', 'artist'):
+                            elif data['context'].get('type') in ('album', 'artist'):
                                 parent_category = 'album'
                         # Use item id to prevent duplicates
                         #local_id = format_local_id(item_id)
@@ -147,7 +147,7 @@ def spotify_new_session():
                 }
                 zs.close()
                 cfg_copy.append(new_user)
-                config.set_('accounts', cfg_copy)
+                config.set('accounts', cfg_copy)
                 config.update()
                 logger.info("New account added to config.")
                 return True
@@ -273,7 +273,7 @@ def spotify_get_playlist_data(token, playlist_id):
 
 
 def spotify_get_lyrics(token, item_id, item_type, metadata, filepath):
-    if config.get('inp_enable_lyrics'):
+    if config.get('download_lyrics'):
         lyrics = []
         try:
             if item_type == "track":
@@ -331,7 +331,7 @@ def spotify_get_lyrics(token, item_id, item_type, metadata, filepath):
                     for line in resp["lyrics"]["lines"]:
                         minutes, seconds = divmod(int(line['startTimeMs']) / 1000, 60)
                         lyrics.append(f'[{minutes:0>2.0f}:{seconds:05.2f}] {line["words"]}')
-                elif resp["lyrics"]["syncType"] == "UNSYNCED" and not config.get("only_synced_lyrics"):
+                elif resp["lyrics"]["syncType"] == "UNSYNCED" and not config.get("only_download_synced_lyrics"):
                     lyrics = [line['words'] for line in resp['lyrics']['lines']]
 
             elif item_type == "episode":
@@ -354,7 +354,7 @@ def spotify_get_lyrics(token, item_id, item_type, metadata, filepath):
             logger.debug(lyrics)
             if len(lyrics) <= default_length:
                 return False
-            if config.get('use_lrc_file'):
+            if config.get('save_lrc_file'):
                 with open(filepath + '.lrc', 'w', encoding='utf-8') as f:
                     f.write(merged_lyrics)
             if config.get('embed_lyrics'):
@@ -477,12 +477,12 @@ def spotify_get_search_results(token, search_term, content_types):
             item_type = item['type']
             if item_type == "track":
                 item_name = f"{config.get('explicit_label') if item['explicit'] else ''} {item['name']}"
-                item_by = f"{config.get('metadata_seperator').join([artist['name'] for artist in item['artists']])}"
+                item_by = f"{config.get('metadata_separator').join([artist['name'] for artist in item['artists']])}"
                 item_thumbnail_url = item['album']['images'][-1]["url"] if len(item['album']['images']) > 0 else ""
             elif item_type == "album":
                 rel_year = re.search(r'(\d{4})', item['release_date']).group(1)
                 item_name = f"[Y:{rel_year}] [T:{item['total_tracks']}] {item['name']}"
-                item_by = f"{config.get('metadata_seperator').join([artist['name'] for artist in item['artists']])}"
+                item_by = f"{config.get('metadata_separator').join([artist['name'] for artist in item['artists']])}"
                 item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
             elif item_type == "playlist":
                 item_name = f"{item['name']}"
@@ -498,10 +498,12 @@ def spotify_get_search_results(token, search_term, content_types):
                 item_name = f"{config.get('explicit_label') if item['explicit'] else ''} {item['name']}"
                 item_by = f"{item['publisher']}"
                 item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
+                item_type = "podcast"
             elif item_type == "episode":
                 item_name = f"{config.get('explicit_label') if item['explicit'] else ''} {item['name']}"
                 item_by = ""
                 item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
+                item_type = "podcast_episode"
             elif item_type == "audiobook":
                 item_name = f"{config.get('explicit_label') if item['explicit'] else ''} {item['name']}"
                 item_by = f"{item['publisher']}"
@@ -511,7 +513,7 @@ def spotify_get_search_results(token, search_term, content_types):
                 'item_id': item['id'],
                 'item_name': item_name,
                 'item_by': item_by,
-                'item_type': item['type'],
+                'item_type': item_type,
                 'item_service': "spotify",
                 'item_url': item['external_urls']['spotify'],
                 'item_thumbnail_url': item_thumbnail_url
@@ -526,21 +528,21 @@ def spotify_get_track_metadata(token, item_id):
     track_data = make_call(f'{BASE_URL}/tracks?ids={item_id}&market=from_token', headers=headers)
     credits_data = make_call(f'https://spclient.wg.spotify.com/track-credits-view/v0/experimental/{item_id}/credits', headers=headers)
     track_audio_data = make_call(f'{BASE_URL}/audio-features/{item_id}', headers=headers)
-    album_data = make_call(f"{BASE_URL}/albums/{track_data.get('tracks', [])[0].get('album', {}).get('id', '')}", headers=headers)
-    artist_data = make_call(f"{BASE_URL}/artists/{track_data.get('tracks', [])[0].get('artists', [])[0].get('id', '')}", headers=headers)
-    album_track_ids = spotify_get_album_track_ids(token, track_data.get('tracks', [])[0].get('album', {}).get('id', ''))
+    album_data = make_call(f"{BASE_URL}/albums/{track_data.get('tracks', [])[0].get('album', {}).get('id')}", headers=headers)
+    artist_data = make_call(f"{BASE_URL}/artists/{track_data.get('tracks', [])[0].get('artists', [])[0].get('id')}", headers=headers)
+    album_track_ids = spotify_get_album_track_ids(token, track_data.get('tracks', [])[0].get('album', {}).get('id'))
 
     artists = []
     for data in track_data.get('tracks', [{}])[0].get('artists', []):
-        artists.append(data.get('name', ''))
+        artists.append(data.get('name'))
     artists = conv_list_format(artists)
 
     credits = {}
     if credits_data:
         for credit_block in credits_data.get('roleCredits', []):
-            role_title = credit_block.get('roleTitle', '').lower()
+            role_title = credit_block.get('roleTitle').lower()
             credits[role_title] = [
-                artist.get('name', '') for artist in credit_block.get('artists', [])
+                artist.get('name') for artist in credit_block.get('artists', [])
             ]
 
     # Track Number
@@ -551,39 +553,39 @@ def spotify_get_track_metadata(token, item_id):
                 track_number = i + 1
                 break
     if not track_number:
-        track_number = track_data.get('tracks', [{}])[0].get('track_number', '')
+        track_number = track_data.get('tracks', [{}])[0].get('track_number')
 
     info = {}
     info['artists'] = artists
     info['album_name'] = track_data.get('tracks', [{}])[0].get('album', {}).get("name", '')
-    info['album_type'] = album_data.get('album_type', '')
-    info['album_artists'] = album_data.get('artists', [{}])[0].get('name', '')
-    info['title'] = track_data.get('tracks', [{}])[0].get('name', '')
+    info['album_type'] = album_data.get('album_type')
+    info['album_artists'] = album_data.get('artists', [{}])[0].get('name')
+    info['title'] = track_data.get('tracks', [{}])[0].get('name')
 
     try:
-        info['image_url'] = track_data.get('tracks', [{}])[0].get('album', {}).get('images', [{}])[0].get('url', '')
+        info['image_url'] = track_data.get('tracks', [{}])[0].get('album', {}).get('images', [{}])[0].get('url')
     except IndexError:
         info['image_url'] = ''
         logger.info('Invalid thumbnail')
 
-    info['release_year'] = track_data.get('tracks', [{}])[0].get('album', {}).get('release_date', '').split("-")[0]
-    #info['track_number'] = track_data.get('tracks', [{}])[0].get('track_number', '')
+    info['release_year'] = track_data.get('tracks', [{}])[0].get('album', {}).get('release_date').split("-")[0]
+    #info['track_number'] = track_data.get('tracks', [{}])[0].get('track_number')
     info['track_number'] = track_number
-    info['total_tracks'] = track_data.get('tracks', [{}])[0].get('album', {}).get('total_tracks', '')
-    info['disc_number'] = track_data.get('tracks', [{}])[0].get('disc_number', '')
+    info['total_tracks'] = track_data.get('tracks', [{}])[0].get('album', {}).get('total_tracks')
+    info['disc_number'] = track_data.get('tracks', [{}])[0].get('disc_number')
     info['total_discs'] = sorted([trk.get('disc_number', 0) for trk in album_data.get('tracks', {}).get('items', [])])[-1] if 'tracks' in album_data else 1
     info['genre'] = conv_list_format(artist_data.get('genres', []))
     info['performers'] = conv_list_format([item for item in credits.get('performers', []) if isinstance(item, str)])
     info['producers'] = conv_list_format([item for item in credits.get('producers', []) if isinstance(item, str)])
     info['writers'] = conv_list_format([item for item in credits.get('writers', []) if isinstance(item, str)])
-    info['label'] = album_data.get('label', '')
-    info['copyright'] = conv_list_format([holder.get('text', '') for holder in album_data.get('copyrights', [])])
+    info['label'] = album_data.get('label')
+    info['copyright'] = conv_list_format([holder.get('text') for holder in album_data.get('copyrights', [])])
     info['explicit'] = track_data.get('tracks', [{}])[0].get('explicit', False)
-    info['isrc'] = track_data.get('tracks', [{}])[0].get('external_ids', {}).get('isrc', '')
-    info['length'] = str(track_data.get('tracks', [{}])[0].get('duration_ms', ''))
-    info['item_url'] = track_data.get('tracks', [{}])[0].get('external_urls', {}).get('spotify', '')
-    #info['popularity'] = track_data.get('tracks', [{}])[0].get('popularity', '')
-    info['item_id'] = track_data.get('tracks', [{}])[0].get('id', '')
+    info['isrc'] = track_data.get('tracks', [{}])[0].get('external_ids', {}).get('isrc')
+    info['length'] = str(track_data.get('tracks', [{}])[0].get('duration_ms'))
+    info['item_url'] = track_data.get('tracks', [{}])[0].get('external_urls', {}).get('spotify')
+    #info['popularity'] = track_data.get('tracks', [{}])[0].get('popularity')
+    info['item_id'] = track_data.get('tracks', [{}])[0].get('id')
     info['is_playable'] = track_data.get('tracks', [{}])[0].get('is_playable', False)
 
     key_mapping = {
@@ -602,26 +604,26 @@ def spotify_get_track_metadata(token, item_id):
     }
 
     if track_audio_data is not None:
-        info['bpm'] = str(track_audio_data.get('tempo', ''))
-        info['key'] = str(key_mapping.get(track_audio_data.get('key', ''), ''))
-        info['time_signature'] = track_audio_data.get('time_signature', '')
-        info['acousticness'] = track_audio_data.get('acousticness', '')
-        info['danceability'] = track_audio_data.get('danceability', '')
-        info['energy'] = track_audio_data.get('energy', '')
-        info['instrumentalness'] = track_audio_data.get('instrumentalness', '')
-        info['liveness'] = track_audio_data.get('liveness', '')
-        info['loudness'] = track_audio_data.get('loudness', '')
-        info['speechiness'] = track_audio_data.get('speechiness', '')
-        info['valence'] = track_audio_data.get('valence', '')
+        info['bpm'] = str(track_audio_data.get('tempo'))
+        info['key'] = str(key_mapping.get(track_audio_data.get('key'), ''))
+        info['time_signature'] = track_audio_data.get('time_signature')
+        info['acousticness'] = track_audio_data.get('acousticness')
+        info['danceability'] = track_audio_data.get('danceability')
+        info['energy'] = track_audio_data.get('energy')
+        info['instrumentalness'] = track_audio_data.get('instrumentalness')
+        info['liveness'] = track_audio_data.get('liveness')
+        info['loudness'] = track_audio_data.get('loudness')
+        info['speechiness'] = track_audio_data.get('speechiness')
+        info['valence'] = track_audio_data.get('valence')
     return info
 
 
-def spotify_get_episode_metadata(token, episode_id):
+def spotify_get_podcast_episode_metadata(token, episode_id):
     logger.info(f"Get episode info for episode by id '{episode_id}'")
     headers = {}
     headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
     episode_data = make_call(f"{BASE_URL}/episodes/{episode_id}", headers=headers)
-    show_episode_ids = spotify_get_show_episode_ids(token, episode_data.get('show', {}).get('id', ''))
+    show_episode_ids = spotify_get_podcast_episode_ids(token, episode_data.get('show', {}).get('id'))
     # I believe audiobook ids start with a 7 but to verify you can use https://api.spotify.com/v1/audiobooks/{id}
     # the endpoint could possibly be used to mark audiobooks in genre but it doesn't really provide any additional
     # metadata compared to show_data beyond abridged and unabridged.
@@ -634,34 +636,34 @@ def spotify_get_episode_metadata(token, episode_id):
 
     copyrights = []
     for copyright in episode_data.get('show', {}).get('copyrights', []):
-        text = copyright.get('text', '')
+        text = copyright.get('text')
         copyrights.append(text)
 
     info = {}
-    info['album_name'] = episode_data.get('show', {}).get('name', '')
-    info['title'] = episode_data.get('name', '')
-    info['image_url'] = episode_data.get('images', [{}])[0].get('url', '')
-    info['release_year'] = episode_data.get('release_date', '').split('-')[0]
+    info['album_name'] = episode_data.get('show', {}).get('name')
+    info['title'] = episode_data.get('name')
+    info['image_url'] = episode_data.get('images', [{}])[0].get('url')
+    info['release_year'] = episode_data.get('release_date').split('-')[0]
     info['track_number'] = track_number
     # Not accurate
     #info['total_tracks'] = episode_data.get('show', {}).get('total_episodes', 0)
     info['total_tracks'] = len(show_episode_ids)
-    info['artists'] = conv_list_format([episode_data.get('show', {}).get('publisher', '')])
-    info['album_artists'] = conv_list_format([episode_data.get('show', {}).get('publisher', '')])
+    info['artists'] = conv_list_format([episode_data.get('show', {}).get('publisher')])
+    info['album_artists'] = conv_list_format([episode_data.get('show', {}).get('publisher')])
     info['language'] = conv_list_format(episode_data.get('languages', []))
-    description = episode_data.get('description', '')
+    description = episode_data.get('description')
     info['description'] = str(description if description else episode_data.get('show', {}).get('description', ""))
     info['copyright'] = conv_list_format(copyrights)
-    info['length'] = str(episode_data.get('duration_ms', ''))
-    info['explicit'] = episode_data.get('explicit', '')
-    info['is_playable'] = episode_data.get('is_playable', '')
-    info['item_url'] = episode_data.get('external_urls', {}).get('spotify', '')
-    info['item_id'] = episode_data.get('id', '')
+    info['length'] = str(episode_data.get('duration_ms'))
+    info['explicit'] = episode_data.get('explicit')
+    info['is_playable'] = episode_data.get('is_playable')
+    info['item_url'] = episode_data.get('external_urls', {}).get('spotify')
+    info['item_id'] = episode_data.get('id')
 
     return info
 
 
-def spotify_get_show_episode_ids(token, show_id):
+def spotify_get_podcast_episode_ids(token, show_id):
     logger.info(f"Getting show episodes: {show_id}'")
     episodes = []
     offset = 0

@@ -59,7 +59,7 @@
                         const showThumbnails = {{ config.show_search_thumbnails|tojson }};
 
                         const itemImage = showThumbnails && item.item_thumbnail_url
-                            ? `<img src="${item.item_thumbnail_url}" style="width: {{ config.search_thumb_height }}px; height: {{ config.search_thumb_height }}px;">`
+                            ? `<img src="${item.item_thumbnail_url}" style="width: {{ config.thumbnail_size }}px; height: {{ config.thumbnail_size }}px;">`
                             : '';
 
                         const serviceIcon = item.item_service

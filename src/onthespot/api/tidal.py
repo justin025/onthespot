@@ -67,7 +67,7 @@ def tidal_add_account_pt2(device_code):
                 }
             }
             cfg_copy.append(new_user)
-            config.set_('accounts', cfg_copy)
+            config.set('accounts', cfg_copy)
             config.update()
             return True
 
@@ -99,7 +99,7 @@ def tidal_login_user(account):
                     acc['login']['access_token'] = auth_data["access_token"]
                     acc['login']['expires_in'] = auth_data["expires_in"] + time.time()
                     account = acc
-            config.set_('accounts', cfg_copy)
+            config.set('accounts', cfg_copy)
             config.update()
 
         account_pool.append({
@@ -159,7 +159,7 @@ def tidal_get_search_results(token, search_term, content_types):
                 'item_type': "track",
                 'item_service': "tidal",
                 'item_url': track['url'],
-                'item_thumbnail_url': f'https://resources.tidal.com/images/{(track.get("album", "").get("cover", "") or "").replace("-", "/")}/80x80.jpg'
+                'item_thumbnail_url': f'https://resources.tidal.com/images/{(track.get("album").get("cover") or "").replace("-", "/")}/80x80.jpg'
             })
 
     if 'album' in content_types:
@@ -172,7 +172,7 @@ def tidal_get_search_results(token, search_term, content_types):
                 'item_type': "album",
                 'item_service': "tidal",
                 'item_url': album['url'],
-                'item_thumbnail_url': f'https://resources.tidal.com/images/{(album.get("cover", "") or "").replace("-", "/")}/80x80.jpg'
+                'item_thumbnail_url': f'https://resources.tidal.com/images/{(album.get("cover") or "").replace("-", "/")}/80x80.jpg'
             })
 
     if 'artist' in content_types:
@@ -185,7 +185,7 @@ def tidal_get_search_results(token, search_term, content_types):
                 'item_type': "artist",
                 'item_service': "tidal",
                 'item_url': artist['url'],
-                'item_thumbnail_url': f'https://resources.tidal.com/images/{(artist.get("picture", "") or "").replace("-", "/")}/480x480.jpg'
+                'item_thumbnail_url': f'https://resources.tidal.com/images/{(artist.get("picture") or "").replace("-", "/")}/480x480.jpg'
             })
 
     if 'playlist' in content_types:
@@ -194,11 +194,11 @@ def tidal_get_search_results(token, search_term, content_types):
             search_results.append({
                 'item_id': playlist['uuid'],
                 'item_name': playlist['title'],
-                'item_by': playlist.get('creator', '').get('name', ''),
+                'item_by': playlist.get('creator').get('name'),
                 'item_type': "playlist",
                 'item_service': "tidal",
                 'item_url': playlist['url'],
-                'item_thumbnail_url': f'https://resources.tidal.com/images/{(playlist.get("squareImage", "") or "").replace("-", "/")}/480x480.jpg'
+                'item_thumbnail_url': f'https://resources.tidal.com/images/{(playlist.get("squareImage") or "").replace("-", "/")}/480x480.jpg'
             })
 
     logger.debug(search_results)
@@ -221,47 +221,47 @@ def tidal_get_track_metadata(token, item_id):
 
     # Artists
     artists = []
-    for artist in track_data.get('artists', ''):
-        artists.append(artist.get('name', ''))
+    for artist in track_data.get('artists'):
+        artists.append(artist.get('name'))
 
     # Track Number
     track_number = None
     for i, track in enumerate(album_data.get('included', [])):
-        if track.get('id', '') == str(item_id):
+        if track.get('id') == str(item_id):
             track_number = i + 1
             break
     if not track_number:
-        track_number = track_data.get('trackNumber', '')
+        track_number = track_data.get('trackNumber')
 
     info = {}
-    info['item_id'] = str(track_data.get('id', ''))
-    info['title'] = track_data.get('title', '')
-    info['length'] = str(track_data.get('duration', '')) + '000'
+    info['item_id'] = str(track_data.get('id'))
+    info['title'] = track_data.get('title')
+    info['length'] = str(track_data.get('duration')) + '000'
     info['track_number'] = track_number
-    info['disc_number'] = track_data.get('volumeNumber', '')
-    #info['description'] = track_data.get('version', '')
-    info['copyright'] = track_data.get('copyright', '')
-    bpm = track_data.get('bpm', '')
+    info['disc_number'] = track_data.get('volumeNumber')
+    #info['description'] = track_data.get('version')
+    info['copyright'] = track_data.get('copyright')
+    bpm = track_data.get('bpm')
     info['bpm'] = bpm if bpm else ''
-    info['item_url'] = track_data.get('url', '').replace('http://www.', 'https://')
-    info['isrc'] = track_data.get('isrc', '')
-    info['explicit'] = track_data.get('explicit', '')
-    info['album_artists'] = track_data.get('artist', '').get('name', '')
+    info['item_url'] = track_data.get('url').replace('http://www.', 'https://')
+    info['isrc'] = track_data.get('isrc')
+    info['explicit'] = track_data.get('explicit')
+    info['album_artists'] = track_data.get('artist').get('name')
     info['artists'] = conv_list_format(artists)
-    info['album_name'] = track_data.get('album', '').get('title', '')
-    info['total_tracks'] = album_data.get('data', {}).get('attributes', {}).get('numberOfItems', '')
-    info['total_discs'] = album_data.get('data', {}).get('attributes', {}).get('numberOfVolumes', '')
-    info['release_year'] = album_data.get('data', {}).get('attributes', {}).get('releaseDate', '').split("-")[0]
-    info['upc'] = album_data.get('data', {}).get('attributes', {}).get('barcodeId', '')
-    info['image_url'] = album_data.get('data', {}).get('attributes', {}).get('imageLinks', {})[0].get('href', '')
-    info['album_type'] = album_data.get('data', {}).get('attributes', {}).get('type', '').lower()
-    info['is_playable'] = track_data.get('streamReady', '')
+    info['album_name'] = track_data.get('album').get('title')
+    info['total_tracks'] = album_data.get('data', {}).get('attributes', {}).get('numberOfItems')
+    info['total_discs'] = album_data.get('data', {}).get('attributes', {}).get('numberOfVolumes')
+    info['release_year'] = album_data.get('data', {}).get('attributes', {}).get('releaseDate').split("-")[0]
+    info['upc'] = album_data.get('data', {}).get('attributes', {}).get('barcodeId')
+    info['image_url'] = album_data.get('data', {}).get('attributes', {}).get('imageLinks', {})[0].get('href')
+    info['album_type'] = album_data.get('data', {}).get('attributes', {}).get('type').lower()
+    info['is_playable'] = track_data.get('streamReady')
 
     return info
 
 
 def tidal_get_lyrics(token, item_id, item_type, metadata, filepath):
-    if config.get('inp_enable_lyrics'):
+    if config.get('download_lyrics'):
         headers = {}
         headers["Authorization"] = f"Bearer {token['access_token']}"
 
@@ -292,7 +292,7 @@ def tidal_get_lyrics(token, item_id, item_type, metadata, filepath):
             elif key in ['writers'] and config.get("embed_writers"):
                 lyrics.append(f'[au:{value}]')
 
-        lyrics.append(f'[by:{resp.get("lyricsProvider", "").title()}]')
+        lyrics.append(f'[by:{resp.get("lyricsProvider").title()}]')
 
         if config.get("embed_length"):
             l_ms = int(metadata['length'])
@@ -304,9 +304,9 @@ def tidal_get_lyrics(token, item_id, item_type, metadata, filepath):
 
         default_length = len(lyrics)
 
-        if resp.get('subtitles', ''):
+        if resp.get('subtitles'):
             lyric_data = resp['subtitles']
-        elif resp.get('lyrics', ''):
+        elif resp.get('lyrics'):
             lyric_data = resp['lyrics']
         else:
             lyric_data = ''
@@ -320,7 +320,7 @@ def tidal_get_lyrics(token, item_id, item_type, metadata, filepath):
             logger.debug(lyrics)
             if len(lyrics) <= default_length:
                 return False
-            if config.get('use_lrc_file'):
+            if config.get('save_lrc_file'):
                 with open(filepath + '.lrc', 'w', encoding='utf-8') as f:
                     f.write(merged_lyrics)
             if config.get('embed_lyrics'):
@@ -394,12 +394,12 @@ def tidal_get_playlist_data(token, playlist_id):
     playlist_data = make_call(f"{BASE_URL}/playlists/{playlist_id}", params=params, headers=headers, skip_cache=True)
     playlist_track_data = make_call(f"{BASE_URL}/playlists/{playlist_id}/tracks", params=params, headers=headers, skip_cache=True)
 
-    playlist_name = playlist_data.get('title', '')
+    playlist_name = playlist_data.get('title')
     playlist_by = playlist_data.get('creator', {}).get('name', 'Tidal')
 
     track_ids = []
     for track in playlist_track_data['items']:
-        track_ids.append(track.get('id', ''))
+        track_ids.append(track.get('id'))
     return playlist_name, playlist_by, track_ids
 
 

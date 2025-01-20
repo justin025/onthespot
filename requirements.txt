@@ -1,3 +1,4 @@
+crunpyroll @ git+https://github.com/justin025/crunpyroll.git
 flask>=3.1.0
 flask-login>=0.6.3
 librespot @ git+https://github.com/justin025/librespot-python.git
