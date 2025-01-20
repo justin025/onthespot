@@ -139,6 +139,7 @@ class Config:
             "download_lyrics": False, # Enable lyrics download
             "save_lrc_file": False, # Download .lrc file alongside track
             "only_download_synced_lyrics": False, # Only download synced lyrics
+            "delete_removed": False,  # Clear the folder before adding new files if True
             "translate_file_path": False, # Translate downloaded file path to application language
 
             # Audio Metadata Settings
