@@ -7,6 +7,7 @@ import random
 import threading
 import time
 import traceback
+import argparse
 from cmd import Cmd
 from .accounts import FillAccountPool, get_account_token
 from .api.apple_music import apple_music_get_track_metadata
@@ -24,8 +25,23 @@ from .parse_item import parsingworker, parse_url
 from .runtimedata import account_pool, pending, download_queue, download_queue_lock, pending_lock
 from .search import get_search_results
 
-logging.disable(logging.CRITICAL)
+def parse_args():
+    parser = argparse.ArgumentParser(description="OnTheSpot CLI Downloader")
+    
+    parser.add_argument('--download', help="Rechercher et télécharger automatiquement un élément via une requête")
+    
+    args, unknown_args = parser.parse_known_args()
 
+    overrides = {}
+    for arg in unknown_args:
+        if arg.startswith('--') and '=' in arg:
+            key, value = arg[2:].split('=', 1)
+            overrides[key] = value
+
+    return args, overrides
+
+# logging.disable(logging.CRITICAL)
+logger = logging.getLogger("cli")
 
 class QueueWorker(threading.Thread):
     def __init__(self):
@@ -66,13 +82,18 @@ class QueueWorker(threading.Thread):
                     pending[local_id] = item
 
 def main():
+    args, cli_overrides = parse_args()
+    config.apply_overrides(cli_overrides)
+
+    print("Final configuration after overriding:")
+    for key, value in cli_overrides.items():
+        print(f"{key}={value}")
+
     print('\033[32mLogging In...\033[0m\n', end='', flush=True)
 
     fill_account_pool = FillAccountPool()
-
     fill_account_pool.finished.connect(lambda: print("Finished filling account pool."))
     fill_account_pool.progress.connect(lambda message, status: print(f"{message} {'Success' if status else 'Failed'}"))
-
     fill_account_pool.start()
 
     thread = threading.Thread(target=parsingworker)
@@ -96,6 +117,19 @@ def main():
     if config.get('mirror_spotify_playback'):
         mirrorplayback = MirrorSpotifyPlayback()
         mirrorplayback.start()
+
+    if args.download:
+        print(f"\033[32mSearching and downloading: {args.download}\033[0m")
+        CLI().onecmd(f"search {args.download}")
+
+        while not any(item['item_status'] in ("Waiting", "Downloading") for item in download_queue.values()):
+            time.sleep(0.1)
+
+        while any(item['item_status'] not in ("Downloaded", "Failed", "Cancelled") for item in download_queue.values()):
+            time.sleep(1)
+
+        print("\033[32mDownload finished. Exiting...\033[0m")
+        os._exit(0)
 
     CLI().cmdloop()
 
