@@ -164,8 +164,13 @@ class CLI(Cmd):
 
         if arg == "list_accounts":
             print('\033[32mLegend:\033[0m\n\033[34m>\033[0mSelected: Service, Status\n\n\033[32mAccounts:\033[0m')
-            for index, item in enumerate(account_pool):
-                print(f"{'\033[34m>\033[0m' if config.get('active_account_number') == index else ' '}[{index}] {item['username']}: {item['service']}, {item['status']}")
+            accounts = config.get('accounts')
+            active_account_index = config.get('active_account_number')
+
+            for index, account in enumerate(accounts):
+                status = 'active' if account.get('active', False) else 'inactive'
+                selected = '\033[34m>\033[0m' if index == active_account_index else ' '
+                print(f"{selected}[{index}] {account['uuid']}: {account['service']}, {status}")
             return
 
         if arg.startswith("add_account"):
