@@ -10,7 +10,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (platform.includes('win')) {
             fileExtension = '.exe';
         } else if (platform.includes('mac')) {
-            fileExtension = '.dmg';
+            window.location.href = 'https://github.com/justin025/onthespot/releases/latest';
+            return;
         } else if (platform.includes('linux')) {
             fileExtension = '.AppImage';
         } else {
