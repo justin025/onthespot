@@ -9,15 +9,16 @@ import time
 import traceback
 from cmd import Cmd
 from .accounts import FillAccountPool, get_account_token
-from .api.apple_music import apple_music_get_track_metadata
-from .api.bandcamp import bandcamp_get_track_metadata
+from .api.apple_music import apple_music_get_track_metadata, apple_music_add_account
+from .api.bandcamp import bandcamp_get_track_metadata, bandcamp_login_user
 from .api.deezer import deezer_get_track_metadata, deezer_add_account
-from .api.qobuz import qobuz_get_track_metadata
-from .api.soundcloud import soundcloud_get_track_metadata
+from .api.qobuz import qobuz_get_track_metadata, qobuz_add_account
+from .api.soundcloud import soundcloud_get_track_metadata, soundcloud_login_user
+from .api.generic import generic_add_account
 from .api.spotify import MirrorSpotifyPlayback, spotify_new_session, spotify_get_track_metadata, spotify_get_podcast_episode_metadata
-from .api.tidal import tidal_get_track_metadata
-from .api.youtube_music import youtube_music_get_track_metadata
-from .api.crunchyroll import crunchyroll_get_episode_metadata
+from .api.tidal import tidal_get_track_metadata, tidal_add_account_pt1, tidal_add_account_pt2
+from .api.youtube_music import youtube_music_get_track_metadata, youtube_music_add_account
+from .api.crunchyroll import crunchyroll_get_episode_metadata, crunchyroll_add_account
 from .downloader import DownloadWorker, RetryWorker
 from .otsconfig import config_dir, config
 from .parse_item import parsingworker, parse_url
@@ -134,7 +135,7 @@ class CLI(Cmd):
                     except ValueError:
                         pass
 
-                    config.set_(key, value)
+                    config.set(key, value)
                     config.update()
                     print(f"\033[32mUpdated {key} to {value}.\033[0m")
                 else:
@@ -170,7 +171,174 @@ class CLI(Cmd):
         if arg.startswith("add_account"):
             parts = arg.split(maxsplit=2)
             if len(parts) == 1:
-                print("Available services: soundcloud, spotify, deezer")
+                print("Incorrect usage. Please provide a service among the following: apple_music, bandcamp, crunchyroll, deezer, generic, qobuz, soundcloud, spotify, tidal, youtube_music.")
+            elif parts[1] == "apple_music":
+                print("\033[32mInitializing Apple Music account login...\033[0m")
+
+                if len(parts) == 3:  # Media-user-token provided
+                    media_user_token = parts[2]
+
+                    def add_apple_music_account_worker():
+                        try:
+                            apple_music_add_account(media_user_token)
+                            print("\033[32mApple Music account added successfully. Please restart the app.\033[0m")
+                            config.set('active_account_number', config.get('active_account_number') + 1)
+                            config.update()
+                        except Exception as e:
+                            print(f"\033[31mError while adding Apple Music account: {e}\033[0m")
+
+                    login_worker = threading.Thread(target=add_apple_music_account_worker)
+                    login_worker.daemon = True
+                    login_worker.start()
+                else:
+                    print("\033[31mUsage: add_account apple_music <media-user-token>\033[0m")
+                return
+            elif parts[1] == "bandcamp":
+                print("\033[32mInitializing Bandcamp account login...\033[0m")
+
+                def add_bandcamp_account_worker():
+                    try:
+                        account = {
+                            "uuid": "public_bandcamp",
+                            "service": "bandcamp",
+                            "active": True,
+                        }
+                        result = bandcamp_login_user(account)
+                        if result:
+                            print("\033[32mBandcamp account added successfully. Please restart the app.\033[0m")
+                            config.set('active_account_number', config.get('active_account_number') + 1)
+                            config.update()
+                        else:
+                            print("\033[31mFailed to add Bandcamp account.\033[0m")
+                    except Exception as e:
+                        print(f"\033[31mError while adding Bandcamp account: {e}\033[0m")
+
+                login_worker = threading.Thread(target=add_bandcamp_account_worker)
+                login_worker.daemon = True
+                login_worker.start()
+            elif parts[1] == "crunchyroll":
+                print("\033[32mInitializing Crunchyroll account login...\033[0m")
+
+                if len(parts) == 4:  # Email and password provided
+                    email = parts[2]
+                    password = parts[3]
+
+                    def add_crunchyroll_account_worker():
+                        try:
+                            crunchyroll_add_account(email, password)
+                            print("\033[32mCrunchyroll account added successfully. Please restart the app.\033[0m")
+                            config.set('active_account_number', config.get('active_account_number') + 1)
+                            config.update()
+                        except Exception as e:
+                            print(f"\033[31mError while adding Crunchyroll account: {e}\033[0m")
+
+                    login_worker = threading.Thread(target=add_crunchyroll_account_worker)
+                    login_worker.daemon = True
+                    login_worker.start()
+                else:
+                    print("\033[31mUsage: add_account crunchyroll <email> <password>\033[0m")
+                return
+            elif parts[1] == "deezer":
+                if len(parts) == 3:  # Check if an ARL token is provided
+                    print("\033[32mAdding Deezer account with provided ARL token...\033[0m")
+
+                    def add_deezer_account_worker():
+                        try:
+                            deezer_add_account(parts[2])
+                            print("\033[32mDeezer account added successfully. Please restart the app.\033[0m")
+                            config.set('active_account_number', config.get('active_account_number') + 1)
+                            config.update()
+                        except Exception as e:
+                            print(f"\033[31mError while adding Deezer account: {e}\033[0m")
+
+                    login_worker = threading.Thread(target=add_deezer_account_worker)
+                    login_worker.daemon = True
+                    login_worker.start()
+                else:
+                    print("\033[31mNo ARL token provided. Adding public Deezer account.\033[0m")
+
+                    def add_public_deezer_account_worker():
+                        try:
+                            deezer_add_account("public_deezer")
+                            print("\033[32mPublic Deezer account added successfully. Please restart the app.\033[0m")
+                            config.set('active_account_number', config.get('active_account_number') + 1)
+                            config.update()
+                        except Exception as e:
+                            print(f"\033[31mError while adding public Deezer account: {e}\033[0m")
+
+                    login_worker = threading.Thread(target=add_public_deezer_account_worker)
+                    login_worker.daemon = True
+                    login_worker.start()
+                return
+            elif parts[1] == "generic":
+                print("\033[32mInitializing Generic platform support...\033[0m")
+
+                def add_generic_account_worker():
+                    try:
+                        # Adding a public account for the generic platform
+                        generic_add_account()
+                        print("\033[32mGeneric platform support added successfully. Please restart the app.\033[0m")
+                        config.set('active_account_number', config.get('active_account_number') + 1)
+                        config.update()
+                    except Exception as e:
+                        print(f"\033[31mError while adding Generic platform support: {e}\033[0m")
+
+                login_worker = threading.Thread(target=add_generic_account_worker)
+                login_worker.daemon = True
+                login_worker.start()
+                return
+            elif parts[1] == "qobuz":
+                print("\033[32mInitializing Qobuz account login...\033[0m")
+
+                if len(parts) == 4:  # Email and password provided
+                    email = parts[2]
+                    password = parts[3]
+
+                    def add_qobuz_account_worker():
+                        try:
+                            result = qobuz_add_account(email, password)
+                            if result:
+                                print("\033[32mQobuz account added successfully. Please restart the app.\033[0m")
+                                config.set('active_account_number', config.get('active_account_number') + 1)
+                                config.update()
+                            else:
+                                print("\033[31mFailed to add Qobuz account. Check credentials or try again later.\033[0m")
+                        except Exception as e:
+                            print(f"\033[31mError while adding Qobuz account: {e}\033[0m")
+
+                    login_worker = threading.Thread(target=add_qobuz_account_worker)
+                    login_worker.daemon = True
+                    login_worker.start()
+                else:
+                    print("\033[31mUsage: add_account qobuz <email> <password>\033[0m")
+                return
+            elif parts[1] == "soundcloud":
+                print("\033[32mInitializing SoundCloud account login...\033[0m")
+
+                def add_soundcloud_account_worker():
+                    try:
+                        account = {
+                            "uuid": "public_soundcloud",
+                            "login": {
+                                "client_id": "null",
+                                "app_version": "null",
+                                "app_locale": "null"
+                            }
+                        }
+                        result = soundcloud_login_user(account)
+                        if result:
+                            # Mise à jour de la configuration pour suivre les comptes actifs
+                            print("\033[32mSoundCloud account added successfully. Please restart the app.\033[0m")
+                            config.set('active_account_number', config.get('active_account_number') + 1)
+                            config.update()
+                        else:
+                            print("\033[31mFailed to add SoundCloud account.\033[0m")
+                    except Exception as e:
+                        print(f"\033[31mError while adding SoundCloud account: {e}\033[0m")
+
+                login_worker = threading.Thread(target=add_soundcloud_account_worker)
+                login_worker.daemon = True
+                login_worker.start()
             elif parts[1] == "spotify":
                 print("\033[32mLogin service started, select 'OnTheSpot' under devices in the Spotify Desktop App.\033[0m")
 
@@ -178,7 +346,7 @@ class CLI(Cmd):
                     session = spotify_new_session
                     if session:
                         print("\033[32mAccount added, please restart the app.\033[0m")
-                        config.set_('active_account_number', config.get('active_account_number') + 1)
+                        config.set('active_account_number', config.get('active_account_number') + 1)
                         config.update()
                     else:
                         print("\033[31mAccount already exists.\033[0m")
@@ -186,15 +354,46 @@ class CLI(Cmd):
                 login_worker = threading.Thread(target=add_spotify_account_worker)
                 login_worker.daemon = True
                 login_worker.start()
-            elif parts[1] == "deezer":
-                if len(parts) == 3:
-                    deezer_add_account(parts[2])
-                else:
-                    print("\033[31mUsage: add_account deezer <arl>\033[0m")
-            elif parts[1] == "soundcloud":
-                print("Not implemented yet.")
+            elif parts[1] == "tidal":
+                print("\033[32mInitializing Tidal account login...\033[0m")
+
+                def add_tidal_account_worker():
+                    try:
+                        device_code, verification_url = tidal_add_account_pt1()
+                        print(f"\033[32mPlease visit the following URL to complete login: {verification_url}\033[0m")
+
+                        result = tidal_add_account_pt2(device_code)
+                        if result:
+                            print("\033[32mTidal account added successfully. Please restart the app.\033[0m")
+                            config.set('active_account_number', config.get('active_account_number') + 1)
+                            config.update()
+                        else:
+                            print("\033[31mFailed to add Tidal account.\033[0m")
+                    except Exception as e:
+                        print(f"\033[31mError while adding Tidal account: {e}\033[0m")
+
+                login_worker = threading.Thread(target=add_tidal_account_worker)
+                login_worker.daemon = True
+                login_worker.start()
+            elif parts[1] == "youtube_music":
+                print("\033[32mInitializing YouTube Music account login...\033[0m")
+
+                def add_youtube_music_account_worker():
+                    try:
+                        # Adding public YouTube Music account
+                        youtube_music_add_account()
+                        print("\033[32mYouTube Music public account added successfully. Please restart the app.\033[0m")
+                        config.set('active_account_number', config.get('active_account_number') + 1)
+                        config.update()
+                    except Exception as e:
+                        print(f"\033[31mError while adding YouTube Music account: {e}\033[0m")
+
+                login_worker = threading.Thread(target=add_youtube_music_account_worker)
+                login_worker.daemon = True
+                login_worker.start()
+                return
             else:
-                print("\033[31mUnknown service. Available services: soundcloud, spotify, deezer.\033[0m")
+                print("\033[31mUnknown service.\033[0m")
             return
 
         if arg.startswith("select_account"):
@@ -202,7 +401,7 @@ class CLI(Cmd):
             if len(parts) == 2:
                 try:
                     account_number = int(parts[1])
-                    config.set_('active_account_number', account_number)
+                    config.set('active_account_number', account_number)
                     config.update()
                     print(f"\033[32mSelected account number: {account_number}\033[0m")
                 except ValueError:
@@ -218,7 +417,7 @@ class CLI(Cmd):
                     account_number = int(parts[1])
                     accounts = config.get('accounts').copy()
                     del accounts[account_number]
-                    config.set_('accounts', accounts)
+                    config.set('accounts', accounts)
                     config.update()
                     del account_pool[account_number]
                     print(f"\033[32mDeleted account number: {account_number}\033[0m")
