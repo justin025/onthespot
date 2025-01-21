@@ -350,7 +350,7 @@ class CLI(Cmd):
                 def add_spotify_account_worker():
                     session = spotify_new_session
                     if session:
-                        print("\033[32mAccount added, please restart the app.\033[0m")
+                        print("\033[32mAccount added.\033[0m")
                         config.set('active_account_number', config.get('active_account_number') + 1)
                         config.update()
                     else:
