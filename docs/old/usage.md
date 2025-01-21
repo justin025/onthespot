@@ -1,51 +1,44 @@
-# Usage Guide (Basic)
+# Usage Guide
 
-## Overview
-This guide provides basic usage instructions for each interface. For detailed information, refer to the respective wiki files:
 
-- **[config](config.md)**: For configuration options.
-- **[installation](installation.md)**: For installation steps and requirements.
-- **[integration](integration.md)**: For integration details.
-- **[variables](variables.md)**: For installation steps and requirements.
-- **[wiki-cli](wiki-cli.md)**: For command-line interface usage.
-- **[wiki-gui](wiki-gui.md)**: For graphical user interface usage.
-- **[wiki-webui](wiki-webui.md)**: For web user interface usage.
+## 1. Logging into your accounts
+OnTheSpot supports various accounts and instructions for each are listed below, for further assistance please reach out for support on the community discord [here](https://discord.gg/GCQwRBFPk9).
 
-## CLI Usage
-1. Open your terminal.
-2. Run commands directly:
-   - Example: `search "Daft Punk"`
-   - Example: `download --url https://example.com/media`
-3. Automate tasks by creating and running batch scripts.
-4. Access help: `--help` or `command --help` for usage instructions.
+- **Apple Music**: Enter your media-user-token. It can be obtained in chrome by logging into https://music.apple.com, pressing ctrl + shift + i to open inspect element, clicking the 'Application' or 'Storage' header, opening the music.apple.com cookie, and copying the media-user-token value. Please note a premium account is required to download music.
 
-Refer to [wiki-cli](wiki-cli.md) for detailed CLI commands and features.
+- **Bandcamp**: Bandcamp offers public downloads and does not require an account, simply click 'Add Bandcamp Account' and restart the app.
 
-## WebUI Usage
-1. Launch the WebUI in your browser by navigating to `http://localhost:PORT`.
-2. Log in or configure your account via the settings panel.
-3. Search and manage downloads interactively:
-   - Use the search bar for queries or paste URLs.
-   - View organized results and initiate downloads.
-4. Adjust settings and manage accounts from the dashboard.
+- **Deezer**: Paste your arl into the bar provided and click add account. To get your arl log into the deezer website, press ctrl + shift + i to open inspect element, navigate to the 'Application' or 'Storage' header, and open the www.deezer.com cookie. Your arl should be listed under one of the values provided.
 
-Refer to [wiki-webui](wiki-webui.md) for more details on WebUI features.
+- **Qobuz**: To login to your Qobuz account simply enter your email and password, and restart the app. If you would like to login using your user_auth_token you can append the following to the accounts section of your config file.
+   ```python
+   {
+      # Random string of numbers and letters
+      "uuid": "ABC123",
+      "service": "qobuz",
+      "active": true,
+      "login": {
+            # Email is not used during token logins
+            "email": "email@example.com",
+            # Password is not used during token logins
+            "password": "n/a",
+            "app_id": APP_ID,
+            "app_secrets": [
+               APP_SECRET
+            ],
+            "user_auth_token": USER_AUTH_TOKEN
+      }
+   }
+   ```
 
-## GUI Usage
-1. Open the application.
-2. Navigate through the intuitive interface:
-   - Use the navigation menu for quick access.
-   - Perform searches, manage downloads, and customize settings.
-3. Add accounts or adjust configurations from the settings panel.
-4. Use visual indicators and controls to monitor downloads and system status.
+- **Soundcloud**: Soundcloud offers public downloads and does not require an account, simply click 'Add Soundcloud Account' and restart the app. *If you have a GO+ account and would like to support development please reach out.*
 
-Refer to [wiki-gui](wiki-gui.md) for more information on GUI features.
+- **Spotify**: Ensure that both OnTheSpot and the Spotify Desktop App are not restricted by a firewall or vpn so that they can communicate. Click add account and then head over to devices in the Spotify app. Under devices you should see 'OnTheSpot', select it. Once complete the app will prompt you to restart.
 
----
+- **Tidal**: The app will provide you a link, open the link and login in your browser.
 
-For further questions or support, consult the respective wiki files or community resources.
+- **Youtube Music**: Youtube Music offers public downloads and does not require an account, simply click 'Add Youtube Music Account' and restart the app.
 
-<<<<<<< Updated upstream
 - **Crunchyroll**: To login to your Qobuz account simply enter your email and password, and restart the app.
 
 - **Generic Downloader**: Generic Downloader uses yt-dlp to rip any available music or videos from a given webpage. A list of supported services is available in the app or [here](https://github.com/yt-dlp/yt-dlp/tree/master/yt_dlp/extractor). Even if your given website is not listed the generic downloader may be able to rip media anyway, just paste your url in the search bar. To activate generic downloader simply click 'Add Generic Downloader'.
@@ -99,11 +92,10 @@ If a file path is provided the app will parse each line in the file for urls beg
 | [**M3U Path**](#media-path-format) | Customize the download path of created M3U files using variables like `{artist}`, `{album}`, etc. |
 | [**EXTINF Seperator**](#media-path-format) | M3U EXTINF metadata / list seperator. |
 | [**EXTINF Path**](#media-path-format) | Customize the M3U EXTINF label using variables like `{artist}`, `{album}`, etc. |
-| **Save Album Cover** | Save album cover as an image with a default format of cover.png |
-| **Album Cover Format** | The image format to save album covers in (default: png) |
 | **File Bitrate** | Set the bitrate of a converted file, default value is 320k. This setting is not respected by some lossless codecs, results may vary depending on your chosen filetype. |
 | **File Hertz** | Set the hertz of a converted file, default value is 44100 |
-| **Use Custom File Bitrate** | Use the user specified 'File Bitrate' field, if disabled the app will use the maximum value allowed by your account. |
+| **Save Album Cover** | Save album cover as an image with a default format of cover.png |
+| **Album Cover Format** | The image format to save album covers in (default: png) |
 | **Download Lyrics\*** | Enable downloading of lyrics for each track/episode. *This feature may require a premium account.* |
 | **Download Synced Lyrics Only\*** | Only download synced lyrics for tracks. *This feature may require a premium account.*|
 | **Save LRC File\*** | Save lyrics in an `.lrc` file alongside the track. *This feature may require a premium account.*|
@@ -174,5 +166,3 @@ If a file path is provided the app will parse each line in the file for urls beg
 
 - **Apply Changes**
   - After adjusting any settings, click the 'Save Settings' button to apply your changes. Some configuration changes may require restarting the app to take effect.
-=======
->>>>>>> Stashed changes
