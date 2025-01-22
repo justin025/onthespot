@@ -176,7 +176,7 @@ class DownloadWorker(QObject):
                     temp_file_path = os.path.join(directory, '~' + file_name)
 
                     # Clear the directory if it exists at the beginning
-                    if config.get("delete_removed", False) and not self.cleaned_directory:
+                    if config.get("delete_removed", False) and config.get("use_playlist_path", False) and not self.cleaned_directory and item.get("parent_category") == "playlist":
                         if os.path.exists(os.path.dirname(file_path)):
                             for file_name in os.listdir(os.path.dirname(file_path)):
                                 file_path_to_delete = os.path.join(os.path.dirname(file_path), file_name)
@@ -187,7 +187,7 @@ class DownloadWorker(QObject):
                                         os.rmdir(file_path_to_delete)
                                 except Exception as e:
                                     logger.error(f"Error while cleaning {file_path_to_delete}: {e}")
-                        self.cleaned_directory = True  # Marque le nettoyage comme effectué
+                        self.cleaned_directory = True
 
                     # Create the directory if it doesn't exist
                     os.makedirs(os.path.dirname(file_path), exist_ok=True)
