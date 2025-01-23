@@ -7,6 +7,7 @@ import random
 import threading
 import time
 import traceback
+import argparse
 from cmd import Cmd
 from .accounts import FillAccountPool, get_account_token
 from .api.apple_music import apple_music_get_track_metadata, apple_music_add_account
@@ -14,7 +15,7 @@ from .api.bandcamp import bandcamp_get_track_metadata, bandcamp_add_account
 from .api.deezer import deezer_get_track_metadata, deezer_add_account
 from .api.qobuz import qobuz_get_track_metadata, qobuz_add_account
 from .api.soundcloud import soundcloud_get_track_metadata, soundcloud_add_account
-from .api.generic import generic_add_account
+from .api.generic import generic_get_track_metadata, generic_add_account
 from .api.spotify import MirrorSpotifyPlayback, spotify_new_session, spotify_get_track_metadata, spotify_get_podcast_episode_metadata
 from .api.tidal import tidal_get_track_metadata, tidal_add_account_pt1, tidal_add_account_pt2
 from .api.youtube_music import youtube_music_get_track_metadata, youtube_music_add_account
@@ -25,7 +26,30 @@ from .parse_item import parsingworker, parse_url
 from .runtimedata import account_pool, pending, download_queue, download_queue_lock, pending_lock
 from .search import get_search_results
 
-logging.disable(logging.CRITICAL)
+if not config.get('debug_mode'):
+    logging.disable(logging.CRITICAL)
+else:
+    logger = logging.getLogger("cli")
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="OnTheSpot CLI Downloader")
+    
+    parser.add_argument('--download', help="Parse and download the URL specified")
+    
+    args, unknown_args = parser.parse_known_args()
+
+    overrides = {}
+    for arg in unknown_args:
+        if arg.startswith('--') and '=' in arg:
+            key, value = arg[2:].split('=', 1)
+            overrides[key] = value
+
+    if args.download:
+        if not (args.download.startswith("http://") or args.download.startswith("https://")):
+            parser.error("Parameter --download only accept URLs.")
+
+    return args, overrides
 
 
 class QueueWorker(threading.Thread):
@@ -66,14 +90,19 @@ class QueueWorker(threading.Thread):
                 with pending_lock:
                     pending[local_id] = item
 
+
 def main():
+    args, cli_overrides = parse_args()
+    config.apply_overrides(cli_overrides)
+
+    for key, value in cli_overrides.items():
+        print(f"{key}={value}")
+
     print('\033[32mLogging In...\033[0m\n', end='', flush=True)
 
     fill_account_pool = FillAccountPool()
-
     fill_account_pool.finished.connect(lambda: print("Finished filling account pool."))
     fill_account_pool.progress.connect(lambda message, status: print(f"{message} {'Success' if status else 'Failed'}"))
-
     fill_account_pool.start()
 
     thread = threading.Thread(target=parsingworker)
@@ -97,6 +126,19 @@ def main():
     if config.get('mirror_spotify_playback'):
         mirrorplayback = MirrorSpotifyPlayback()
         mirrorplayback.start()
+
+    if args.download:
+        print(f"\033[32mSearching and downloading: {args.download}\033[0m")
+        CLI().onecmd(f"search {args.download}")
+
+        while not any(item['item_status'] in ("Waiting", "Downloading") for item in download_queue.values()):
+            time.sleep(0.1)
+
+        while any(item['item_status'] not in ("Downloaded", "Failed", "Cancelled") for item in download_queue.values()):
+            time.sleep(1)
+
+        print("\033[32mDownload finished. Exiting...\033[0m")
+        os._exit(0)
 
     CLI().cmdloop()
 
@@ -277,7 +319,7 @@ class CLI(Cmd):
                 def add_spotify_account_worker():
                     session = spotify_new_session()
                     if session:
-                        print("\033[32mAccount added.\033[0m")
+                        print("\033[32mAccount added, please restart the app.\n\033[0m")
                         config.set('active_account_number', config.get('active_account_number') + 1)
                         config.update()
                     else:
@@ -327,6 +369,8 @@ class CLI(Cmd):
             if len(parts) == 2:
                 try:
                     account_number = int(parts[1])
+                    if not isinstance(account_number, int) or account_number > len(config.get('accounts')):
+                        raise ValueError
                     config.set('active_account_number', account_number)
                     config.update()
                     print(f"\033[32mSelected account number: {account_number}\033[0m")
@@ -340,19 +384,15 @@ class CLI(Cmd):
             parts = arg.split(maxsplit=1)
             if len(parts) == 2:
                 try:
-                    account_number = int(parts[1])
+                    account_number = parts[1]
+                    if not isinstance(account_number, int) or account_number > len(config.get('accounts')):
+                        raise ValueError
                     accounts = config.get('accounts').copy()
-                    if 0 <= account_number < len(accounts):
-                        del accounts[account_number]
-                        config.set('accounts', accounts)
-                        config.update()
-
-                        if account_number < len(account_pool):
-                            del account_pool[account_number]
-
-                        print(f"\033[32mDeleted account number: {account_number}\033[0m")
-                    else:
-                        print("\033[31mInvalid account number: Out of range.\033[0m")
+                    del accounts[account_number]
+                    config.set('accounts', accounts)
+                    config.update()
+                    del account_pool[account_number]
+                    print(f"\033[32mDeleted account number: {account_number}\033[0m")
                 except ValueError:
                     print("\033[31mInvalid account number. Please enter a valid integer.\033[0m")
                 except Exception as e:
@@ -536,13 +576,13 @@ def start_snake_game(win):
 
             head_y, head_x = snake[0]
             if direction == curses.KEY_RIGHT:
-                head_x  = 1
+                head_x  += 1
             elif direction == curses.KEY_LEFT:
                 head_x -= 1
             elif direction == curses.KEY_UP:
                 head_y -= 1
             elif direction == curses.KEY_DOWN:
-                head_y  = 1
+                head_y  += 1
 
             if (head_x in [0, win.getmaxyx()[1] - 2] or
                 head_y in [0, win.getmaxyx()[0] - 1] or
@@ -552,7 +592,7 @@ def start_snake_game(win):
                 break
 
             if (head_y, head_x) == food:
-                score  = 1
+                score  += 1
                 food = (random.randint(3, win.getmaxyx()[0] - 2), random.randint(1, win.getmaxyx()[1] - 3))
             else:
                 snake.pop()

@@ -16,7 +16,7 @@ from .runtimedata import account_pool, get_logger
 logger = get_logger("search")
 
 
-def get_search_results(search_term, content_types=None):
+def get_search_results(search_term, content_types=['track', 'album', 'artist', 'playlist']):
     if len(account_pool) <= 0:
         return None
 
