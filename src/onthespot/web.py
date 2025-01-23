@@ -27,16 +27,17 @@ from .search import get_search_results
 logger = get_logger("web")
 os.environ['FLASK_ENV'] = 'production'
 web_resources = os.path.join(config.app_root, 'resources', 'web')
-app = Flask('OnTheSpot', template_folder=web_resources, static_folder=web_resources)
+app = Flask(
+    'OnTheSpot',
+    template_folder=web_resources,
+    static_folder=os.path.join(web_resources, 'assets')
+)
 app.secret_key = os.urandom(24)
 login_manager = LoginManager()
 login_manager.init_app(app)
 
 
 class QueueWorker(threading.Thread):
-    def __init__(self):
-        super().__init__()
-
     def run(self):
         while True:
             try:
@@ -44,9 +45,13 @@ class QueueWorker(threading.Thread):
                     local_id = next(iter(pending))
                     with pending_lock:
                         item = pending.pop(local_id)
+                    logger.info(f"Processing item: {item}")
+
                     token = get_account_token(item['item_service'])
                     item_metadata = globals()[f"{item['item_service']}_get_{item['item_type']}_metadata"](token, item['item_id'])
+
                     if item_metadata:
+                        logger.info(f"Metadata fetched for item {local_id}: {item_metadata}")
                         with download_queue_lock:
                             download_queue[local_id] = {
                                 'local_id': local_id,
@@ -65,12 +70,10 @@ class QueueWorker(threading.Thread):
                                 'item_thumbnail': item_metadata["image_url"],
                                 'item_url': item_metadata["item_url"]
                             }
-                else:
-                    time.sleep(0.2)
+                    else:
+                        logger.error(f"Failed to fetch metadata for item {local_id}")
             except Exception as e:
-                logger.error(f"Unknown Exception for {item}: {str(e)}\nTraceback: {traceback.format_exc()}")
-                with pending_lock:
-                    pending[local_id] = item
+                logger.error(f"Error in QueueWorker: {e}")
 
 class User(UserMixin):
     def __init__(self, id):
@@ -82,36 +85,46 @@ def load_user(user_id):
     return User(user_id)
 
 
-login_manager.login_view = "login"
+login_manager.login_view = "/login"
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if not config.get('use_webui_login') or not config.get('webui_username'):
+    next_url = request.args.get('next') or '/'  # Default to '/' if no `next` parameter is provided
+
+    if request.method == 'GET':
+        # Handle GET request: Show login form or redirect to the front-end
+        return jsonify({'success': False, 'message': 'Login required.', 'next': next_url}), 401
+
+    # Handle POST request for login logic
+    if not config.get('use_webui_login', False) or not config.get('webui_username', ''):
         user = User('guest')
         login_user(user)
-        return redirect(url_for('download_queue_page'))
+        return jsonify({'success': True, 'message': 'Logged in as guest.', 'next': next_url})
 
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        if username == config.get('webui_username') and password == config.get('webui_password'):
-            user = User(username)
-            login_user(user)
-            return redirect(url_for('download_queue_page'))
-        flash('Invalid credentials, please try again.')
-    return render_template('login.html')
+    username = request.json.get('username')
+    password = request.json.get('password')
 
+    if username == config.get('webui_username') and password == config.get('webui_password'):
+        user = User(username)
+        login_user(user)
+        return jsonify({'success': True, 'message': 'Login successful.', 'next': next_url})
 
-@app.route('/logout')
+    return jsonify({'success': False, 'message': 'Invalid credentials.'}), 401
+
+@login_manager.unauthorized_handler
+def unauthorized():
+    return redirect(url_for('login', next=request.url))
+
+@app.route('/logout', methods=['POST'])
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('login'))
+    return jsonify({'success': True, 'message': 'Logged out successfully.'})
 
 
 @app.route('/items')
-@login_required
+# @login_required
 def get_items():
     with download_queue_lock:
         return jsonify(download_queue)
@@ -124,42 +137,48 @@ def serve_icons(filename):
 
 
 @app.route('/download/<path:local_id>')
-@login_required
+# @login_required
 def download_media(local_id):
-    return send_file(download_queue[local_id]['file_path'], as_attachment=True)
+    if local_id in download_queue and os.path.exists(download_queue[local_id]['file_path']):
+        return send_file(download_queue[local_id]['file_path'], as_attachment=True)
+    return jsonify({'error': 'File not found'}), 404
 
 
 @app.route('/delete/<path:local_id>', methods=['DELETE'])
-@login_required
+# @login_required
 def delete_media(local_id):
-    os.remove(download_queue[local_id]['file_path'])
-    download_queue[local_id]['item_status'] = 'Deleted'
-    return jsonify(success=True)
+    if local_id in download_queue:
+        file_path = download_queue[local_id].get('file_path')
+        if file_path and os.path.exists(file_path):
+            os.remove(file_path)
+        del download_queue[local_id]
+        return jsonify({'success': True})
+    return jsonify({'error': 'Invalid ID or file not found'}), 400
 
 
 @app.route('/cancel/<path:local_id>', methods=['POST'])
-@login_required
+# @login_required
 def cancel_item(local_id):
     download_queue[local_id]['item_status'] = 'Cancelled'
     return jsonify(success=True)
 
 
 @app.route('/retry/<path:local_id>', methods=['POST'])
-@login_required
+# @login_required
 def retry_item(local_id):
     download_queue[local_id]['item_status'] = 'Waiting'
     return jsonify(success=True)
 
 
 @app.route('/download/<path:url>', methods=['POST'])
-@login_required
+# @login_required
 def download_file(url):
     parse_url(url)
     return jsonify(success=True)
 
 
 @app.route('/clear', methods=['POST'])
-@login_required
+# @login_required
 def clear_items():
     keys_to_delete = []
 
@@ -175,7 +194,7 @@ def clear_items():
 
 
 @app.route('/restart_workers', methods=['POST'])
-@login_required
+# @login_required
 def restart_workers():
     for download_worker in download_workers:
         download_worker.stop()
@@ -200,38 +219,36 @@ def restart_workers():
     return jsonify(success=True)
 
 
-@app.route('/download_queue')
-@login_required
-def download_queue_page():
-    config_path = os.path.join(config_dir(), 'onthespot', 'otsconfig.json')
-    with open(config_path, 'r') as config_file:
-        config_data = json.load(config_file)
-    return render_template('download_queue.html', config=config_data)
+@app.route('/api/download_queue', methods=['GET'])
+# @login_required
+def api_download_queue():
+    with download_queue_lock:
+        if not download_queue:
+            return jsonify({'success': True, 'data': []})
+        return jsonify({'success': True, 'data': download_queue})
 
 
 @app.route('/')
-@login_required
-def index():
-    return redirect(url_for('download_queue_page'))
+def home():
+    return send_file(os.path.join(web_resources, 'app.html'))
 
 
-@app.route('/search')
-@login_required
+@app.route('/search', methods=['GET'])
+# @login_required
 def search():
     config_path = os.path.join(config_dir(), 'onthespot', 'otsconfig.json')
-    with open(config_path, 'r') as config_file:
-        config_data = json.load(config_file)
-    return render_template('search.html', config=config_data)
-
-
-@app.route('/about')
-@login_required
-def about():
-    return render_template('about.html')
+    try:
+        with open(config_path, 'r') as config_file:
+            config_data = json.load(config_file)
+        return jsonify({'success': True, 'config': config_data})
+    except FileNotFoundError:
+        return jsonify({'success': False, 'error': 'Configuration file not found'}), 404
+    except json.JSONDecodeError:
+        return jsonify({'success': False, 'error': 'Invalid configuration file format'}), 500
 
 
 @app.route('/search_results')
-@login_required
+# @login_required
 def search_results():
     query = request.args.get('q')
 
@@ -255,13 +272,22 @@ def search_results():
     return jsonify(results)
 
 
-@app.route('/settings')
-@login_required
+@app.route('/settings', methods=['GET'])
+# @login_required
 def settings():
     config_path = os.path.join(config_dir(), 'onthespot', 'otsconfig.json')
-    with open(config_path, 'r') as config_file:
-        config_data = json.load(config_file)
-    return render_template('settings.html', config=config_data, account_pool=account_pool)  # Render the settings.html file
+    try:
+        with open(config_path, 'r') as config_file:
+            config_data = json.load(config_file)
+        return jsonify({
+            'success': True,
+            'config': config_data,
+            'account_pool': account_pool  # Pass account pool if needed
+        })
+    except FileNotFoundError:
+        return jsonify({'success': False, 'error': 'Configuration file not found'}), 404
+    except json.JSONDecodeError:
+        return jsonify({'success': False, 'error': 'Invalid configuration file format'}), 500
 
 
 @app.route('/update_settings', methods=['POST'])
@@ -278,7 +304,7 @@ def update_settings():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--host', type=str, default='127.0.0.1', help='Host IP address')
+    parser.add_argument('--host', type=str, default='0.0.0.0', help='Host IP address')
     parser.add_argument('--port', type=int, default=5000, help='Port number')
     parser.add_argument('--debug', action='store_true', help='Enable debug mode')
     args = parser.parse_args()

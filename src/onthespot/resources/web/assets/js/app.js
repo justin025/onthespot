@@ -23,7 +23,6 @@ $(document).ready(function () {
 
     $(document).on('keydown', e => {
         if (e.key === 's') {
-            e.preventDefault();
             $('#search-bar').focus();
         }
     });

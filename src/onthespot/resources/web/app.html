@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="assets/img/onthespot.png" type="image/x-icon">
+    <title>Home</title>
+    <link rel="stylesheet" href="assets/css/app.css">
+    <script defer src="assets/js/app.js"></script>
+    <script defer src="assets/js/api.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <!-- Search -->
+        <div id="search-container" class="">
+            <form id="search" autocomplete="off">
+                <input type="text" name="q" placeholder="Search..." id="search-bar" required>
+                <button type="submit" id="search-button"><ion-icon name="search-outline"></ion-icon></button>
+            </form>
+        </div>
+
+        <!-- Download Queue -->
+        <div id="download-queue-container" class="active">
+            <div id="download-queue">
+                <!-- JavaScript will dynamically populate this section -->
+
+                <!-- Ligne 1 -->
+                <div class="row">
+                    <div class="localId">1</div>
+                    <div class="thumbnail">
+                        <img src="https://placehold.co/600" alt="Thumbnail">
+                    </div>
+                    <div class="name">Song One</div>
+                    <div class="by">Artist One</div>
+                    <div class="service">
+                        <img src="assets/img/icons/spotify.png" alt="Spotify">
+                    </div>
+                    <div class="status">Finished</div>
+                    <div class="action"><ion-icon name="arrow-down-circle-outline"></ion-icon></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- About -->
+        <div id="about-container" class="full">
+            <div id="about">
+                <p>
+                    OnTheSpot is strictly intended for educational, private, and fair use only in compliance with the
+                    <a href="https://www.copyright.gov/dmca/">Digital Millennium Copyright Act (DMCA), Section 1201</a>.
+                    It is not affiliated with or endorsed by any music streaming services or platforms.
+                    The contributors/developers of OnTheSpot are not responsible for any misuse of the program or source code.
+                    Users are solely responsible for ensuring that their use of OnTheSpot complies with all relevant/applicable laws
+                    in their country. The creators and contributors of OnTheSpot assume no liability for any misuse of legal terms
+                    associated with the application or its source code.
+                </p>
+                <a href="https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html#SEC1">GPL-2.0 License</a>
+            </div>
+            <ion-icon name="close-outline"></ion-icon>
+        </div>
+
+        <!-- Login -->
+        <div id="login-container" class="full">
+            <div id="login">
+                <form id="loginform" method="POST" autocomplete="off">
+                    <div id="login-info">
+                        <div>
+                            <label for="username">Username</label>
+                            <input type="text" id="username" name="username" placeholder="Username..." required>
+                        </div>
+                        <div>
+                            <label for="password">Password</label>
+                            <input type="password" id="password" name="password" placeholder="Password..." required>
+                        </div>
+                    </div>
+                    <div>
+                        <button type="submit" id="loginButton">Login</button>
+                    </div>
+                </form>
+            </div>
+            <ion-icon name="close-outline"></ion-icon>
+        </div>
+
+        <!-- Settings -->
+        <div id="settings-container" class="full">
+            <form id="settings">
+                <h1>Settings</h1>
+                <section id="webui" class="settings-section active">
+                    <h2>Web UI</h2>
+                    <div>
+                        <label for="use_webui_login">Enable Web UI Login Page:</label>
+                        <input type="checkbox" role="switch" id="use_webui_login" {% if config.use_webui_login %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="webui_username">Web UI Username:</label>
+                        <input type="text" id="webui_username" value="{{ config.webui_username }}" placeholder="Enter your username">
+                    </div>
+                    <div>
+                        <label for="webui_password">Web UI Password:</label>
+                        <input type="password" id="webui_password" value="{{ config.webui_password }}" placeholder="Enter your password">
+                    </div>
+                </section>
+
+                <section id="general" class="settings-section active">
+                    <h2>General</h2>
+                    <div>
+                        <label for="explicit_label">Explicit Label:</label>
+                        <input type="text" id="explicit_label" value="{{ config.explicit_label }}" placeholder="Enter explicit label">
+                    </div>
+                    <div>
+                        <label for="download_copy_btn">Add Copy Button to Downloads:</label>
+                        <input type="checkbox" role="switch" id="download_copy_btn" {% if config.download_copy_btn %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="download_open_btn">Add Open Button to Downloads:</label>
+                        <input type="checkbox" role="switch" id="download_open_btn" {% if config.download_open_btn %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="download_locate_btn">Add Locate Button to Downloads:</label>
+                        <input type="checkbox" role="switch" id="download_locate_btn" {% if config.download_locate_btn %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="download_delete_btn">Add Delete Button to Downloads:</label>
+                        <input type="checkbox" role="switch" id="download_delete_btn" {% if config.download_delete_btn %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="show_search_thumbnails">Show Thumbnails in Search View:</label>
+                        <input type="checkbox" role="switch" id="show_search_thumbnails" {% if config.show_search_thumbnails %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="show_download_thumbnails">Show Thumbnails in Download View:</label>
+                        <input type="checkbox" role="switch" id="show_download_thumbnails" {% if config.show_download_thumbnails %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="thumbnail_size">Thumbnail Size (px):</label>
+                        <input type="number" id="thumbnail_size" value="{{ config.thumbnail_size }}" placeholder="Enter thumbnail size">
+                    </div>
+                    <div>
+                        <label for="max_search_results">Max Search Results:</label>
+                        <input type="number" id="max_search_results" value="{{ config.max_search_results }}" placeholder="Enter max search results">
+                    </div>
+                    <div>
+                        <label for="disable_download_popups">Hide Download Popups:</label>
+                        <input type="checkbox" role="switch" id="disable_download_popups" {% if config.disable_download_popups %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="windows_10_explorer_thumbnails">Use Old ID3 Format for Windows 10 Explorer:</label>
+                        <input type="checkbox" role="switch" id="windows_10_explorer_thumbnails" {% if config.windows_10_explorer_thumbnails %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="mirror_spotify_playback">Mirror Spotify Playback:</label>
+                        <input type="checkbox" role="switch" id="mirror_spotify_playback" {% if config.mirror_spotify_playback %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="close_to_tray">Close Application to Tray:</label>
+                        <input type="checkbox" role="switch" id="close_to_tray" {% if config.close_to_tray %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="check_for_updates">Check for Updates:</label>
+                        <input type="checkbox" role="switch" id="check_for_updates" {% if config.check_for_updates %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="illegal_character_replacement">Illegal Character Replacement:</label>
+                        <input type="text" id="illegal_character_replacement" value="{{ config.illegal_character_replacement }}" placeholder="Enter character for replacement">
+                    </div>
+                    <div>
+                        <label for="raw_media_download">Skip Media Conversion:</label>
+                        <input type="checkbox" role="switch" id="raw_media_download" {% if config.raw_media_download %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="rotate_active_account_number">Rotate Active Account:</label>
+                        <input type="checkbox" role="switch" id="rotate_active_account_number" {% if config.rotate_active_account_number %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="download_delay">Download Delay (seconds):</label>
+                        <input type="number" id="download_delay" value="{{ config.download_delay }}" placeholder="Enter download delay">
+                    </div>
+                    <div>
+                        <label for="download_chunk_size">Download Chunk Size (bytes):</label>
+                        <input type="number" id="download_chunk_size" value="{{ config.download_chunk_size }}" placeholder="Enter chunk size">
+                    </div>
+                    <div>
+                        <label for="maximum_queue_workers">Maximum Queue Workers:</label>
+                        <input type="number" id="maximum_queue_workers" value="{{ config.maximum_queue_workers }}" placeholder="Enter max queue workers">
+                    </div>
+                    <div>
+                        <label for="maximum_download_workers">Maximum Download Workers:</label>
+                        <input type="number" id="maximum_download_workers" value="{{ config.maximum_download_workers }}" placeholder="Enter max download workers">
+                    </div>
+                    <div>
+                        <label for="enable_retry_worker">Enable Retry Worker:</label>
+                        <input type="checkbox" role="switch" id="enable_retry_worker" {% if config.enable_retry_worker %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="retry_worker_delay">Retry Worker Delay (minutes):</label>
+                        <input type="number" id="retry_worker_delay" value="{{ config.retry_worker_delay }}" placeholder="Enter retry delay">
+                    </div>
+                </section>
+
+                <section id="search-settings" class="settings-section active">
+                    <h2>Search Settings</h2>
+                    <div>
+                        <label for="enable_search_tracks">Enable Search for Tracks:</label>
+                        <input type="checkbox" role="switch" id="enable_search_tracks" {% if config.enable_search_tracks %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="enable_search_albums">Enable Search for Albums:</label>
+                        <input type="checkbox" role="switch" id="enable_search_albums" {% if config.enable_search_albums %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="enable_search_playlists">Enable Search for Playlists:</label>
+                        <input type="checkbox" role="switch" id="enable_search_playlists" {% if config.enable_search_playlists %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="enable_search_artists">Enable Search for Artists:</label>
+                        <input type="checkbox" role="switch" id="enable_search_artists" {% if config.enable_search_artists %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="enable_search_episodes">Enable Search for Episodes:</label>
+                        <input type="checkbox" role="switch" id="enable_search_episodes" {% if config.enable_search_episodes %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="enable_search_podcasts">Enable Search for Podcasts:</label>
+                        <input type="checkbox" role="switch" id="enable_search_podcasts" {% if config.enable_search_podcasts %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="enable_search_audiobooks">Enable Search for Audiobooks:</label>
+                        <input type="checkbox" role="switch" id="enable_search_audiobooks" {% if config.enable_search_audiobooks %}checked{% endif %}>
+                    </div>
+                </section>
+
+                <section id="audio-downloads" class="settings-section active">
+                    <h2>Audio Downloads</h2>
+                    <div>
+                        <label for="audio_download_path">Audio Download Path:</label>
+                        <input type="text" id="audio_download_path" value="{{ config.audio_download_path }}" placeholder="Enter audio download path">
+                    </div>
+                    <div>
+                        <label for="track_file_format">Track File Format:</label>
+                        <input type="text" id="track_file_format" value="{{ config.track_file_format }}" placeholder="Enter track file format">
+                    </div>
+                    <div>
+                        <label for="track_path_formatter">Track Path Formatter:</label>
+                        <input type="text" id="track_path_formatter" value="{{ config.track_path_formatter }}" placeholder="Enter track path format">
+                    </div>
+                    <div>
+                        <label for="podcast_file_format">Podcast File Format:</label>
+                        <input type="text" id="podcast_file_format" value="{{ config.podcast_file_format }}" placeholder="Enter podcast file format">
+                    </div>
+                    <div>
+                        <label for="podcast_path_formatter">Podcast Path Formatter:</label>
+                        <input type="text" id="podcast_path_formatter" value="{{ config.podcast_path_formatter }}" placeholder="Enter podcast path format">
+                    </div>
+                    <div>
+                        <label for="use_playlist_path">Use Playlist Path:</label>
+                        <input type="checkbox" role="switch" id="use_playlist_path" {% if config.use_playlist_path %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="playlist_path_formatter">Playlist Path Formatter:</label>
+                        <input type="text" id="playlist_path_formatter" value="{{ config.playlist_path_formatter }}" placeholder="Enter playlist path format">
+                    </div>
+                    <div>
+                        <label for="create_m3u_file">Create M3U File:</label>
+                        <input type="checkbox" role="switch" id="create_m3u_file" {% if config.create_m3u_file %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="m3u_path_formatter">M3U Path Formatter:</label>
+                        <input type="text" id="m3u_path_formatter" value="{{ config.m3u_path_formatter }}" placeholder="Enter M3U path format">
+                    </div>
+                    <div>
+                        <label for="extinf_separator">EXTINF Separator:</label>
+                        <input type="text" id="extinf_separator" value="{{ config.extinf_separator }}" placeholder="Enter EXTINF metadata separator">
+                    </div>
+                    <div>
+                        <label for="extinf_label">EXTINF Label:</label>
+                        <input type="text" id="extinf_label" value="{{ config.extinf_label }}" placeholder="Enter EXTINF label format">
+                    </div>
+                    <div>
+                        <label for="file_bitrate">File Bitrate:</label>
+                        <input type="text" id="file_bitrate" value="{{ config.file_bitrate }}" placeholder="Enter file bitrate">
+                    </div>
+                    <div>
+                        <label for="file_hertz">File Hertz:</label>
+                        <input type="number" id="file_hertz" value="{{ config.file_hertz }}" placeholder="Enter file hertz">
+                    </div>
+                    <div>
+                        <label for="save_album_cover">Save Album Cover:</label>
+                        <input type="checkbox" role="switch" id="save_album_cover" {% if config.save_album_cover %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="album_cover_format">Album Cover Format:</label>
+                        <input type="text" id="album_cover_format" value="{{ config.album_cover_format }}" placeholder="Enter album cover format">
+                    </div>
+                    <div>
+                        <label for="download_lyrics">Enable Lyrics Download:</label>
+                        <input type="checkbox" role="switch" id="download_lyrics" {% if config.download_lyrics %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="save_lrc_file">Save LRC File:</label>
+                        <input type="checkbox" role="switch" id="save_lrc_file" {% if config.save_lrc_file %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="only_download_synced_lyrics">Only Download Synced Lyrics:</label>
+                        <input type="checkbox" role="switch" id="only_download_synced_lyrics" {% if config.only_download_synced_lyrics %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="translate_file_path">Translate File Path:</label>
+                        <input type="checkbox" role="switch" id="translate_file_path" {% if config.translate_file_path %}checked{% endif %}>
+                    </div>
+                </section>
+
+                <section id="audio-metadata" class="settings-section active">
+                    <h2>Audio Metadata</h2>
+                    <div>
+                        <label for="metadata_separator">Metadata Separator:</label>
+                        <input type="text" id="metadata_separator" value="{{ config.metadata_separator }}" placeholder="Enter metadata separator">
+                    </div>
+                    <div>
+                        <label for="overwrite_existing_metadata">Overwrite Existing Metadata:</label>
+                        <input type="checkbox" role="switch" id="overwrite_existing_metadata" {% if config.overwrite_existing_metadata %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_branding">Embed Branding:</label>
+                        <input type="checkbox" role="switch" id="embed_branding" {% if config.embed_branding %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_cover">Embed Cover:</label>
+                        <input type="checkbox" role="switch" id="embed_cover" {% if config.embed_cover %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_artist">Embed Artist:</label>
+                        <input type="checkbox" role="switch" id="embed_artist" {% if config.embed_artist %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_album">Embed Album:</label>
+                        <input type="checkbox" role="switch" id="embed_album" {% if config.embed_album %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_albumartist">Embed Album Artist:</label>
+                        <input type="checkbox" role="switch" id="embed_albumartist" {% if config.embed_albumartist %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_name">Embed Name:</label>
+                        <input type="checkbox" role="switch" id="embed_name" {% if config.embed_name %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_year">Embed Year:</label>
+                        <input type="checkbox" role="switch" id="embed_year" {% if config.embed_year %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_discnumber">Embed Disc Number:</label>
+                        <input type="checkbox" role="switch" id="embed_discnumber" {% if config.embed_discnumber %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_tracknumber">Embed Track Number:</label>
+                        <input type="checkbox" role="switch" id="embed_tracknumber" {% if config.embed_tracknumber %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_genre">Embed Genre:</label>
+                        <input type="checkbox" role="switch" id="embed_genre" {% if config.embed_genre %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_performers">Embed Performers:</label>
+                        <input type="checkbox" role="switch" id="embed_performers" {% if config.embed_performers %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_producers">Embed Producers:</label>
+                        <input type="checkbox" role="switch" id="embed_producers" {% if config.embed_producers %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_writers">Embed Writers:</label>
+                        <input type="checkbox" role="switch" id="embed_writers" {% if config.embed_writers %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_label">Embed Label:</label>
+                        <input type="checkbox" role="switch" id="embed_label" {% if config.embed_label %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_copyright">Embed Copyright:</label>
+                        <input type="checkbox" role="switch" id="embed_copyright" {% if config.embed_copyright %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_description">Embed Description:</label>
+                        <input type="checkbox" role="switch" id="embed_description" {% if config.embed_description %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_language">Embed Language:</label>
+                        <input type="checkbox" role="switch" id="embed_language" {% if config.embed_language %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_isrc">Embed ISRC:</label>
+                        <input type="checkbox" role="switch" id="embed_isrc" {% if config.embed_isrc %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_length">Embed Length:</label>
+                        <input type="checkbox" role="switch" id="embed_length" {% if config.embed_length %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_url">Embed URL:</label>
+                        <input type="checkbox" role="switch" id="embed_url" {% if config.embed_url %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_key">Embed Key:</label>
+                        <input type="checkbox" role="switch" id="embed_key" {% if config.embed_key %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_bpm">Embed BPM:</label>
+                        <input type="checkbox" role="switch" id="embed_bpm" {% if config.embed_bpm %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_compilation">Embed Compilation:</label>
+                        <input type="checkbox" role="switch" id="embed_compilation" {% if config.embed_compilation %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_lyrics">Embed Lyrics:</label>
+                        <input type="checkbox" role="switch" id="embed_lyrics" {% if config.embed_lyrics %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_explicit">Embed Explicit:</label>
+                        <input type="checkbox" role="switch" id="embed_explicit" {% if config.embed_explicit %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_upc">Embed UPC:</label>
+                        <input type="checkbox" role="switch" id="embed_upc" {% if config.embed_upc %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_service_id">Embed Service ID:</label>
+                        <input type="checkbox" role="switch" id="embed_service_id" {% if config.embed_service_id %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_timesignature">Embed Time Signature:</label>
+                        <input type="checkbox" role="switch" id="embed_timesignature" {% if config.embed_timesignature %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_acousticness">Embed Acousticness:</label>
+                        <input type="checkbox" role="switch" id="embed_acousticness" {% if config.embed_acousticness %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_danceability">Embed Danceability:</label>
+                        <input type="checkbox" role="switch" id="embed_danceability" {% if config.embed_danceability %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_energy">Embed Energy:</label>
+                        <input type="checkbox" role="switch" id="embed_energy" {% if config.embed_energy %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_instrumentalness">Embed Instrumentalness:</label>
+                        <input type="checkbox" role="switch" id="embed_instrumentalness" {% if config.embed_instrumentalness %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_liveness">Embed Liveness:</label>
+                        <input type="checkbox" role="switch" id="embed_liveness" {% if config.embed_liveness %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_loudness">Embed Loudness:</label>
+                        <input type="checkbox" role="switch" id="embed_loudness" {% if config.embed_loudness %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_speechiness">Embed Speechiness:</label>
+                        <input type="checkbox" role="switch" id="embed_speechiness" {% if config.embed_speechiness %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="embed_valence">Embed Valence:</label>
+                        <input type="checkbox" role="switch" id="embed_valence" {% if config.embed_valence %}checked{% endif %}>
+                    </div>
+                </section>
+
+                <section id="video-downloads" class="settings-section active">
+                    <h2>Video Downloads</h2>
+                    <div>
+                        <label for="video_download_path">Video Download Path:</label>
+                        <input type="text" id="video_download_path" value="{{ config.video_download_path }}" placeholder="Enter video download path">
+                    </div>
+                    <div>
+                        <label for="movie_file_format">Movie File Format:</label>
+                        <input type="text" id="movie_file_format" value="{{ config.movie_file_format }}" placeholder="Enter movie file format">
+                    </div>
+                    <div>
+                        <label for="movie_path_formatter">Movie Path Formatter:</label>
+                        <input type="text" id="movie_path_formatter" value="{{ config.movie_path_formatter }}" placeholder="Enter movie path format">
+                    </div>
+                    <div>
+                        <label for="show_file_format">Show File Format:</label>
+                        <input type="text" id="show_file_format" value="{{ config.show_file_format }}" placeholder="Enter show file format">
+                    </div>
+                    <div>
+                        <label for="show_path_formatter">Show Path Formatter:</label>
+                        <input type="text" id="show_path_formatter" value="{{ config.show_path_formatter }}" placeholder="Enter show path format">
+                    </div>
+                    <div>
+                        <label for="preferred_video_resolution">Preferred Video Resolution:</label>
+                        <input type="number" id="preferred_video_resolution" value="{{ config.preferred_video_resolution }}" placeholder="Enter max video resolution">
+                    </div>
+                    <div>
+                        <label for="download_subtitles">Download Subtitles:</label>
+                        <input type="checkbox" role="switch" id="download_subtitles" {% if config.download_subtitles %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="preferred_audio_language">Preferred Audio Language:</label>
+                        <input type="text" id="preferred_audio_language" value="{{ config.preferred_audio_language }}" placeholder="Enter preferred audio language">
+                    </div>
+                    <div>
+                        <label for="preferred_subtitle_language">Preferred Subtitle Language:</label>
+                        <input type="text" id="preferred_subtitle_language" value="{{ config.preferred_subtitle_language }}" placeholder="Enter preferred subtitle language">
+                    </div>
+                    <div>
+                        <label for="download_all_available_audio">Download All Available Audio:</label>
+                        <input type="checkbox" role="switch" id="download_all_available_audio" {% if config.download_all_available_audio %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <label for="download_all_available_subtitles">Download All Available Subtitles:</label>
+                        <input type="checkbox" role="switch" id="download_all_available_subtitles" {% if config.download_all_available_subtitles %}checked{% endif %}>
+                    </div>
+                </section>
+            </form>
+            <ion-icon name="close-outline"></ion-icon>
+        </div>
+
+        <!-- Menu -->
+        <div id="menu">
+            <a class="item" href="https://github.com/justin025/onthespot/" target="_blank" id="github-button">
+                <ion-icon name="logo-github"></ion-icon>
+            </a>
+            <a class="item" id="login-button">
+                <ion-icon name="log-in-outline"></ion-icon>
+            </a>
+            <a class="item" id="about-button">
+                <ion-icon name="information-circle-outline"></ion-icon>
+            </a>
+            <a class="item" id="settings-button">
+                <ion-icon name="cog-outline"></ion-icon>
+            </a>
+        </div>
+
+        <!-- Notification -->
+        <div id="notification" class="hidden">
+            <ion-icon name="alert-circle-outline"></ion-icon>
+            <p>Song Downloaded Successfully.</p>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -479,6 +479,7 @@ option {
     padding: 0;
     color: var(--fifth);
     font-style: italic;
+    width: 50%;
 }
 
 #settings input[type="text"]:focus,
