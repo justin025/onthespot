@@ -461,8 +461,6 @@ def spotify_get_album_track_ids(token, album_id):
 
 def spotify_get_search_results(token, search_term, content_types):
     logger.info(f"Get search result for term '{search_term}'")
-    if content_types is None:
-        content_types = ["track", "album", "playlist", "artist", "show", "episode", "audiobook"]
 
     headers = {}
     headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
