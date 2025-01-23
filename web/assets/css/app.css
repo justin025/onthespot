@@ -1,0 +1,658 @@
+/* Variables */
+:root {
+    --background: #121212;
+    --main: #373737;
+    --second: #fff;
+    --third: #262626;
+    --fourth: #1F1F1F;
+    --fifth: #8d8d8d;
+    --accent: #4CAF50;
+    --search-height: 40px;
+    --column-2: 100px;
+    --column-3: 100px;
+    --column-4: 150px;
+    --column-5: 100px;
+    --column-6: 120px;
+    --scrollbar-width: 10px;
+    --app-gap: 20px;
+    --app-padding: 20px;
+    --load-more-button-height: 0px;
+    --link-cursor: url(../cursors/Link.cur), pointer;
+    --default-cursor: url(../cursors/Normal.cur), default;
+    --text-cursor: url(../cursors/Text.cur), text;
+}
+
+/* General */
+
+* {
+    box-sizing: border-box;
+    color: var(--second);
+    font-family: Arial, Helvetica, sans-serif;
+    text-decoration: none;
+    transition: all 0.25s ease-in-out;
+    cursor: var(--default-cursor);
+    -webkit-tap-highlight-color: var(--accent);
+}
+
+*::selection {
+    background: #efefef;
+    color: var(--main);
+}
+
+*:not() {
+    transition: all 0.25s ease-in-out;
+}
+
+p,
+input,
+h1 {
+    cursor: var(--text-cursor);
+}
+
+p {
+    margin: 0;
+}
+
+a {
+    text-decoration: inherit;
+    cursor: var(--link-cursor);
+}
+
+h1 {
+    margin: 0;
+}
+
+h2 {
+    margin: 0;
+    margin-bottom: 10px;
+    font-size: 20px;
+}
+
+input {
+    background: var(--third);
+    border: none;
+    padding: 8px 10px;
+}
+
+input[type="submit"] {
+    cursor: var(--link-cursor);
+}
+
+input[type="submit"]:hover {
+    filter: brightness(0.9);
+}
+
+input:-internal-autofill-selected,
+input:-webkit-autofill,
+input:-webkit-autofill:focus {
+    transition: background-color 0s 600000s, color 0s 600000s !important;
+    background-color: var(--background) !important;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+    outline: 1px solid var(--second);
+}
+
+ion-icon[name="close-outline"] {
+    font-size: 30px;
+    cursor: var(--link-cursor);
+    border-radius: 100px;
+    padding: 7px;
+    position: fixed;
+    right: 20px;
+    top: 20px;
+    /* box-shadow: 0 0 10px 0 #000; */
+    border: 1px solid var(--third);
+    background: var(--fourth);
+}
+
+::-webkit-scrollbar {
+    width: var(--scrollbar-width);
+    height: 8px;
+    background: var(--fourth);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--main);
+    border-radius: 10px;
+    cursor: var(--link-cursor);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--third);
+}
+
+::-webkit-scrollbar-corner {
+    display: none;
+}
+
+body {
+    background-color: var(--background);
+    /* background: url(../img/background.webp); */
+    font-family: Arial, sans-serif;
+    margin: 0;
+    overflow: hidden;
+}
+
+#app {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    flex-direction: column;
+    width: 100vw;
+    min-height: 100vh;
+    gap: var(--app-gap);
+    /* padding: var(--app-padding); */
+    overflow: hidden;
+}
+
+#app.home-toggled {
+    display: flex;
+    justify-content: center;
+}
+
+/* Search */
+
+#search-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100vw;
+    height: 100vh;
+    padding: 40px;
+    /* box-shadow: 0 0 10px 0 #000; */
+}
+
+#search-container.download-queue {
+    height: var(--search-height);
+}
+
+#search {
+    text-align: center;
+    display: flex;
+    height: var(--search-height);
+    gap: 10px;
+}
+
+#search-bar {
+    padding: 10px;
+    min-width: 450px;
+    width: 100vw;
+    max-width: 450px;
+    height: -webkit-fill-available;
+    border-radius: 100px;
+    border: 1px solid var(--third);
+    padding: 10px 20px;
+    background: var(--main);
+}
+
+#search-button {
+    border-radius: 100px;
+    background-color: var(--accent);
+    color: white;
+    border: none;
+    cursor: var(--link-cursor);
+    height: 100%;
+    aspect-ratio: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+}
+
+#search-button *,
+option {
+    cursor: var(--link-cursor);
+}
+
+#search-button:hover {
+    filter: brightness(0.9);
+}
+
+#search-button ion-icon {
+    width: 100%;
+    height: 100%;
+}
+
+#download-queue {
+    display: flex;
+    flex-direction: column;
+    width: 100vw;
+    height: calc(100vh - var(--search-height));
+    padding: 0 3vw;
+    overflow-y: scroll;
+}
+
+#download-queue .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid var(--third);
+    gap: 10px;
+}
+
+.row:hover {
+    background: var(--fourth);
+}
+
+#download-queue img {
+    height: 100%;
+}
+
+.row div {
+    display: flex;
+    align-items: center;
+}
+
+.row.download {
+    cursor: var(--link-cursor);
+}
+
+.row * {
+    font-size: 15px;
+}
+
+.localId {
+    display: none !important;
+}
+
+.thumbnail {
+    width: 5%;
+    height: 40px;
+}
+
+.name {
+    min-width: 40%;
+}
+
+.by {
+    min-width: 30%;
+}
+
+.service {
+    width: 2.5%;
+    height: 25px;
+}
+
+.status {
+    width: 10%;
+}
+
+.action ion-icon {
+    font-size: 25px;
+    cursor: var(--link-cursor);
+}
+
+#download-queue .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid var(--third);
+}
+
+#app div.full {
+    position: fixed;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+    width: 100vw;
+    height: 100vh;
+    padding: 20px;
+    opacity: 0;
+    z-index: -1;
+}
+
+#app div.full form {
+    max-height: 100%;
+    overflow-y: scroll;
+}
+
+#app .full.active {
+    opacity: 100;
+    z-index: 1;
+}
+
+#app div.swipe {
+    position: fixed;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+    width: 100vw;
+    max-height: 200px;
+    opacity: 0;
+    z-index: -1;
+    border-bottom: 1px solid var(--background);
+    box-shadow: 0 0 10px 0 #000;
+    transform: translateY(-100%);
+}
+
+.swipe div {
+    background: transparent !important;
+}
+
+.swipe.swiped {
+    transform: translateY(0) !important;
+}
+
+#about,
+#login,
+#settings {
+    background: var(--fourth);
+    border-radius: 5px;
+    padding: 25px;
+    min-width: 40vw;
+    max-width: 60vw;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+#about *{
+    line-height: 1.5;
+}
+
+#about a {
+    color: #64B5F6;
+    text-decoration: underline;
+}
+
+#loginform {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+#loginform div {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+#login-info {
+    flex-direction: row !important;
+    gap: 20px !important;
+}
+
+#login-info div {
+    width: 50%;
+}
+
+#loginButton {
+    background: var(--accent);
+}
+
+.settings-tabs {
+    display: flex;
+    background-color: #f4f4f4;
+    border-bottom: 1px solid #ddd;
+}
+
+.settings-tab {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-weight: bold;
+}
+
+.settings-tab.active {
+    background-color: #007bff;
+    color: white;
+}
+
+.settings-content {
+    padding: 20px;
+}
+
+.settings-section {
+    display: none;
+}
+
+.settings-section.active {
+    display: flex;
+    flex-direction: column;
+}
+
+#settings {
+    min-width: calc(100% - 4vw);
+    max-width: 95vw;
+    margin-right: 4vw;
+}
+
+#settings div {
+    display: flex;
+    align-items: center;
+    height: 35px;
+}
+
+#settings div label {
+    width: 50%;
+    height: 100%;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    /* border-right: 3px solid var(--third); */
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    font-size: 14px;
+}
+
+#settings div input {
+    height: 100%;
+    border: none;
+    background: transparent;
+    padding: 0 10px;
+    color: var(--second);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+}
+
+#settings,
+.settings-section div:nth-child(odd) {
+    background-color: var(--fourth);
+}
+
+.settings-section div:nth-child(even) {
+    background-color: var(--third);
+}
+
+#settings div input {
+    margin-left: 10px;
+    background: transparent;
+}
+
+#settings div input:hover {
+    background: var(--main);
+    cursor: var(--link-cursor);
+}
+
+#settings div input[type="text"] {
+    padding: 0;
+    color: var(--fifth);
+    font-style: italic;
+}
+
+#settings input[type="text"]:focus,
+#settings input[type="password"]:focus {
+    outline: none;
+}
+
+#settings input[type="text"]:focus,
+#settings input[type="password"]:focus {
+    border: 1px solid var(--second);
+}
+
+#settings div input:where([type="checkbox"][role="switch"]) {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    position: relative;
+    color: inherit;
+    font-size: inherit;
+    width: 13px;
+    height: 50%;
+    box-sizing: content-box;
+    border: 1px solid;
+    border-radius: 20px;
+}
+
+#settings div input:where([type="checkbox"][role="switch"])::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translate(0, -50%);
+    box-sizing: border-box;
+    width: 0.7em;
+    height: 0.7em;
+    margin: 0 0.15em;
+    border: 1px solid;
+    border-radius: 50%;
+    background: currentcolor;
+    transition: 0.3s;
+}
+
+#settings div input:where([type="checkbox"][role="switch"]):checked {
+    background: var(--accent);
+}
+
+#settings div input:where([type="checkbox"][role="switch"]):checked::before {
+    left: 1em;
+}
+
+#menu {
+    position: fixed;
+    background: var(--background);
+    border-radius: 100px;
+    bottom: 20px;
+    left: 20px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 0 10px 0 #000;
+    border: 1px solid var(--third);
+}
+
+.item {
+    display: flex;
+}
+
+#menu ion-icon {
+    font-size: 35px;
+    border-radius: 100px;
+    padding: 15px;
+}
+
+#menu a:first-child ion-icon {
+    border-radius: 100px 100px 0 0;
+}
+
+#menu a ion-icon {
+    border-radius: 0;
+}
+
+#menu a:last-child ion-icon {
+    border-radius: 0 0 100px 100px;
+}
+
+#menu ion-icon:hover {
+    background: var(--third);
+    cursor: var(--link-cursor);
+}
+
+#notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    background: var(--background);
+    box-shadow: 0 0 10px 0 #000;
+    border: 1px solid var(--third);
+    padding: 20px 30px;
+    border-radius: 100px;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    transform: translateY(150%);
+}
+
+#notification.swiped {
+    transform: translateY(0);
+}
+
+#notification ion-icon {
+    font-size: 25px;
+}
+
+#notification * {
+    color: var(--accent);
+}
+
+@media screen and (max-width: 800px) {
+    ::-webkit-scrollbar {
+        display: none;
+    }
+
+    #search-bar {
+        min-width: unset;
+        max-width: 80vw;
+    }
+
+    #about,
+    #login {
+        min-width: 80vw;
+        max-width: 90vw;
+    }
+
+    .by {
+        display: none !important;
+    }
+
+    #menu {
+        flex-direction: row;
+        left: auto;
+    }
+
+    #menu a:first-child ion-icon {
+        border-radius: 100px 0 0 100px;
+    }
+
+    #menu a:last-child ion-icon {
+        border-radius: 0 100px 100px 0;
+    }
+
+    #settings {
+        min-width: 100%;
+        margin: 0;
+    }
+
+    ion-icon[name="close-outline"] {
+        right: 40px;
+        top: 35px;
+        font-size: 40px;
+    }
+
+    #settings div label {
+        overflow-x: scroll;
+    }
+
+    #notification {
+        right: auto;
+    }
+
+    #login-info{
+        flex-direction: column !important;
+    }
+
+    #login-info div{
+        width: 100%;
+    }
+}

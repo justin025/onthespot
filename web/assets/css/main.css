@@ -1,0 +1,334 @@
+/* CSS Reset */
+html,
+body,
+div,
+span,
+applet,
+object,
+iframe,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+blockquote,
+pre,
+a,
+abbr,
+acronym,
+address,
+big,
+cite,
+code,
+del,
+dfn,
+em,
+img,
+ins,
+kbd,
+q,
+s,
+samp,
+small,
+strike,
+strong,
+sub,
+sup,
+tt,
+var,
+b,
+u,
+i,
+center,
+dl,
+dt,
+dd,
+ol,
+ul,
+li,
+fieldset,
+form,
+label,
+legend,
+table,
+caption,
+tbody,
+tfoot,
+thead,
+tr,
+th,
+td,
+article,
+aside,
+canvas,
+details,
+embed,
+figure,
+figcaption,
+footer,
+header,
+hgroup,
+menu,
+nav,
+output,
+ruby,
+section,
+summary,
+time,
+mark,
+audio,
+video {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-size: 100%;
+    font: inherit;
+    vertical-align: baseline;
+}
+
+/* HTML5 display-role reset for older browsers */
+article,
+aside,
+details,
+figcaption,
+figure,
+footer,
+header,
+hgroup,
+menu,
+nav,
+section {
+    display: block;
+}
+
+html {
+    overflow: hidden;
+}
+
+body {
+    margin: 0;
+    box-sizing: border-box;
+    padding: 0;
+    height: 100vh;
+    overflow: hidden;
+    background: #000000;
+}
+
+.background {
+    z-index: -1;
+    position: fixed;
+    top: 0;
+    left: 0;
+}
+
+ol,
+ul {
+    list-style: none;
+}
+
+blockquote,
+q {
+    quotes: none;
+}
+
+blockquote:before,
+blockquote:after,
+q:before,
+q:after {
+    content: '';
+    content: none;
+}
+
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+/* Styling */
+
+:root {
+    color: white;
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif
+}
+
+.background-overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    /* background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 100%); */
+    /* box-shadow: rgba(0, 0, 0, 0.5) 0 0 0 100vw inset; */
+    backdrop-filter: blur(20px) brightness(0.7);
+}
+
+svg {
+    width: 52px;
+    height: 52px;
+    fill: white;
+}
+
+.background {
+    z-index: -1;
+    position: absolute;
+    user-select: none;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.content {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 3rem;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+}
+
+.download-links {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    font-size: 2rem;
+}
+
+a {
+    color: white;
+    text-decoration: none;
+}
+
+.logo {
+    width: 15rem;
+    height: 15rem;
+    border-radius: 50px;
+}
+
+.descriptor {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.descriptor>.title {
+    font-size: 6rem;
+    font-weight: 600;
+}
+
+.descriptor>.subtext {
+    font-size: 2rem;
+}
+
+@media (max-width: 924px) {
+    .content {
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .logo {
+        width: 12rem;
+        height: 12rem;
+    }
+
+    .descriptor>.title {
+        font-size: 4rem;
+        font-weight: 600;
+    }
+
+    .descriptor>.subtext {
+        font-size: 1.5rem;
+    }
+
+    .download-links>a {
+        font-size: 1.5rem !important;
+    }
+}
+
+@media (max-width: 600px) {
+    .descriptor>.title {
+        font-size: 2rem;
+        font-weight: 600;
+    }
+
+    .descriptor>.subtext {
+        font-size: 1rem;
+    }
+}
+
+footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    bottom: 0;
+    margin-bottom: 25px;
+    z-index: 3;
+    left: 0;
+    width: 100%;
+    height: 5em;
+    gap: 1.5rem;
+}
+
+
+
+.footer-item {
+    cursor: pointer;
+    border: none;
+    color: white;
+    display: block;
+}
+
+.tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+/* Tooltip text */
+.tooltip .tooltip-text {
+    visibility: hidden;
+
+    background-color: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    transition: opacity 0.3s;
+    text-align: center;
+    border-radius: 6px;
+    padding: 10px;
+    opacity: 0;
+
+
+    position: absolute;
+    z-index: 1;
+    width: auto;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-left: calc(50% - attr(width));
+}
+
+.tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
