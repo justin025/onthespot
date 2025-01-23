@@ -274,33 +274,30 @@ def tidal_get_lyrics(token, item_id, item_type, metadata, filepath):
         if not resp:
             return False
 
-        if config.get("embed_branding"):
-            lyrics.append('[re:OnTheSpot]')
+        if not config.get('only_download_plain_lyrics'):
+            if config.get("embed_branding"):
+                lyrics.append('[re:OnTheSpot]')
 
-        for key in metadata.keys():
-            value = metadata[key]
+            for key in metadata.keys():
+                value = metadata[key]
+                if key in ['title', 'track_title', 'tracktitle'] and config.get("embed_name"):
+                    lyrics.append(f'[ti:{value}]')
+                elif key == 'artists' and config.get("embed_artist"):
+                    lyrics.append(f'[ar:{value}]')
+                elif key in ['album_name', 'album'] and config.get("embed_album"):
+                    lyrics.append(f'[al:{value}]')
+                elif key in ['writers'] and config.get("embed_writers"):
+                    lyrics.append(f'[au:{value}]')
 
-            if key in ['title', 'track_title', 'tracktitle'] and config.get("embed_name"):
-                lyrics.append(f'[ti:{value}]')
+            lyrics.append(f'[by:{resp.get("lyricsProvider").title()}]')
 
-            elif key == 'artists' and config.get("embed_artist"):
-                lyrics.append(f'[ar:{value}]')
-
-            elif key in ['album_name', 'album'] and config.get("embed_album"):
-                lyrics.append(f'[al:{value}]')
-
-            elif key in ['writers'] and config.get("embed_writers"):
-                lyrics.append(f'[au:{value}]')
-
-        lyrics.append(f'[by:{resp.get("lyricsProvider").title()}]')
-
-        if config.get("embed_length"):
-            l_ms = int(metadata['length'])
-            if round((l_ms/1000)/60) < 10:
-                digit="0"
-            else:
-                digit=""
-            lyrics.append(f'[length:{digit}{round((l_ms/1000)/60)}:{round((l_ms/1000)%60)}]\n')
+            if config.get("embed_length"):
+                l_ms = int(metadata['length'])
+                if round((l_ms/1000)/60) < 10:
+                    digit="0"
+                else:
+                    digit=""
+                lyrics.append(f'[length:{digit}{round((l_ms/1000)/60)}:{round((l_ms/1000)%60)}]\n')
 
         default_length = len(lyrics)
 
@@ -312,6 +309,8 @@ def tidal_get_lyrics(token, item_id, item_type, metadata, filepath):
             lyric_data = ''
 
         for line in lyric_data.split('\n'):
+            if config.get('only_download_plain_lyrics'):
+                line = line.split('] ', 1)[-1]
             lyrics.append(line)
 
         merged_lyrics = '\n'.join(lyrics)

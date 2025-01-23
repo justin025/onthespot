@@ -89,6 +89,7 @@ def main():
         config.set('save_lrc_file', config.get('use_lrc_file'))
         config.set('only_download_synced_lyrics', config.get('only_synced_lyrics'))
         config.set('preferred_video_resolution', config.get('maximum_generic_resolution'))
+        config.set('use_custom_file_bitrate', True)
 
     # Language
     if config.get("language_index") == 0:

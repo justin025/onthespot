@@ -185,10 +185,10 @@ class MainWindow(QMainWindow):
 
         self.toggle_theme_button.clicked.connect(self.open_theme_dialog)
 
-        self.btn_progress_retry_all.clicked.connect(self.retry_all_failed_downloads)
+        self.btn_progress_retry_all.clicked.connect(self.retry_cancelled_and_failed_downloads)
         self.btn_progress_cancel_all.clicked.connect(self.cancel_all_downloads)
         self.btn_audio_download_path_browse.clicked.connect(lambda: self.select_dir(self.audio_download_path))
-        self.btn_generic_audio_download_path_browse.clicked.connect(lambda: self.select_dir(self.generic_audio_download_path))
+        self.btn_video_download_path.clicked.connect(lambda: self.select_dir(self.video_download_path))
 
         self.btn_download_tmp_browse.clicked.connect(lambda: self.select_dir(self.tmp_dl_root))
         self.tmp_dl_root.textChanged.connect(self.update_tmp_dir)
@@ -217,7 +217,7 @@ class MainWindow(QMainWindow):
         self.settings_bookmark_accounts.clicked.connect(lambda: self.settings_scroll_area.verticalScrollBar().setValue(0))
         self.settings_bookmark_general.clicked.connect(lambda: self.settings_scroll_area.verticalScrollBar().setValue(328))
         self.settings_bookmark_audio_downloads.clicked.connect(lambda: self.settings_scroll_area.verticalScrollBar().setValue(1160))
-        self.settings_bookmark_audio_metadata.clicked.connect(lambda: self.settings_scroll_area.verticalScrollBar().setValue(1930))
+        self.settings_bookmark_audio_metadata.clicked.connect(lambda: self.settings_scroll_area.verticalScrollBar().setValue(2000))
         self.settings_bookmark_video_downloads.clicked.connect(lambda: self.settings_scroll_area.verticalScrollBar().setValue(9999))
 
         self.export_logs.clicked.connect(lambda: shutil.copy(
@@ -556,13 +556,13 @@ class MainWindow(QMainWindow):
                 self.update_table_visibility()
 
 
-    def retry_all_failed_downloads(self):
+    def retry_cancelled_and_failed_downloads(self):
         with download_queue_lock:
             row_count = self.tbl_dl_progress.rowCount()
             while row_count > 0:
                 for local_id in download_queue.keys():
                     logger.debug(f'Retrying : {local_id}')
-                    if download_queue[local_id]['item_status'] == "Failed":
+                    if download_queue[local_id]['item_status'] in ("Failed", "Cancelled"):
                         download_queue[local_id]['item_status'] = "Waiting"
                         download_queue[local_id]['gui']['status_label'].setText(self.tr("Waiting"))
                         download_queue[local_id]['gui']["btn"]['cancel'].show()

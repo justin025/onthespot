@@ -18,7 +18,7 @@
   </property>
   <property name="windowIcon">
    <iconset>
-    <normaloff>../../../../../../../../resources/icon.png</normaloff>../../../../../../../../resources/icon.png</iconset>
+    <normaloff>../../../../../../../../../../../../../../resources/icon.png</normaloff>../../../../../../../../../../../../../../resources/icon.png</iconset>
   </property>
   <property name="styleSheet">
    <string notr="true">QGroupBox #group_login_form_3, #gb0_0, #gb0_1, #gb0_2, #gb0_3, #gb0_4, #gb0_5, #gb0_6, #gb0_7, #gb1_0, #gb1_1, #gb1_2, #gb1_3, #gb1_4, #gb1_5, #gb1_6, #gb1_7, #gb1_8, #gb1_9, #gb1_10, #gb1_11, #gb1_12, #gb1_13, #gb1_14, #gb1_29, #gb2_0, #gb2_1, #gb2_2, #gb2_3, #gb2_4, #gb2_5, #gb2_6, #gb2_7, #gb2_8, #gb2_9, #gb2_10, #gb2_11, #gb2_12, #gb2_13, #gb2_14, #gb2_15, #gb2_16, #gb2_17, #gb2_18, #gb3_0, #gb3_1, #gb3_2, #gb3_3, #gb3_4, #gb3_5, #gb3_6 { border: 0;}</string>
@@ -40,7 +40,7 @@
        <string notr="true"/>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="search">
        <attribute name="title">
@@ -533,7 +533,7 @@
            <item>
             <widget class="QPushButton" name="btn_progress_retry_all">
              <property name="text">
-              <string>Retry Failed</string>
+              <string>Retry Cancelled/Failed</string>
              </property>
             </widget>
            </item>
@@ -716,9 +716,9 @@
            <property name="geometry">
             <rect>
              <x>0</x>
-             <y>-3692</y>
+             <y>0</y>
              <width>627</width>
-             <height>4061</height>
+             <height>4132</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_16">
@@ -2291,6 +2291,75 @@
                 </widget>
                </item>
                <item>
+                <widget class="QGroupBox" name="gb1_9">
+                 <property name="title">
+                  <string/>
+                 </property>
+                 <property name="flat">
+                  <bool>true</bool>
+                 </property>
+                 <layout class="QHBoxLayout" name="horizontalLayout_38">
+                  <item>
+                   <widget class="QGroupBox" name="group_lyrics_cfg_lyricsenable_2">
+                    <property name="title">
+                     <string/>
+                    </property>
+                    <property name="flat">
+                     <bool>false</bool>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_46">
+                     <item>
+                      <widget class="QCheckBox" name="save_album_cover">
+                       <property name="toolTip">
+                        <string>This feature requires a premium account.</string>
+                       </property>
+                       <property name="layoutDirection">
+                        <enum>Qt::RightToLeft</enum>
+                       </property>
+                       <property name="text">
+                        <string>Save Album Cover</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <spacer name="horizontalSpacer_19">
+                       <property name="orientation">
+                        <enum>Qt::Horizontal</enum>
+                       </property>
+                       <property name="sizeHint" stdset="0">
+                        <size>
+                         <width>40</width>
+                         <height>20</height>
+                        </size>
+                       </property>
+                      </spacer>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QGroupBox" name="group_lyrics_cfg_only_synced_2">
+                    <property name="title">
+                     <string/>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_47">
+                     <item>
+                      <widget class="QLabel" name="lb_album_cover_format">
+                       <property name="text">
+                        <string>Album Cover Format</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QLineEdit" name="album_cover_format"/>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
                 <widget class="QGroupBox" name="gb1_13">
                  <property name="title">
                   <string/>
@@ -2373,25 +2442,22 @@
                 </widget>
                </item>
                <item>
-                <widget class="QGroupBox" name="gb1_9">
+                <widget class="QGroupBox" name="gb1_2">
                  <property name="title">
                   <string/>
                  </property>
                  <property name="flat">
                   <bool>true</bool>
                  </property>
-                 <layout class="QHBoxLayout" name="horizontalLayout_38">
+                 <layout class="QHBoxLayout" name="horizontalLayout_13">
                   <item>
-                   <widget class="QGroupBox" name="group_lyrics_cfg_lyricsenable_2">
+                   <widget class="QGroupBox" name="group_lyrics_cfg_only_synced_4">
                     <property name="title">
                      <string/>
                     </property>
-                    <property name="flat">
-                     <bool>false</bool>
-                    </property>
-                    <layout class="QHBoxLayout" name="horizontalLayout_46">
+                    <layout class="QHBoxLayout" name="horizontalLayout_44">
                      <item>
-                      <widget class="QCheckBox" name="save_album_cover">
+                      <widget class="QCheckBox" name="use_custom_file_bitrate">
                        <property name="toolTip">
                         <string>This feature requires a premium account.</string>
                        </property>
@@ -2399,12 +2465,12 @@
                         <enum>Qt::RightToLeft</enum>
                        </property>
                        <property name="text">
-                        <string>Save Album Cover</string>
+                        <string>Use Custom File Bitrate</string>
                        </property>
                       </widget>
                      </item>
                      <item>
-                      <spacer name="horizontalSpacer_19">
+                      <spacer name="horizontalSpacer_23">
                        <property name="orientation">
                         <enum>Qt::Horizontal</enum>
                        </property>
@@ -2419,37 +2485,6 @@
                     </layout>
                    </widget>
                   </item>
-                  <item>
-                   <widget class="QGroupBox" name="group_lyrics_cfg_only_synced_2">
-                    <property name="title">
-                     <string/>
-                    </property>
-                    <layout class="QHBoxLayout" name="horizontalLayout_47">
-                     <item>
-                      <widget class="QLabel" name="lb_album_cover_format">
-                       <property name="text">
-                        <string>Album Cover Format</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QLineEdit" name="album_cover_format"/>
-                     </item>
-                    </layout>
-                   </widget>
-                  </item>
-                 </layout>
-                </widget>
-               </item>
-               <item>
-                <widget class="QGroupBox" name="gb1_2">
-                 <property name="title">
-                  <string/>
-                 </property>
-                 <property name="flat">
-                  <bool>true</bool>
-                 </property>
-                 <layout class="QHBoxLayout" name="horizontalLayout_13">
                   <item>
                    <widget class="QGroupBox" name="group_lyrics_cfg_lyricsenable">
                     <property name="title">
@@ -2488,6 +2523,18 @@
                     </layout>
                    </widget>
                   </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="gb1_6">
+                 <property name="title">
+                  <string/>
+                 </property>
+                 <property name="flat">
+                  <bool>true</bool>
+                 </property>
+                 <layout class="QHBoxLayout" name="horizontalLayout_14">
                   <item>
                    <widget class="QGroupBox" name="group_lyrics_cfg_only_synced">
                     <property name="title">
@@ -2509,6 +2556,41 @@
                      </item>
                      <item>
                       <spacer name="horizontalSpacer_11">
+                       <property name="orientation">
+                        <enum>Qt::Horizontal</enum>
+                       </property>
+                       <property name="sizeHint" stdset="0">
+                        <size>
+                         <width>40</width>
+                         <height>20</height>
+                        </size>
+                       </property>
+                      </spacer>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QGroupBox" name="group_lyrics_cfg_only_synced_5">
+                    <property name="title">
+                     <string/>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_55">
+                     <item>
+                      <widget class="QCheckBox" name="only_download_plain_lyrics">
+                       <property name="toolTip">
+                        <string>This feature requires a premium account.</string>
+                       </property>
+                       <property name="layoutDirection">
+                        <enum>Qt::RightToLeft</enum>
+                       </property>
+                       <property name="text">
+                        <string>Only Download Plain Lyrics*</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <spacer name="horizontalSpacer_28">
                        <property name="orientation">
                         <enum>Qt::Horizontal</enum>
                        </property>
@@ -4111,7 +4193,7 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QPushButton" name="btn_generic_audio_download_path_browse">
+                      <widget class="QPushButton" name="btn_video_download_path">
                        <property name="text">
                         <string/>
                        </property>

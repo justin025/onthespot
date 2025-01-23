@@ -193,7 +193,7 @@ class DownloadWorker(QObject):
                                     logger.info('Overwriting Existing Metadata')
 
                                     # Lyrics
-                                    if item_service in ("spotify", "tidal"):
+                                    if item_service in ("apple_music", "spotify", "tidal") and config.get('download_lyrics'):
                                         item['item_status'] = 'Getting Lyrics'
                                         if self.gui:
                                             self.progress.emit(item, self.tr("Getting Lyrics"), 99)
@@ -550,7 +550,7 @@ class DownloadWorker(QObject):
                         ydl_opts['quiet'] = True
                         ydl_opts['no_warnings'] = True
                         ydl_opts['noprogress'] = True
-                        ydl_opts['outtmpl'] = config.get('generic_audio_download_path') + os.path.sep + '%(title)s.%(ext)s'
+                        ydl_opts['outtmpl'] = config.get('video_download_path') + os.path.sep + '%(title)s.%(ext)s'
                         ydl_opts['ffmpeg_location'] = config.get('_ffmpeg_bin_path')
                         ydl_opts['postprocessors'] = [{
                             'key': 'FFmpegMetadata',  # Enables embedding metadata
@@ -570,97 +570,100 @@ class DownloadWorker(QObject):
                     self.readd_item_to_download_queue(item)
                     continue
 
-                # Audio Formatting
-                if item_type in ('track', 'podcast_episode'):
-                    # Lyrics
-                    if item_service in ("apple_music", "spotify", "tidal"):
-                        item['item_status'] = 'Getting Lyrics'
-                        if self.gui:
-                            self.progress.emit(item, self.tr("Getting Lyrics"), 99)
-                        extra_metadata = globals()[f"{item_service}_get_lyrics"](token, item_id, item_type, item_metadata, file_path)
-                        if isinstance(extra_metadata, dict):
-                            item_metadata.update(extra_metadata)
-
-                    if config.get('raw_media_download'):
-                        file_path += default_format
-                    elif item_type == "track":
-                        file_path += "." + config.get("track_file_format")
-                    elif item_type == "podcast_episode":
-                        file_path += "." + config.get("podcast_file_format")
-
-                    os.rename(temp_file_path, file_path)
-                    item['file_path'] = file_path
-
-                    # Convert file format and embed metadata
-                    if not config.get('raw_media_download'):
-                        item['item_status'] = 'Converting'
-                        if self.gui:
-                            self.progress.emit(item, self.tr("Converting"), 99)
-
-                        convert_audio_format(file_path, default_format)
-
-                        embed_metadata(item, item_metadata)
-
-                        # Thumbnail
-                        if config.get('save_album_cover') or config.get('embed_cover'):
-                            item['item_status'] = 'Setting Thumbnail'
+                if item_service != 'generic':
+                    # Audio Formatting
+                    if item_type in ('track', 'podcast_episode'):
+                        # Lyrics
+                        if item_service in ("apple_music", "spotify", "tidal") and config.get('download_lyrics'):
+                            item['item_status'] = 'Getting Lyrics'
                             if self.gui:
-                                self.progress.emit(item, self.tr("Setting Thumbnail"), 99)
-                            set_music_thumbnail(file_path, item_metadata)
+                                self.progress.emit(item, self.tr("Getting Lyrics"), 99)
+                            extra_metadata = globals()[f"{item_service}_get_lyrics"](token, item_id, item_type, item_metadata, file_path)
+                            if isinstance(extra_metadata, dict):
+                                item_metadata.update(extra_metadata)
 
-                        if os.path.splitext(file_path)[1] == '.mp3':
-                            fix_mp3_metadata(file_path)
-                    else:
-                        if config.get('save_album_cover'):
-                            item['item_status'] = 'Setting Thumbnail'
+                        if config.get('raw_media_download'):
+                            file_path += default_format
+                        elif item_type == "track":
+                            file_path += "." + config.get("track_file_format")
+                        elif item_type == "podcast_episode":
+                            file_path += "." + config.get("podcast_file_format")
+
+                        os.rename(temp_file_path, file_path)
+                        item['file_path'] = file_path
+
+                        # Convert file format and embed metadata
+                        if not config.get('raw_media_download'):
+                            item['item_status'] = 'Converting'
                             if self.gui:
-                                self.progress.emit(item, self.tr("Setting Thumbnail"), 99)
-                            set_music_thumbnail(file_path, item_metadata)
+                                self.progress.emit(item, self.tr("Converting"), 99)
 
-                    # M3U
-                    if config.get('create_m3u_file') and item.get('parent_category') == 'playlist':
-                        item['item_status'] = 'Adding To M3U'
-                        if self.gui:
-                            self.progress.emit(item, self.tr("Adding To M3U"), 1)
-                            add_to_m3u_file(item, item_metadata)
+                            if config.get('use_custom_file_bitrate'):
+                                bitrate = config.get("file_bitrate")
+                            convert_audio_format(file_path, bitrate, default_format)
 
-                # Video Formatting
-                elif item_type in ('movie', 'episode'):
-                    subtitle_files = []
-                    if config.get("download_subtitles"):
-                        item['item_status'] = 'Getting Subtitles'
-                        if self.gui:
-                            self.progress.emit(item, self.tr("Getting Subtitles"), 99)
+                            embed_metadata(item, item_metadata)
+
+                            # Thumbnail
+                            if config.get('save_album_cover') or config.get('embed_cover'):
+                                item['item_status'] = 'Setting Thumbnail'
+                                if self.gui:
+                                    self.progress.emit(item, self.tr("Setting Thumbnail"), 99)
+                                set_music_thumbnail(file_path, item_metadata)
+
+                            if os.path.splitext(file_path)[1] == '.mp3':
+                                fix_mp3_metadata(file_path)
+                        else:
+                            if config.get('save_album_cover'):
+                                item['item_status'] = 'Setting Thumbnail'
+                                if self.gui:
+                                    self.progress.emit(item, self.tr("Setting Thumbnail"), 99)
+                                set_music_thumbnail(file_path, item_metadata)
+
+                        # M3U
+                        if config.get('create_m3u_file') and item.get('parent_category') == 'playlist':
+                            item['item_status'] = 'Adding To M3U'
+                            if self.gui:
+                                self.progress.emit(item, self.tr("Adding To M3U"), 1)
+                                add_to_m3u_file(item, item_metadata)
+
+                    # Video Formatting
+                    elif item_type in ('movie', 'episode'):
+                        subtitle_files = []
+                        if config.get("download_subtitles"):
+                            item['item_status'] = 'Getting Subtitles'
+                            if self.gui:
+                                self.progress.emit(item, self.tr("Getting Subtitles"), 99)
 
 
-                        subtitle_dict = item_metadata.get("subtitle_urls")
-                        if config.get("download_all_available_subtitles"):
-                            for key in subtitle_dict:
-                                subtitle_data = requests.get(subtitle_dict[key].get("url")).text
-                                subtitle_file = file_path + f".{key}." + subtitle_dict[key].get("ext")
+                            subtitle_dict = item_metadata.get("subtitle_urls")
+                            if config.get("download_all_available_subtitles"):
+                                for key in subtitle_dict:
+                                    subtitle_data = requests.get(subtitle_dict[key].get("url")).text
+                                    subtitle_file = file_path + f".{key}." + subtitle_dict[key].get("ext")
+                                    with open(subtitle_file, "w") as file:
+                                        file.write(subtitle_data)
+                                    subtitle_files.append(subtitle_file)
+                            else:
+                                lang = config.get("preferred_subtitle_language")
+                                subtitle_data = requests.get(subtitle_dict[lang].get("url")).text
+                                subtitle_file = file_path + f".{lang}." + subtitle_dict[lang].get("ext")
                                 with open(subtitle_file, "w") as file:
                                     file.write(subtitle_data)
                                 subtitle_files.append(subtitle_file)
-                        else:
-                            lang = config.get("preferred_subtitle_language")
-                            subtitle_data = requests.get(subtitle_dict[lang].get("url")).text
-                            subtitle_file = file_path + f".{lang}." + subtitle_dict[lang].get("ext")
-                            with open(subtitle_file, "w") as file:
-                                file.write(subtitle_data)
-                            subtitle_files.append(subtitle_file)
 
-                    if not config.get("raw_media_format"):
-                        item['item_status'] = 'Converting'
-                        if self.gui:
-                            self.progress.emit(item, self.tr("Converting"), 99)
-                        if item_type == "episode":
-                            output_format = config.get("show_file_format")
-                        elif item_type == "movie":
-                            output_format = config.get("movie_file_format")
-                        convert_video_format(file_path, output_format, video_file_parts, subtitle_files)
-                        item['file_path'] = file_path + '.' + output_format
-                    else:
-                        item['file_path'] = file_path + '.mp4'
+                        if not config.get("raw_media_format"):
+                            item['item_status'] = 'Converting'
+                            if self.gui:
+                                self.progress.emit(item, self.tr("Converting"), 99)
+                            if item_type == "episode":
+                                output_format = config.get("show_file_format")
+                            elif item_type == "movie":
+                                output_format = config.get("movie_file_format")
+                            convert_video_format(file_path, output_format, video_file_parts, subtitle_files)
+                            item['file_path'] = file_path + '.' + output_format
+                        else:
+                            item['file_path'] = file_path + '.mp4'
 
                 item['item_status'] = 'Downloaded'
                 logger.info("Item Successfully Downloaded")

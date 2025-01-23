@@ -251,31 +251,28 @@ def apple_music_get_lyrics(session, item_id, item_type, metadata, filepath):
         ttml_data = track_data.get('data', [])[0].get('relationships', {}).get('lyrics', {}).get('data', [])[0].get('attributes', {}).get('ttml')
         lyrics_list = []
 
-        if config.get("embed_branding"):
-            lyrics_list.append('[re:OnTheSpot]')
+        if not config.get('only_download_plain_lyrics'):
+            if config.get("embed_branding"):
+                lyrics_list.append('[re:OnTheSpot]')
 
-        for key in metadata.keys():
-            value = metadata[key]
+            for key in metadata.keys():
+                value = metadata[key]
+                if key in ['title', 'track_title', 'tracktitle'] and config.get("embed_name"):
+                    lyrics_list.append(f'[ti:{value}]')
+                elif key == 'artists' and config.get("embed_artist"):
+                    lyrics_list.append(f'[ar:{value}]')
+                elif key in ['album_name', 'album'] and config.get("embed_album"):
+                    lyrics_list.append(f'[al:{value}]')
+                elif key in ['writers'] and config.get("embed_writers"):
+                    lyrics_list.append(f'[au:{value}]')
 
-            if key in ['title', 'track_title', 'tracktitle'] and config.get("embed_name"):
-                lyrics_list.append(f'[ti:{value}]')
-
-            elif key == 'artists' and config.get("embed_artist"):
-                lyrics_list.append(f'[ar:{value}]')
-
-            elif key in ['album_name', 'album'] and config.get("embed_album"):
-                lyrics_list.append(f'[al:{value}]')
-
-            elif key in ['writers'] and config.get("embed_writers"):
-                lyrics_list.append(f'[au:{value}]')
-
-        if config.get("embed_length"):
-            l_ms = int(metadata['length'])
-            if round((l_ms/1000)/60) < 10:
-                digit="0"
-            else:
-                digit=""
-            lyrics_list.append(f'[length:{digit}{str((l_ms/1000)/60)[:1]}:{round((l_ms/1000)%60)}]\n')
+            if config.get("embed_length"):
+                l_ms = int(metadata['length'])
+                if round((l_ms/1000)/60) < 10:
+                    digit="0"
+                else:
+                    digit=""
+                lyrics_list.append(f'[length:{digit}{str((l_ms/1000)/60)[:1]}:{round((l_ms/1000)%60)}]\n')
 
         default_length = len(lyrics_list)
 
@@ -299,7 +296,8 @@ def apple_music_get_lyrics(session, item_id, item_type, metadata, filepath):
                     except (TypeError, ValueError):
                         milliseconds = '0'
                     formatted_time = f"{int(minutes):02}:{int(seconds):02}.{milliseconds.replace('s', '')[:2]}"
-                    lyric = f'[{formatted_time}] {lyric}'
+                    if not config.get('only_download_plain_lyrics'):
+                        lyric = f'[{formatted_time}] {lyric}'
 
                 lyrics_list.append(lyric)
 

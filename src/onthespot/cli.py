@@ -52,6 +52,19 @@ def parse_args():
     return args, overrides
 
 
+    overrides = {}
+    for arg in unknown_args:
+        if arg.startswith('--') and '=' in arg:
+            key, value = arg[2:].split('=', 1)
+            overrides[key] = value
+
+    if args.download:
+        if not (args.download.startswith("http://") or args.download.startswith("https://")):
+            parser.error("Parameter --download only accept URLs.")
+
+    return args, overrides
+
+
 class QueueWorker(threading.Thread):
     def __init__(self):
         super().__init__()

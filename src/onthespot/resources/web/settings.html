@@ -201,26 +201,32 @@
         <label for="extinf_label">EXTINF Label:</label>
         <input type="text" id="extinf_label" value="{{ config.extinf_label }}" placeholder="Enter EXTINF label format"><br><br>
 
-        <label for="file_bitrate">File Bitrate:</label>
-        <input type="text" id="file_bitrate" value="{{ config.file_bitrate }}" placeholder="Enter file bitrate"><br><br>
-
-        <label for="file_hertz">File Hertz:</label>
-        <input type="number" id="file_hertz" value="{{ config.file_hertz }}" placeholder="Enter file hertz"><br><br>
-
         <label for="save_album_cover">Save Album Cover:</label>
         <input type="checkbox" id="save_album_cover" {% if config.save_album_cover %}checked{% endif %}><br><br>
 
         <label for="album_cover_format">Album Cover Format:</label>
         <input type="text" id="album_cover_format" value="{{ config.album_cover_format }}" placeholder="Enter album cover format"><br><br>
 
+        <label for="file_bitrate">File Bitrate:</label>
+        <input type="text" id="file_bitrate" value="{{ config.file_bitrate }}" placeholder="Enter file bitrate"><br><br>
+
+        <label for="file_hertz">File Hertz:</label>
+        <input type="number" id="file_hertz" value="{{ config.file_hertz }}" placeholder="Enter file hertz"><br><br>
+
+        <label for="use_custom_file_bitrate">Use Custom File Bitrate:</label>
+        <input type="checkbox" id="use_custom_file_bitrate" {% if config.use_custom_file_bitrate %}checked{% endif %}><br><br>
+
         <label for="download_lyrics">Enable Lyrics Download:</label>
         <input type="checkbox" id="download_lyrics" {% if config.download_lyrics %}checked{% endif %}><br><br>
 
-        <label for="save_lrc_file">Save LRC File:</label>
-        <input type="checkbox" id="save_lrc_file" {% if config.save_lrc_file %}checked{% endif %}><br><br>
-
         <label for="only_download_synced_lyrics">Only Download Synced Lyrics:</label>
         <input type="checkbox" id="only_download_synced_lyrics" {% if config.only_download_synced_lyrics %}checked{% endif %}><br><br>
+
+        <label for="only_download_plain_lyrics">Only Download Plain Lyrics:</label>
+        <input type="checkbox" id="only_download_plain_lyrics" {% if config.only_download_plain_lyrics %}checked{% endif %}><br><br>
+
+        <label for="save_lrc_file">Save LRC File:</label>
+        <input type="checkbox" id="save_lrc_file" {% if config.save_lrc_file %}checked{% endif %}><br><br>
 
         <label for="translate_file_path">Translate File Path:</label>
         <input type="checkbox" id="translate_file_path" {% if config.translate_file_path %}checked{% endif %}><br><br>
@@ -436,13 +442,15 @@
                 m3u_path_formatter: document.getElementById('m3u_path_formatter').value,
                 extinf_separator: document.getElementById('extinf_separator').value,
                 extinf_label: document.getElementById('extinf_label').value,
-                file_bitrate: document.getElementById('file_bitrate').value,
-                file_hertz: document.getElementById('file_hertz').value,
                 save_album_cover: document.getElementById('save_album_cover').checked,
                 album_cover_format: document.getElementById('album_cover_format').value,
+                file_bitrate: document.getElementById('file_bitrate').value,
+                file_hertz: document.getElementById('file_hertz').value,
+                use_custom_file_bitrate: document.getElementById('use_custom_file_bitrate').checked,
                 download_lyrics: document.getElementById('download_lyrics').checked,
-                save_lrc_file: document.getElementById('save_lrc_file').checked,
                 only_download_synced_lyrics: document.getElementById('only_download_synced_lyrics').checked,
+                only_download_plain_lyrics: document.getElementById('only_download_plain_lyrics').checked,
+                save_lrc_file: document.getElementById('save_lrc_file').checked,
                 translate_file_path: document.getElementById('translate_file_path').checked,
                 // Audio Metadata Settings
                 metadata_separator: document.getElementById('metadata_separator').value,
