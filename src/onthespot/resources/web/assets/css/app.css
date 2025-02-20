@@ -1,19 +1,20 @@
 /* Variables */
 :root {
-    --background: #121212;
-    --main: #373737;
+    --background: #0f0f0f;
+    --dark: #121212;
+    --main: #212121;
     --second: #fff;
-    --third: #262626;
+    --third: #2d2d2d;
     --fourth: #1F1F1F;
     --fifth: #8d8d8d;
     --accent: #4CAF50;
-    --search-height: 40px;
+    --search-height: 80px;
     --column-2: 100px;
     --column-3: 100px;
     --column-4: 150px;
     --column-5: 100px;
     --column-6: 120px;
-    --scrollbar-width: 10px;
+    --scrollbar-width: 0;
     --app-gap: 20px;
     --app-padding: 20px;
     --load-more-button-height: 0px;
@@ -160,31 +161,35 @@ body {
     align-items: center;
     width: 100vw;
     height: 100vh;
-    padding: 40px;
+    padding: 20px;
     /* box-shadow: 0 0 10px 0 #000; */
 }
 
-#search-container.download-queue {
+#search-container.render-results {
     height: var(--search-height);
 }
 
 #search {
     text-align: center;
     display: flex;
-    height: var(--search-height);
+    height: fit-content;
     gap: 10px;
 }
 
 #search-bar {
     padding: 10px;
     min-width: 450px;
-    width: 100vw;
+    max-width: 95vw;
     max-width: 450px;
-    height: -webkit-fill-available;
+    height: 50%;
     border-radius: 100px;
     border: 1px solid var(--third);
     padding: 10px 20px;
     background: var(--main);
+}
+
+.render-results #search-bar {
+    background: var(--dark);
 }
 
 #search-button {
@@ -193,7 +198,7 @@ body {
     color: white;
     border: none;
     cursor: var(--link-cursor);
-    height: 100%;
+    height: 37px;
     aspect-ratio: 1;
     display: flex;
     justify-content: center;
@@ -219,12 +224,35 @@ option {
     display: flex;
     flex-direction: column;
     width: 100vw;
-    height: calc(100vh - var(--search-height));
+    height: calc(100vh - (var(--search-height)*2) - var(--app-gap));
     padding: 0 3vw;
     overflow-y: scroll;
 }
 
-#download-queue .row {
+#download-queue-button {
+    position: fixed;
+    top: 15px;
+    right: 40px;
+    font-size: 30px;
+    padding: 10px;
+    border-radius: 100px;
+    cursor: var(--link-cursor);
+    border: 1px solid transparent;
+    opacity: 0;
+    z-index: -1;
+}
+
+#download-queue-button.active {
+    opacity: 100;
+    z-index: 0;
+}
+
+#download-queue-button:hover {
+    background: var(--third);
+    border-color: var(--main);
+}
+
+.row {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -237,8 +265,44 @@ option {
     background: var(--fourth);
 }
 
-#download-queue img {
+#search-results-container,
+#download-queue-container {
+    opacity: 0;
+    z-index: -1;
+}
+
+#search-results-container {
+    position: absolute;
+    width: calc(450px);
+    transform: translateX(calc((40px + 10px)*-1 /2));
+    top: 70px;
+}
+
+#search-results-container.active {
+    z-index: 0;
+    opacity: 100;
+}
+
+#search-results {
+    width: 100%;
+    background: var(--main);
+    border-radius: 15px;
+    overflow-y: scroll;
+    max-height: 88vh;
+}
+
+#download-queue img,
+#search-results img {
     height: 100%;
+}
+
+#search-results .row {
+    padding: 10px 15px;
+    border-radius: 15px;
+}
+
+#search-results .row:hover {
+    background: var(--third);
 }
 
 .row div {
@@ -252,45 +316,69 @@ option {
 
 .row * {
     font-size: 15px;
+    white-space: nowrap;
 }
 
 .localId {
     display: none !important;
 }
 
-.thumbnail {
+#search-results .thumbnail {
+    width: 10%;
+    height: 40px;
+}
+
+#search-results .name {
+    width: 50%;
+    overflow: hidden;
+}
+
+#search-results .by {
+    display: none;
+}
+
+#search-results .service {
+    width: 5%;
+    height: 25px;
+}
+
+#search-results .service span{
+    display: none;
+}
+
+#download-queue .thumbnail {
     width: 5%;
     height: 40px;
 }
 
-.name {
+#download-queue .name {
     min-width: 40%;
 }
 
-.by {
+#download-queue .by {
     min-width: 30%;
 }
 
-.service {
+#download-queue .service {
     width: 2.5%;
     height: 25px;
 }
 
-.status {
+#download-queue .status {
     width: 10%;
 }
 
-.action ion-icon {
-    font-size: 25px;
-    cursor: var(--link-cursor);
+.action{
+    display: flex;
+    gap: 5px;
 }
 
-#download-queue .row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-    border-bottom: 1px solid var(--third);
+.action ion-icon {
+    font-size: 20px;
+    cursor: var(--link-cursor);
+    /* border: 1px solid var(--second);
+    border-radius: 100px; */
+    padding: 5px;
 }
 
 #app div.full {
@@ -301,7 +389,7 @@ option {
     backdrop-filter: blur(5px);
     width: 100vw;
     height: 100vh;
-    padding: 20px;
+    padding: 18px;
     opacity: 0;
     z-index: -1;
 }
@@ -352,7 +440,7 @@ option {
     gap: 40px;
 }
 
-#about *{
+#about * {
     line-height: 1.5;
 }
 
@@ -649,11 +737,11 @@ option {
         right: auto;
     }
 
-    #login-info{
+    #login-info {
         flex-direction: column !important;
     }
 
-    #login-info div{
+    #login-info div {
         width: 100%;
     }
 }

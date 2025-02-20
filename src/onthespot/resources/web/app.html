@@ -4,9 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="shortcut icon" href="assets/img/onthespot.png" type="image/x-icon">
+    <link rel="shortcut icon" href="assets/img/icons/onthespot.png" type="image/x-icon">
     <title>Home</title>
     <link rel="stylesheet" href="assets/css/app.css">
+    <script defer src="assets/js/utils.js"></script>
     <script defer src="assets/js/app.js"></script>
     <script defer src="assets/js/api.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
@@ -24,11 +25,14 @@
             </form>
         </div>
 
-        <!-- Download Queue -->
-        <div id="download-queue-container" class="active">
-            <div id="download-queue">
-                <!-- JavaScript will dynamically populate this section -->
+        <!-- Search Results -->
+        <div id="search-results-container">
+            <div id="search-results"></div>
+        </div>
 
+        <!-- Download Queue -->
+        <div id="download-queue-container">
+            <div id="download-queue">
                 <!-- Ligne 1 -->
                 <div class="row">
                     <div class="localId">1</div>
@@ -519,6 +523,9 @@
             </form>
             <ion-icon name="close-outline"></ion-icon>
         </div>
+
+        <!-- Download Queue Button -->
+        <ion-icon id="download-queue-button" name="arrow-down-circle-outline"></ion-icon>
 
         <!-- Menu -->
         <div id="menu">

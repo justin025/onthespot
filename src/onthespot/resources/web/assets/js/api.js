@@ -4,26 +4,23 @@ $(document).ready(() => {
     // Handle search form submission
     $('#search').on('submit', (event) => {
         event.preventDefault(); // Prevent page reload
-
         const query = $('#search-bar').val().trim(); // Get the search query
         if (query === '') {
             console.error('The search field is empty.');
             return;
         }
-
-        // Perform the search (replace with your actual API or logic)
         console.log(`Searching for: ${query}`);
         performSearch(query);
     });
 
-    // Perform the search (example implementation)
+    // Perform the search
     function performSearch(query) {
         $.ajax({
             url: `/search_results?q=${encodeURIComponent(query)}`,
             method: 'GET',
             success: (data) => {
                 console.log('Search results:', data);
-                // TODO: Render search results in the UI
+                renderSearchResults(data);
             },
             error: (xhr) => {
                 console.error('Error during search:', xhr.statusText);
@@ -31,10 +28,62 @@ $(document).ready(() => {
         });
     }
 
-    // Fetch the download queue from the API
-    function fetchDownloadQueue() {
-        downloadQueueContainer.html('<div class="loading">Loading...</div>'); // Display a loading indicator
+    // Render search results in the UI
+    function renderSearchResults(results) {
+        let $searchResults = $('#search-results');
+        if (!$searchResults.length) {
+            $searchResults = $('<div id="search-results"></div>');
+            $('#search-container').append($searchResults);
+        }
+        $searchResults.empty();
+        if (!results.length) {
+            $searchResults.append('<div class="empty-message">No results found.</div>');
+            return;
+        }
+        results.forEach((item) => {
+            // Build the thumbnail cell if thumbnails are enabled
+            const showThumb = window.config && window.config.show_search_thumbnails;
+            const thumbnailHtml = showThumb && item.item_thumbnail_url
+                ? `<div class="thumbnail">
+                        <img src="${item.item_thumbnail_url}" style="width:${window.config.thumbnail_size}px; height:${window.config.thumbnail_size}px;" alt="${item.item_name || 'Thumbnail'}">
+                   </div>`
+                : '';
 
+            // Build the name, by, type, and service cells
+            const nameHtml = `<div class="name">${item.item_name || 'Unknown Name'}</div>`;
+            const byHtml = `<div class="by hide-on-mobile">${item.item_by || 'Unknown Artist'}</div>`;
+            const typeHtml = `<div class="type">${capitalizeFirstLetter(item.item_type)}</div>`;
+            const serviceHtml = item.item_service
+                ? `<div class="service">
+                        <img src="assets/img/icons/${item.item_service}.png" style="width:20px; height:20px;" alt="${item.item_service || 'Service'}">
+                        <span class="hide-on-mobile">${formatServiceName(item.item_service)}</span>
+                   </div>`
+                : '';
+
+            // Build the action cell with a copy and download button
+            const actionsHtml = `<div class="action">
+                ${createButton('copy', `copyToClipboard('${item.item_url}')`)}
+                ${createButton('download', `handleDownload('${item.item_id}')`)}
+            </div>`;
+
+            // Assemble the row. Note that we do not include a status cell here.
+            const row = $(`
+                <div class="row">
+                    ${thumbnailHtml}
+                    ${nameHtml}
+                    ${byHtml}
+                    ${typeHtml}
+                    ${serviceHtml}
+                    ${actionsHtml}
+                </div>
+            `);
+            $searchResults.append(row);
+        });
+    }
+
+    // The rest of your download queue, login, etc. code remains unchanged.
+    // For example, fetching the download queue:
+    function fetchDownloadQueue() {
         $.ajax({
             url: '/api/download_queue',
             method: 'GET',
@@ -48,20 +97,17 @@ $(document).ready(() => {
             },
             error: (xhr) => {
                 console.error('Error fetching the download queue:', xhr.statusText);
-                downloadQueueContainer.html('<div class="error">Failed to load the download queue.</div>');
             }
         });
     }
 
-    // Render the download queue in the UI
+    // Render download queue (kept as before)
     function renderDownloadQueue(queueData) {
-        downloadQueueContainer.empty(); // Clear the container
-
+        downloadQueueContainer.empty();
         if (!queueData.length) {
             downloadQueueContainer.append('<div class="empty-message">The download queue is empty.</div>');
             return;
         }
-
         queueData.forEach((item) => {
             const row = $(`
                 <div class="row">
@@ -78,87 +124,68 @@ $(document).ready(() => {
                     <div class="action"></div>
                 </div>
             `);
-
             const actions = row.find('.action');
             actions.append(`<ion-icon name="arrow-down-circle-outline" data-action="download" data-id="${item.local_id}"></ion-icon>`);
-
             if (item.item_status === 'Failed') {
                 actions.append(`<ion-icon name="reload-outline" data-action="retry" data-id="${item.local_id}"></ion-icon>`);
             }
-
             if (['Waiting', 'Downloading'].includes(item.item_status)) {
                 actions.append(`<ion-icon name="close-circle-outline" data-action="cancel" data-id="${item.local_id}"></ion-icon>`);
             }
-
             downloadQueueContainer.append(row);
         });
     }
 
-    // Handle click actions (download, retry, cancel)
+    // Event delegation for download queue action icons
     downloadQueueContainer.on('click', 'ion-icon', (event) => {
         const action = $(event.target).data('action');
         const localId = $(event.target).data('id');
-
         if (action === 'download') handleDownload(localId);
         if (action === 'retry') handleRetry(localId);
         if (action === 'cancel') handleCancel(localId);
     });
 
-    // Handle downloading an item
-    function handleDownload(localId) {
+    // Action handlers for download queue items
+    function handleDownload(id) {
         $.ajax({
-            url: `/download/${localId}`,
+            url: `/download/${id}`,
             method: 'GET',
-            success: () => console.log(`Download started for ${localId}`),
-            error: (xhr) => console.error(`Error downloading ${localId}:`, xhr.statusText)
+            success: () => console.log(`Download started for ${id}`),
+            error: (xhr) => console.error(`Error downloading ${id}:`, xhr.statusText)
         });
     }
-
-    // Handle retrying a failed download
-    function handleRetry(localId) {
+    function handleRetry(id) {
         $.ajax({
-            url: `/retry/${localId}`,
+            url: `/retry/${id}`,
             method: 'POST',
             success: () => {
-                console.log(`Retry started for ${localId}`);
-                fetchDownloadQueue(); // Refresh the queue
+                console.log(`Retry started for ${id}`);
+                fetchDownloadQueue();
             },
-            error: (xhr) => console.error(`Error retrying ${localId}:`, xhr.statusText)
+            error: (xhr) => console.error(`Error retrying ${id}:`, xhr.statusText)
         });
     }
-
-    // Handle canceling a download
-    function handleCancel(localId) {
+    function handleCancel(id) {
         $.ajax({
-            url: `/cancel/${localId}`,
+            url: `/cancel/${id}`,
             method: 'POST',
             success: () => {
-                console.log(`Cancellation successful for ${localId}`);
-                fetchDownloadQueue(); // Refresh the queue
+                console.log(`Cancellation successful for ${id}`);
+                fetchDownloadQueue();
             },
-            error: (xhr) => console.error(`Error canceling ${localId}:`, xhr.statusText)
+            error: (xhr) => console.error(`Error canceling ${id}:`, xhr.statusText)
         });
     }
 
-    // Check authentication
-    function checkAuthentication() {
-        $.ajax({
-            url: '/api/download_queue',
-            method: 'GET',
-            success: () => console.log('User is authenticated.'),
-            error: (xhr) => {
-                if (xhr.status === 401) $('#login-container').addClass('active');
-                else console.error('Authentication check failed:', xhr.statusText);
-            }
-        });
-    }
+    window.handleDownload = handleDownload;
+    window.handleRetry = handleRetry;
+    window.handleCancel = handleCancel;
 
     // Handle login form submission
     $('#loginform').on('submit', (event) => {
         event.preventDefault();
         const username = $('#username').val();
         const password = $('#password').val();
-
         $.ajax({
             url: '/login',
             method: 'POST',
@@ -167,10 +194,10 @@ $(document).ready(() => {
             success: (data) => {
                 if (data.success) {
                     console.log(data.message);
-                    window.location.href = data.next || '/'; // Redirect after login
+                    window.location.href = data.next || '/';
                 } else {
                     console.error(data.message);
-                    alert(data.message); // Show error
+                    alert(data.message);
                 }
             },
             error: (xhr) => {
@@ -180,9 +207,7 @@ $(document).ready(() => {
         });
     });
 
-    // Fetch the initial download queue
+    // Fetch the initial download queue and refresh it every 5 seconds
     fetchDownloadQueue();
-
-    // Refresh the download queue every 5 seconds
     setInterval(fetchDownloadQueue, 5000);
 });
