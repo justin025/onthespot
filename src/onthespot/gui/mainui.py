@@ -898,6 +898,8 @@ class MainWindow(QMainWindow):
             copy_btn.clicked.connect(lambda x, item_url=result['item_url']: copy_btn_clicked(item_url))
 
             btn_layout = QHBoxLayout()
+            btn_layout.setContentsMargins(2, 2, 2, 2)
+            btn_layout.setSpacing(4)
             btn_layout.addWidget(copy_btn)
             btn_layout.addWidget(download_btn)
 
@@ -926,6 +928,8 @@ class MainWindow(QMainWindow):
             self.tbl_search_results.setItem(rows, 3, service)
             self.tbl_search_results.setCellWidget(rows, 4, btn_widget)
             self.tbl_search_results.horizontalHeader().resizeSection(0, 450)
+            self.tbl_search_results.horizontalHeader().resizeSection(4, 100)
+            
 
             self.search_term.setText('')
 
