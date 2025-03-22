@@ -9,6 +9,7 @@
     --fifth: #8d8d8d;
     --accent: #4CAF50;
     --search-height: 80px;
+    --search-width: 600px;
     --column-2: 100px;
     --column-3: 100px;
     --column-4: 150px;
@@ -178,9 +179,9 @@ body {
 
 #search-bar {
     padding: 10px;
-    min-width: 450px;
+    min-width: var(--search-width);
     max-width: 95vw;
-    max-width: 450px;
+    max-width: var(--search-width);
     height: 50%;
     border-radius: 100px;
     border: 1px solid var(--third);
@@ -259,6 +260,11 @@ option {
     padding: 10px;
     border-bottom: 1px solid var(--third);
     gap: 10px;
+    cursor: var(--link-cursor);
+}
+
+.row *{
+    cursor: var(--link-cursor);
 }
 
 .row:hover {
@@ -273,13 +279,13 @@ option {
 
 #search-results-container {
     position: absolute;
-    width: calc(450px);
+    width: calc(var(--search-width));
     transform: translateX(calc((40px + 10px)*-1 /2));
     top: 70px;
 }
 
 #search-results-container.active {
-    z-index: 0;
+    z-index: 2;
     opacity: 100;
 }
 
@@ -333,9 +339,9 @@ option {
     overflow: hidden;
 }
 
-#search-results .by {
+/* #search-results .by {
     display: none;
-}
+} */
 
 #search-results .service {
     width: 5%;
@@ -371,14 +377,15 @@ option {
 .action{
     display: flex;
     gap: 5px;
+    display: none;
 }
 
 .action ion-icon {
     font-size: 20px;
-    cursor: var(--link-cursor);
     /* border: 1px solid var(--second);
     border-radius: 100px; */
     padding: 5px;
+    padding-right: 15px;
 }
 
 #app div.full {

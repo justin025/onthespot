@@ -40,7 +40,9 @@ $(document).ready(function () {
     // Download Queue
     $('#download-queue-button').click(function () {
         $(`#download-queue-container`).css("opacity", '1');
+        $(`#download-queue-container`).css("zIndex", '1');
         $('#search-results-container').removeClass('active');
+        $('#search-container').addClass('render-results');
     });
 
     $(document).on('keydown', e => {
