@@ -25,7 +25,7 @@
 
 An easy to use music downloader written in Python. OnTheSpot has support for various music services and, unlike similar projects, downloaded files and metadata are sourced directly from the service of your choosing. The app includes a GUI, CLI, and Web UI frontend. To get started download the app [here](https://github.com/justin025/onthespot/releases/latest) or run the command below.
 ```bash
-python -m pip install git+https://github.com/justin025/onthespot
+python3 -m pip install git+https://github.com/justin025/onthespot
 ```
 For more further documentation, please see the following:
 

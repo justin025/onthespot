@@ -4,7 +4,7 @@ import m3u8
 from pathlib import Path
 import requests
 import re
-import uuid
+from uuid import uuid4
 import xml.etree.ElementTree as ET
 from pywidevine import PSSH, Cdm, Device
 from pywidevine.license_protocol_pb2 import WidevinePsshData
@@ -21,7 +21,7 @@ WVN_LICENSE_URL = "https://play.itunes.apple.com/WebObjects/MZPlay.woa/wa/acquir
 def apple_music_add_account(media_user_token):
     cfg_copy = config.get('accounts').copy()
     new_user = {
-        "uuid": str(uuid.uuid4()),
+        "uuid": str(uuid4()),
         "service": "apple_music",
         "active": True,
         "login": {
@@ -30,7 +30,7 @@ def apple_music_add_account(media_user_token):
     }
     cfg_copy.append(new_user)
     config.set('accounts', cfg_copy)
-    config.update()
+    config.save()
 
 
 def apple_music_login_user(account):
@@ -175,32 +175,26 @@ def apple_music_get_track_metadata(session, item_id):
     params = {}
     params['include'] = 'lyrics'
     track_data = make_call(f'{BASE_URL}/catalog/{session.cookies.get("itua")}/songs/{item_id}', params=params, session=session)
-    album_id = track_data.get('data', [])[0].get('relationships', {}).get('albums', {}).get('data', [])[0].get('id', {})
-    album_data = make_call(f'{BASE_URL}/catalog/{session.cookies.get("itua")}/albums/{album_id}', session=session)
+    try:
+        album_id = track_data.get('data', [])[0].get('relationships', {}).get('albums', {}).get('data', [])[0].get('id', {})
+        album_data = make_call(f'{BASE_URL}/catalog/{session.cookies.get("itua")}/albums/{album_id}', session=session)
+    except Exception:
+        album_data = ''
 
     # Artists
     artists = []
     for artist in track_data.get('data', [])[0].get('attributes', {}).get('artistName').replace("&", ",").split(","):
         artists.append(artist.strip())
 
-    # Track Number
-    track_number = None
-    for i, track in enumerate(album_data.get('data', [])[0].get('relationships', {}).get('tracks', {}).get('data', [])):
-        if track.get('id') == str(item_id):
-            track_number = i + 1
-            break
-    if not track_number:
-        track_number = track_data.get('data', [])[0].get('attributes', {}).get('trackNumber')
-
-    # Total Discs
-    total_discs = album_data.get('data', [])[0].get('relationships', {}).get('tracks', {}).get('data', [])[-1].get('attributes', {}).get('discNumber')
-
     info = {}
     info['item_id'] = track_data.get('data', [])[0].get('id')
     info['album_name'] = track_data.get('data', [])[0].get('attributes', {}).get('albumName')
     info['genre'] = conv_list_format(track_data.get('data', [])[0].get('attributes', {}).get('genreNames', []))
     #info['track_number'] = track_data.get('data', [])[0].get('attributes', {}).get('trackNumber')
-    info['release_year'] = track_data.get('data', [])[0].get('attributes', {}).get('releaseDate').split('-')[0]
+    try:
+        info['release_year'] = track_data.get('data', [])[0].get('attributes', {}).get('releaseDate').split('-')[0]
+    except Exception:
+        pass
     info['length'] = str(track_data.get('data', [])[0].get('attributes', {}).get('durationInMillis'))
     info['isrc'] = track_data.get('data', [])[0].get('attributes', {}).get('isrc')
 
@@ -218,22 +212,36 @@ def apple_music_get_track_metadata(session, item_id):
     info['explicit'] = True if track_data.get('data', [])[0].get('attributes', {}).get('contentRating') == 'explicit' else False
     info['artists'] = conv_list_format(artists)
 
-    info['copyright'] = album_data.get('data', [])[0].get('attributes', {}).get('copyright')
-    info['upc'] = album_data.get('data', [])[0].get('attributes', {}).get('upc')
-    info['label'] = album_data.get('data', [])[0].get('attributes', {}).get('recordLabel')
-    info['total_tracks'] = album_data.get('data', [])[0].get('attributes', {}).get('trackCount')
-
-    album_type = 'album'
-    if album_data.get('data', [])[0].get('attributes', {}).get('isSingle'):
-        album_type = 'single'
-    if album_data.get('data', [])[0].get('attributes', {}).get('isCompilation'):
-        album_type = 'compilation'
-    info['album_type'] = album_type
-
     info['album_artists'] = artists[0]
 
-    info['track_number'] = track_number
-    info['total_discs'] = total_discs
+    if album_data:
+        info['copyright'] = album_data.get('data', [])[0].get('attributes', {}).get('copyright')
+        info['upc'] = album_data.get('data', [])[0].get('attributes', {}).get('upc')
+        info['label'] = album_data.get('data', [])[0].get('attributes', {}).get('recordLabel')
+        info['total_tracks'] = album_data.get('data', [])[0].get('attributes', {}).get('trackCount')
+
+        album_type = 'album'
+        if album_data.get('data', [])[0].get('attributes', {}).get('isSingle'):
+            album_type = 'single'
+        if album_data.get('data', [])[0].get('attributes', {}).get('isCompilation'):
+            album_type = 'compilation'
+        info['album_type'] = album_type
+
+        # Track Number
+        track_number = None
+
+        for i, track in enumerate(album_data.get('data', [])[0].get('relationships', {}).get('tracks', {}).get('data', [])):
+            if track.get('id') == str(item_id):
+                track_number = i + 1
+                break
+        if not track_number:
+            track_number = track_data.get('data', [])[0].get('attributes', {}).get('trackNumber')
+
+        # Total Discs
+        total_discs = album_data.get('data', [])[0].get('relationships', {}).get('tracks', {}).get('data', [])[-1].get('attributes', {}).get('discNumber')
+
+        info['track_number'] = track_number
+        info['total_discs'] = total_discs
 
     return info
 
@@ -349,7 +357,7 @@ def apple_music_get_decryption_key(session, stream_url, item_id):
 
         license_data = session.post(WVN_LICENSE_URL, json=json).json()
 
-        wvn_license = license_data.get("license", '')
+        wvn_license = license_data.get('license')
 
         cdm.parse_license(cdm_session, wvn_license)
         decryption_key = next(
@@ -383,7 +391,7 @@ def apple_music_get_artist_album_ids(session, artist_id):
 
     item_ids = []
     for album in album_data.get('data', [])[0].get('relationships', {}).get('albums', {}).get('data', []):
-        item_ids.append(album.get("id", ''))
+        item_ids.append(album.get('id'))
     return item_ids
 
 

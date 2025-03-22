@@ -29,7 +29,7 @@ def generic_add_account():
     }
     cfg_copy.append(new_user)
     config.set('accounts', cfg_copy)
-    config.update()
+    config.save()
 
 
 def generic_get_track_metadata(_, url):

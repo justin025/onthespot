@@ -76,6 +76,8 @@ def parse_url(url):
         item_service = "spotify"
         if item_type == 'episode':
             item_type = 'podcast_episode'
+        elif item_type == 'show':
+            item_type = 'podcast'
     elif url == 'https://open.spotify.com/collection/tracks':
         item_id = None
         item_type = 'liked_songs'

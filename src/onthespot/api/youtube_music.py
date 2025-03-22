@@ -21,7 +21,7 @@ def youtube_music_login_user(account):
                 "service": "youtube_music",
                 "status": "active",
                 "account_type": "public",
-                "bitrate": "256k",
+                "bitrate": "128k",
             })
             return True
     except Exception as e:
@@ -46,7 +46,7 @@ def youtube_music_add_account():
         }
     cfg_copy.append(new_user)
     config.set('accounts', cfg_copy)
-    config.update()
+    config.save()
 
 
 def youtube_music_get_search_results(_, search_term, content_types):
@@ -66,7 +66,7 @@ def youtube_music_get_search_results(_, search_term, content_types):
                     'item_by': result['channel'],
                     'item_type': "track",
                     'item_service': "youtube_music",
-                    'item_url': result['url'],
+                    'item_url': f"https://music.youtube.com/watch?v={result['id']}",
                     'item_thumbnail_url': f'https://i.ytimg.com/vi/{result["id"]}/hqdefault.jpg'
                 })
 

@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>683</width>
+    <width>712</width>
     <height>527</height>
    </rect>
   </property>
@@ -40,7 +40,7 @@
        <string notr="true"/>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="search">
        <attribute name="title">
@@ -717,7 +717,7 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>627</width>
+             <width>656</width>
              <height>4132</height>
             </rect>
            </property>
@@ -800,7 +800,7 @@
                  </column>
                  <column>
                   <property name="text">
-                   <string>Max Bitrate</string>
+                   <string>Max Resolution</string>
                   </property>
                  </column>
                  <column>
@@ -841,7 +841,7 @@
                    </widget>
                   </item>
                   <item>
-                   <widget class="QLabel" name="lb_login_username">
+                   <widget class="QLabel" name="login_username_label">
                     <property name="text">
                      <string>Username</string>
                     </property>
@@ -867,7 +867,7 @@
                    </widget>
                   </item>
                   <item>
-                   <widget class="QLabel" name="lb_login_password">
+                   <widget class="QLabel" name="login_password_label">
                     <property name="text">
                      <string>Password</string>
                     </property>
@@ -2550,7 +2550,7 @@
                         <enum>Qt::RightToLeft</enum>
                        </property>
                        <property name="text">
-                        <string>Download Synced Lyrics Only*</string>
+                        <string>Only Download Synced Lyrics*</string>
                        </property>
                       </widget>
                      </item>
@@ -4674,14 +4674,14 @@
             </widget>
            </item>
            <item>
-            <widget class="QLabel" name="lb_session_uuid">
+            <widget class="QLabel" name="lb_statistics">
              <property name="text">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Log UUID : &lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Total Downloads : &lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QLineEdit" name="session_uuid">
+            <widget class="QLineEdit" name="statistics">
              <property name="enabled">
               <bool>false</bool>
              </property>
@@ -4693,13 +4693,6 @@
              </property>
              <property name="frame">
               <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="export_logs">
-             <property name="text">
-              <string>Export Logs</string>
              </property>
             </widget>
            </item>
@@ -4716,6 +4709,27 @@
              </property>
             </spacer>
            </item>
+           <item>
+            <widget class="QPushButton" name="clear_cache">
+             <property name="text">
+              <string>Clear Cache</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="export_logs">
+             <property name="text">
+              <string>Export Logs</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="donate">
+             <property name="text">
+              <string>Donate</string>
+             </property>
+            </widget>
+           </item>
           </layout>
          </widget>
         </item>
@@ -4729,7 +4743,7 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>641</width>
+             <width>670</width>
              <height>405</height>
             </rect>
            </property>
@@ -4755,12 +4769,9 @@
     program or source code.  Users are solely responsible for ensuring that their use of
     OnTheSpot complies with all relevant/applicable laws in their country.The creators
     and contributors of OnTheSpot assume no liability for any misuse of legal terms
-    associated with the application or its source code.
+    associated with the application or its source code. Licensed under GPL-2.0.
     &lt;br&gt;
     &lt;br&gt;
-    &lt;a href=&quot;https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html#SEC1&quot; style=&quot;text-decoration: underline; color:#64B5F6;&quot;&gt;
-        GPL-2.0 License
-    &lt;/a&gt;
 &lt;/p&gt;</string>
               </property>
               <property name="scaledContents">

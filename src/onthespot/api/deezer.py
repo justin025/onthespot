@@ -48,7 +48,7 @@ def deezer_add_account(arl):
     }
     cfg_copy.append(new_user)
     config.set('accounts', cfg_copy)
-    config.update()
+    config.save()
 
 
 def deezer_get_album_track_ids(_, album_id):

@@ -1,5 +1,7 @@
 import re
 import requests
+import json
+from uuid import uuid4
 from ..otsconfig import config
 from ..runtimedata import get_logger, account_pool
 from ..utils import make_call, conv_list_format
@@ -27,71 +29,92 @@ def soundcloud_parse_url(url, token):
 def soundcloud_login_user(account):
     logger.info('Logging into Soundcloud account...')
     try:
-        # Add support for logging in
-        if account['uuid'] == 'public_soundcloud':
-            response = requests.get("https://soundcloud.com")
+        response = requests.get("https://soundcloud.com")
 
+        page_text = response.text
 
-            page_text = response.text
-
-            client_id_url_match = re.finditer(
-                r"<script\s+crossorigin\s+src=\"([^\"]+)\"",
-                    page_text,
-                )
-
-            *_, client_id_url_match = client_id_url_match
-
-            #if client_id_url_match:
-                #logger.info("Found client_id_url:", client_id_url_match.group(1))  # Access the captured group
-            #else:
-                #logger.info(f"Failed to fetch free soundcloud client_id: {response.status_code}")
-
-            client_id_url = client_id_url_match.group(1)
-
-            app_version_match = re.search(
-                r'<script>window\.__sc_version="(\d+)"</script>',
+        client_id_url_match = re.finditer(
+            r"<script\s+crossorigin\s+src=\"([^\"]+)\"",
                 page_text,
             )
-            if app_version_match is None:
-                raise Exception("Could not find app version in %s" % client_id_url)
 
-            app_version = app_version_match.group(1)
+        *_, client_id_url_match = client_id_url_match
 
-            response2 = requests.get(client_id_url)
+        #if client_id_url_match:
+            #logger.info("Found client_id_url:", client_id_url_match.group(1))  # Access the captured group
+        #else:
+            #logger.info(f"Failed to fetch free soundcloud client_id: {response.status_code}")
 
-            page_text2 = response2.text
+        client_id_url = client_id_url_match.group(1)
 
-            client_id_match = re.search(r'client_id:\s*"(\w+)"', page_text2)
-            assert client_id_match is not None
-            client_id = client_id_match.group(1)
+        app_version_match = re.search(
+            r'<script>window\.__sc_version="(\d+)"</script>',
+            page_text,
+        )
+        if app_version_match is None:
+            raise Exception(f"Could not find app version in {client_id_url}")
 
-            cfg_copy = config.get('accounts').copy()
-            for account in cfg_copy:
-                if account["uuid"] == "public_soundcloud":
-                    account['login']['client_id'] = client_id
-                    account['login']['app_version'] = app_version
-            config.set('accounts', cfg_copy)
-            config.update()
+        app_version = app_version_match.group(1)
 
-            account_pool.append({
-                "uuid": "public_soundcloud",
-                "username": client_id,
-                "service": "soundcloud",
-                "status": "active",
-                "account_type": "public",
-                "bitrate": "128k",
-                "login": {
-                    "client_id": client_id,
-                    "app_version": app_version,
-                    "app_locale": "en",
-                }
-            })
-            return True
+        response2 = requests.get(client_id_url)
+
+        page_text2 = response2.text
+
+        client_id_match = re.search(r'client_id:\s*"(\w+)"', page_text2)
+        assert client_id_match is not None
+        client_id = client_id_match.group(1)
+
+        cfg_copy = config.get('accounts').copy()
+        for _account in cfg_copy:
+            if account["uuid"] == _account['uuid']:
+                # Update Client ID and App Version
+                account['login']['client_id'] = client_id
+                account['login']['app_version'] = app_version
+
+                username = account['login']['client_id']
+                account_type = 'public'
+                bitrate = '128k'
+                oauth_token = account['login'].get('oauth_token')
+                if oauth_token:
+                    # Check OAuth Token Validity
+                    headers = {}
+                    headers['Content-Type'] = 'application/json'
+                    headers['Authorization'] = f'OAuth {oauth_token}'
+
+                    params = {}
+                    params['client_id'] = client_id
+
+                    data = json.dumps({'session': {'access_token': oauth_token}})
+
+                    if requests.post('https://api-auth.soundcloud.com/connect/session', headers=headers, data=data, params=params).status_code != 200:
+                        raise Exception("OAuth token expired/invalid")
+                    username = oauth_token
+                    account_type = 'premium'
+                    bitrate = '256k'
+
+        config.set('accounts', cfg_copy)
+        config.save()
+
+        account_pool.append({
+            "uuid": account['uuid'],
+            "username": username,
+            "service": "soundcloud",
+            "status": "active",
+            "account_type": account_type,
+            "bitrate": bitrate,
+            "login": {
+                "client_id": client_id,
+                "app_version": app_version,
+                "app_locale": "en",
+                "oauth_token": oauth_token
+            }
+        })
+        return True
     except Exception as e:
         logger.error(f"Unknown Exception: {str(e)}")
         account_pool.append({
             "uuid": "public_soundcloud",
-            "username": account['login']['client_id'],
+            "username": 'N/A',
             "service": "soundcloud",
             "status": "error",
             "account_type": "N/A",
@@ -105,28 +128,26 @@ def soundcloud_login_user(account):
         return False
 
 
-def soundcloud_add_account():
+def soundcloud_add_account(oauth_token):
     cfg_copy = config.get('accounts').copy()
     new_user = {
-        "uuid": 'public_soundcloud',
+        "uuid": str(uuid4()),
         "service": "soundcloud",
         "active": True,
         "login": {
             "client_id": "null",
             "app_version": "null",
-            "app_locale": "null"
+            "app_locale": "null",
+            "oauth_token": oauth_token
         }
     }
     cfg_copy.append(new_user)
     config.set('accounts', cfg_copy)
-    config.update()
+    config.save()
 
 
 def soundcloud_get_token(parsing_index):
-    client_id = account_pool[parsing_index]['login']["client_id"]
-    app_version = account_pool[parsing_index]['login']["app_version"]
-    app_locale = account_pool[parsing_index]['login']["app_locale"]
-    return {"client_id": client_id, "app_version": app_version, "app_locale": app_locale}
+    return account_pool[parsing_index]['login']
 
 
 def soundcloud_get_search_results(token, search_term, content_types):
@@ -170,7 +191,7 @@ def soundcloud_get_search_results(token, search_term, content_types):
                 'item_thumbnail_url': playlist["artwork_url"]
             })
 
-    logger.info(search_results)
+    logger.debug(search_results)
     return search_results
 
 
@@ -248,11 +269,16 @@ def soundcloud_get_track_metadata(token, item_id):
         if album_name.startswith("Users who like"):
             album_name = track_data['title']
     # Copyright
-    publisher_metadata = track_data.get('publisher_metadata')
-    if publisher_metadata and publisher_metadata.get('c_line'):
-        copyright_list = [item.strip() for item in publisher_metadata.get('c_line').split(',')]
-    else:
-        copyright_list = ''
+    explicit = ''
+    copyright_list = ''
+    try:
+        publisher_metadata = track_data.get('publisher_metadata', {})
+        explicit = publisher_metadata.get('explicit')
+        if publisher_metadata.get('c_line'):
+            copyright_list = [item.strip() for item in publisher_metadata.get('c_line').split(',')]
+    except (Exception):
+        pass
+
     copyright_data = conv_list_format(copyright_list)
 
     info = {}
@@ -278,7 +304,7 @@ def soundcloud_get_track_metadata(token, item_id):
     info['album_name'] = album_name
     info['album_type'] = album_type
     info['album_artists'] = track_data.get('user', {}).get('username')
-    info['explicit'] = publisher_metadata.get('explicit', False) if publisher_metadata else False
+    info['explicit'] = explicit
     info['copyright'] = copyright_data
     info['is_playable'] = track_data.get('streamable')
     info['item_id'] = track_data.get('id')

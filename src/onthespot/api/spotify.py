@@ -101,10 +101,10 @@ class MirrorSpotifyPlayback(QObject):
 
 
 def spotify_new_session():
-    os.makedirs(os.path.join(cache_dir(), 'onthespot', 'sessions'), exist_ok=True)
+    os.makedirs(os.path.join(cache_dir(), 'sessions'), exist_ok=True)
 
     uuid_uniq = str(uuid.uuid4())
-    session_json_path = os.path.join(os.path.join(cache_dir(), 'onthespot', 'sessions'),
+    session_json_path = os.path.join(os.path.join(cache_dir(), 'sessions'),
                  f"ots_login_{uuid_uniq}.json")
 
     CLIENT_ID: str = "65b708073fc0480ea92a077233ca87bd"
@@ -148,7 +148,7 @@ def spotify_new_session():
                 zs.close()
                 cfg_copy.append(new_user)
                 config.set('accounts', cfg_copy)
-                config.update()
+                config.save()
                 logger.info("New account added to config.")
                 return True
 
@@ -160,7 +160,7 @@ def spotify_login_user(account):
         uuid = account['uuid']
         username = account['login']['username']
 
-        session_dir = os.path.join(cache_dir(), "onthespot", "sessions")
+        session_dir = os.path.join(cache_dir(), "sessions")
         os.makedirs(session_dir, exist_ok=True)
         session_json_path = os.path.join(session_dir, f"ots_login_{uuid}.json")
         try:
@@ -215,7 +215,7 @@ def spotify_login_user(account):
 
 
 def spotify_re_init_session(account):
-    session_json_path = os.path.join(cache_dir(), "onthespot", "sessions", f"ots_login_{account['uuid']}.json")
+    session_json_path = os.path.join(cache_dir(), "sessions", f"ots_login_{account['uuid']}.json")
     try:
         config = Session.Configuration.Builder().set_stored_credential_file(session_json_path).build()
         logger.debug("Session config created")
@@ -455,7 +455,8 @@ def spotify_get_album_track_ids(token, album_id):
 
     item_ids = []
     for track in tracks:
-        item_ids.append(track['id'])
+        if track:
+            item_ids.append(track['id'])
     return item_ids
 
 
@@ -528,24 +529,23 @@ def spotify_get_track_metadata(token, item_id):
     headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
 
     track_data = make_call(f'{BASE_URL}/tracks?ids={item_id}&market=from_token', headers=headers)
-    credits_data = make_call(f'https://spclient.wg.spotify.com/track-credits-view/v0/experimental/{item_id}/credits', headers=headers)
-    track_audio_data = make_call(f'{BASE_URL}/audio-features/{item_id}', headers=headers)
     album_data = make_call(f"{BASE_URL}/albums/{track_data.get('tracks', [])[0].get('album', {}).get('id')}", headers=headers)
     artist_data = make_call(f"{BASE_URL}/artists/{track_data.get('tracks', [])[0].get('artists', [])[0].get('id')}", headers=headers)
     album_track_ids = spotify_get_album_track_ids(token, track_data.get('tracks', [])[0].get('album', {}).get('id'))
+    try:
+        track_audio_data = make_call(f'{BASE_URL}/audio-features/{item_id}', headers=headers)
+    except Exception:
+        track_audio_data = ''
+    try:
+        credits_data = make_call(f'https://spclient.wg.spotify.com/track-credits-view/v0/experimental/{item_id}/credits', headers=headers)
+    except Exception:
+        credits_data = ''
 
+    # Artists
     artists = []
     for data in track_data.get('tracks', [{}])[0].get('artists', []):
         artists.append(data.get('name'))
     artists = conv_list_format(artists)
-
-    credits = {}
-    if credits_data:
-        for credit_block in credits_data.get('roleCredits', []):
-            role_title = credit_block.get('roleTitle').lower()
-            credits[role_title] = [
-                artist.get('name') for artist in credit_block.get('artists', [])
-            ]
 
     # Track Number
     track_number = None
@@ -577,9 +577,6 @@ def spotify_get_track_metadata(token, item_id):
     info['disc_number'] = track_data.get('tracks', [{}])[0].get('disc_number')
     info['total_discs'] = sorted([trk.get('disc_number', 0) for trk in album_data.get('tracks', {}).get('items', [])])[-1] if 'tracks' in album_data else 1
     info['genre'] = conv_list_format(artist_data.get('genres', []))
-    info['performers'] = conv_list_format([item for item in credits.get('performers', []) if isinstance(item, str)])
-    info['producers'] = conv_list_format([item for item in credits.get('producers', []) if isinstance(item, str)])
-    info['writers'] = conv_list_format([item for item in credits.get('writers', []) if isinstance(item, str)])
     info['label'] = album_data.get('label')
     info['copyright'] = conv_list_format([holder.get('text') for holder in album_data.get('copyrights', [])])
     info['explicit'] = track_data.get('tracks', [{}])[0].get('explicit', False)
@@ -590,22 +587,32 @@ def spotify_get_track_metadata(token, item_id):
     info['item_id'] = track_data.get('tracks', [{}])[0].get('id')
     info['is_playable'] = track_data.get('tracks', [{}])[0].get('is_playable', False)
 
-    key_mapping = {
-        0: "C",
-        1: "C♯/D♭",
-        2: "D",
-        3: "D♯/E♭",
-        4: "E",
-        5: "F",
-        6: "F♯/G♭",
-        7: "G",
-        8: "G♯/A♭",
-        9: "A",
-        10: "A♯/B♭",
-        11: "B"
-    }
+    if credits_data:
+        credits = {}
+        for credit_block in credits_data.get('roleCredits', []):
+            role_title = credit_block.get('roleTitle').lower()
+            credits[role_title] = [
+                artist.get('name') for artist in credit_block.get('artists', [])
+            ]
+        info['performers'] = conv_list_format([item for item in credits.get('performers', []) if isinstance(item, str)])
+        info['producers'] = conv_list_format([item for item in credits.get('producers', []) if isinstance(item, str)])
+        info['writers'] = conv_list_format([item for item in credits.get('writers', []) if isinstance(item, str)])
 
-    if track_audio_data is not None:
+    if track_audio_data:
+        key_mapping = {
+            0: "C",
+            1: "C♯/D♭",
+            2: "D",
+            3: "D♯/E♭",
+            4: "E",
+            5: "F",
+            6: "F♯/G♭",
+            7: "G",
+            8: "G♯/A♭",
+            9: "A",
+            10: "A♯/B♭",
+            11: "B"
+        }
         info['bpm'] = str(track_audio_data.get('tempo'))
         info['key'] = str(key_mapping.get(track_audio_data.get('key'), ''))
         info['time_signature'] = track_audio_data.get('time_signature')
@@ -685,5 +692,6 @@ def spotify_get_podcast_episode_ids(token, show_id):
 
     item_ids = []
     for episode in episodes:
-        item_ids.append(episode['id'])
+        if episode:
+            item_ids.append(episode['id'])
     return item_ids

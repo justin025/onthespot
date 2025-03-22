@@ -18,7 +18,7 @@ from .api.soundcloud import soundcloud_get_track_metadata
 from .api.spotify import spotify_get_track_metadata, spotify_get_podcast_episode_metadata, spotify_get_lyrics
 from .api.tidal import tidal_get_track_metadata, tidal_get_lyrics, tidal_get_file_url
 from .api.youtube_music import youtube_music_get_track_metadata
-from .api.crunchyroll import crunchyroll_get_episode_metadata, crunchyroll_get_decryption_key
+from .api.crunchyroll import crunchyroll_get_episode_metadata, crunchyroll_get_decryption_key, crunchyroll_get_mpd_info, crunchyroll_close_stream
 from .api.generic import generic_get_track_metadata
 from .otsconfig import config
 from .runtimedata import get_logger, download_queue, download_queue_lock, account_pool, temp_download_path
@@ -105,7 +105,6 @@ class DownloadWorker(QObject):
                 try:
                     if download_queue:
                         with download_queue_lock:
-
                             # Mark item as unavailable for other download workers
                             iterator = iter(download_queue)
                             while True:
@@ -142,7 +141,7 @@ class DownloadWorker(QObject):
                 if self.gui:
                     self.progress.emit(item, self.tr("Downloading"), 1)
 
-                token = get_account_token(item_service)
+                token = get_account_token(item_service, rotate=config.get("rotate_active_account_number"))
 
                 try:
                     item_metadata = globals()[f"{item_service}_get_{item_type}_metadata"](token, item_id)
@@ -233,6 +232,7 @@ class DownloadWorker(QObject):
                             item['item_status'] = 'Already Exists'
                             logger.info(f"File already exists, Skipping download for track by id '{item_id}'")
                             time.sleep(0.2)
+                            item['progress'] = 100
                             self.readd_item_to_download_queue(item)
                             break
 
@@ -285,7 +285,6 @@ class DownloadWorker(QObject):
                         stream.input_stream.stream().close()
                         stream_internal = stream.input_stream.stream()
                         del stream_internal, stream.input_stream
-
 
                     elif item_service == 'deezer':
                         song = get_song_info_from_deezer_website(token, item['item_id'])
@@ -374,29 +373,36 @@ class DownloadWorker(QObject):
                                 self.progress.emit(item, self.tr("Failed"), 0)
                             self.readd_item_to_download_queue(item)
 
-
                     elif item_service in ("soundcloud", "youtube_music"):
+                        item_url = item_metadata['item_url']
                         ydl_opts = {}
+                        if item_service == "soundcloud":
+                            if token['oauth_token']:
+                                # Bitrate and format extracted later in the function as not all soundcloud songs have m4a available
+                                ydl_opts['format'] = 'bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio'
+                                ydl_opts['username'] = 'oauth'
+                                ydl_opts['password'] = token['oauth_token']
+                            else:
+                                default_format = ".mp3"
+                                bitrate = "128k"
+                                ydl_opts['format'] = 'bestaudio[ext=mp3]'
+                        elif item_service == "youtube_music":
+                            default_format = '.m4a'
+                            bitrate = "128k"
+                            ydl_opts['format'] = 'bestaudio[ext=m4a]'
                         ydl_opts['quiet'] = True
                         ydl_opts['no_warnings'] = True
                         ydl_opts['noprogress'] = True
                         ydl_opts['extract_audio'] = True
                         ydl_opts['outtmpl'] = temp_file_path
-                        if item_service == "soundcloud":
-                            item_url = item_metadata['item_url']
-                            default_format = ".mp3"
-                            bitrate = "128k"
-                            ydl_opts['format'] = 'bestaudio[ext=mp3]'
-                        elif item_service == "youtube_music":
-                            item_url = f'https://music.youtube.com/watch?v={item["item_id"]}'
-                            default_format = '.m4a'
-                            bitrate = "256k"
-                            ydl_opts['format'] = 'bestaudio[ext=m4a]'
                         if self.gui:
                             ydl_opts['progress_hooks'] = [lambda d: self.yt_dlp_progress_hook(item, d)]
                         with YoutubeDL(ydl_opts) as video:
+                            if item_service == "soundcloud" and token['oauth_token']:
+                                info_dict = video.extract_info(item_url)
+                                bitrate = f"{info_dict.get('abr')}k"
+                                default_format = f".{info_dict.get('audio_ext')}"
                             video.download(item_url)
-
 
                     elif item_service in ("bandcamp", "qobuz", "tidal"):
                         if item_service in ("qobuz", "tidal"):
@@ -479,52 +485,108 @@ class DownloadWorker(QObject):
 
                     # Video
                     elif item_service == "crunchyroll":
-                        file_formats = ['.m4a', '.mp4']
-
-                        decryption_key = crunchyroll_get_decryption_key(token, item_id)
-
                         ydl_opts = {}
-                        ydl_opts['username'] = token['email']
-                        ydl_opts['password'] = token['password']
                         ydl_opts['quiet'] = True
                         ydl_opts['no_warnings'] = True
-                        ydl_opts['outtmpl'] = temp_file_path + '~.%(ext)s'
                         ydl_opts['allow_unplayable_formats'] = True
                         ydl_opts['fixup'] = 'never'
+                        ydl_opts['allowed_extractors'] = ['generic']
                         ydl_opts['noprogress'] = True
                         if self.gui:
                             ydl_opts['progress_hooks'] = [lambda d: self.yt_dlp_progress_hook(item, d)]
 
-                        # I would prefer to download video and audio together but yt-dlp
-                        # appends a format string when ext is used together.
-                        if self.gui:
-                            self.progress.emit(item, self.tr("Downloading Video"), 1)
-                        ydl_video_opts = ydl_opts
-                        ydl_video_opts['format'] = (f'(bestvideo[height<={config.get("preferred_video_resolution")}][ext=mp4]/bestvideo)')
-                        with YoutubeDL(ydl_video_opts) as video:
-                            video.download(item_metadata['item_url'])
+                        # Extract preferred language
+                        encrypted_files = []
+                        video_files = []
+                        subtitle_formats = []
+                        for version in item_metadata['versions']:
+                            if version['audio_locale'] in config.get('preferred_audio_language').split(',') or config.get('download_all_available_audio'):
+                                try:
+                                    mpd_url, stream_token, audio_locale, headers, versions, additional_subtitle_formats = crunchyroll_get_mpd_info(token, version['guid'])
+                                    subtitle_formats += additional_subtitle_formats
+                                    decryption_key = crunchyroll_get_decryption_key(token, version['guid'], mpd_url, stream_token)
+                                except Exception as e:
+                                    logger.error(e)
+                                    continue
 
-                        if self.gui:
-                            self.progress.emit(item, self.tr("Downloading Audio"), 1)
-                        ydl_audio_opts = ydl_opts
-                        ydl_audio_opts['format'] = ('(bestaudio[ext=m4a]/bestaudio)')
-                        with YoutubeDL(ydl_audio_opts) as video:
-                            video.download(item_metadata['item_url'])
+                                token = get_account_token(item_service)
+                                headers['Authorization'] = f'Bearer {token}'
+                                ydl_opts['http_headers'] = headers
+                                ydl_opts['outtmpl'] = temp_file_path + f' - {version["audio_locale"]}.%(ext)s.%(ext)s'
+
+                                if self.gui:
+                                    self.progress.emit(item, self.tr("Downloading Video"), 1)
+                                ydl_video_opts = ydl_opts
+                                ydl_video_opts['format'] = (f'(bestvideo[height<={config.get("preferred_video_resolution")}][ext=mp4]/bestvideo)')
+                                with YoutubeDL(ydl_video_opts) as video:
+                                    encrypted_files.append({
+                                        'path': video.prepare_filename(video.extract_info(mpd_url, download=False)),
+                                        'type': 'video',
+                                        'decryption_key': decryption_key,
+                                        'language': version['audio_locale']
+                                    })
+                                    video.download(mpd_url)
+
+                                # I would prefer to download video and audio together but yt-dlp
+                                # appends a format string when ext is used together.
+                                token = get_account_token(item_service)
+                                headers['Authorization'] = f'Bearer {token}'
+                                ydl_opts['http_headers'] = headers
+
+                                if self.gui:
+                                    self.progress.emit(item, self.tr("Downloading Audio"), 1)
+                                ydl_audio_opts = ydl_opts
+                                ydl_audio_opts['format'] = ('(bestaudio[ext=m4a]/bestaudio)')
+                                with YoutubeDL(ydl_audio_opts) as audio:
+                                    encrypted_files.append({
+                                        'path': audio.prepare_filename(audio.extract_info(mpd_url, download=False)),
+                                        'decryption_key': decryption_key,
+                                        'type': 'audio',
+                                        'language': version['audio_locale']
+                                    })
+                                    audio.download(mpd_url)
+
+                                crunchyroll_close_stream(token, item_id, stream_token)
+
+                                # Download Chapters
+                                if not config.get('raw_media_download') and config.get('download_chapters'):
+                                    if self.gui:
+                                        self.progress.emit(item, self.tr("Downloading Chapters"), 1)
+                                    chapter_file = temp_file_path + f' - {version["audio_locale"]}.txt'
+                                    if not os.path.exists(chapter_file):
+                                        resp = requests.get(f'https://static.crunchyroll.com/skip-events/production/{version["guid"]}.json')
+                                        if resp.status_code == 200:
+                                            chapter_data = resp.json()
+                                            with open(chapter_file, 'w', encoding='utf-8') as file:
+                                                file.write(';FFMETADATA1\n')
+                                                for entry in ['intro', 'credits']:
+                                                    if chapter_data.get(entry):
+                                                        file.write(f"[CHAPTER]\nTIMEBASE=1/1\nSTART={chapter_data[entry].get('start')}\nEND={chapter_data[entry].get('end')}\ntitle={entry.title()}\nlanguage={version['audio_locale']}\n")
+                                            video_files.append({
+                                                'path': chapter_file,
+                                                'type': 'chapter',
+                                                'format': 'txt',
+                                                'language': version['audio_locale']
+                                            })
 
                         if self.gui:
                             self.progress.emit(item, self.tr("Decrypting"), 99)
 
-                        video_file_parts = []
-                        for ext in file_formats:
-                            decrypted_temp_file_path = file_path + ext
-                            video_file_parts.append(decrypted_temp_file_path)
+                        for encrypted_file in encrypted_files:
+                            decrypted_temp_file_path = os.path.splitext(encrypted_file['path'])[0]
+                            video_files.append({
+                                "path": decrypted_temp_file_path,
+                                "format": os.path.splitext(encrypted_file['path'])[1],
+                                "type": encrypted_file['type'],
+                                "language": encrypted_file.get('language')
+                            })
 
                             command = [
                                 config.get('_ffmpeg_bin_path'),
                                 "-loglevel", "error",
                                 "-y",
-                                "-decryption_key", decryption_key,
-                                "-i", temp_file_path + f'~{ext}',
+                                "-decryption_key", encrypted_file['decryption_key'],
+                                "-i", encrypted_file['path'],
                                 "-c", "copy",
                                 "-movflags",
                                 "+faststart",
@@ -535,8 +597,33 @@ class DownloadWorker(QObject):
                             else:
                                 subprocess.check_call(command, shell=False)
 
-                            if os.path.exists(temp_file_path + f"~{ext}"):
-                                os.remove(temp_file_path + f"~{ext}")
+                            if os.path.exists(encrypted_file['path']):
+                                os.remove(encrypted_file['path'])
+
+                        # Download Subtitles
+                        if config.get("download_subtitles"):
+                            item['item_status'] = 'Downloading Subtitles'
+                            if self.gui:
+                                self.progress.emit(item, self.tr("Downloading Subtitles"), 99)
+
+                            finished_sub_langs = [] # Needed for duplicates
+                            for subtitle_format in subtitle_formats:
+                                lang = subtitle_format['language']
+                                if lang in finished_sub_langs:
+                                    continue
+                                finished_sub_langs.append(lang)
+                                if lang in config.get('preferred_subtitle_language').split(',') or config.get('download_all_available_subtitles'):
+                                    subtitle_file = temp_file_path + f' - {lang}.{subtitle_format["extension"]}'
+                                    if not os.path.exists(subtitle_file):
+                                        subtitle_data = requests.get(subtitle_format['url']).text
+                                        with open(subtitle_file, 'w', encoding='utf-8') as file:
+                                            file.write(subtitle_data)
+                                    video_files.append({
+                                        'path': subtitle_file,
+                                        'type': 'subtitle',
+                                        'format': subtitle_format['extension'],
+                                        'language': lang
+                                    })
 
                     elif item_service == 'generic':
                         temp_file_path = ''
@@ -571,6 +658,7 @@ class DownloadWorker(QObject):
                     continue
 
                 if item_service != 'generic':
+                    item['progress'] = 99
                     # Audio Formatting
                     if item_type in ('track', 'podcast_episode'):
                         # Lyrics
@@ -629,30 +717,12 @@ class DownloadWorker(QObject):
 
                     # Video Formatting
                     elif item_type in ('movie', 'episode'):
-                        subtitle_files = []
-                        if config.get("download_subtitles"):
-                            item['item_status'] = 'Getting Subtitles'
-                            if self.gui:
-                                self.progress.emit(item, self.tr("Getting Subtitles"), 99)
+                        for file in video_files:
+                            final_path = file['path'].replace('~', '')
+                            os.rename(file['path'], final_path)
+                            file['path'] = final_path
 
-
-                            subtitle_dict = item_metadata.get("subtitle_urls")
-                            if config.get("download_all_available_subtitles"):
-                                for key in subtitle_dict:
-                                    subtitle_data = requests.get(subtitle_dict[key].get("url")).text
-                                    subtitle_file = file_path + f".{key}." + subtitle_dict[key].get("ext")
-                                    with open(subtitle_file, "w") as file:
-                                        file.write(subtitle_data)
-                                    subtitle_files.append(subtitle_file)
-                            else:
-                                lang = config.get("preferred_subtitle_language")
-                                subtitle_data = requests.get(subtitle_dict[lang].get("url")).text
-                                subtitle_file = file_path + f".{lang}." + subtitle_dict[lang].get("ext")
-                                with open(subtitle_file, "w") as file:
-                                    file.write(subtitle_data)
-                                subtitle_files.append(subtitle_file)
-
-                        if not config.get("raw_media_format"):
+                        if not config.get("raw_media_download"):
                             item['item_status'] = 'Converting'
                             if self.gui:
                                 self.progress.emit(item, self.tr("Converting"), 99)
@@ -660,16 +730,22 @@ class DownloadWorker(QObject):
                                 output_format = config.get("show_file_format")
                             elif item_type == "movie":
                                 output_format = config.get("movie_file_format")
-                            convert_video_format(file_path, output_format, video_file_parts, subtitle_files)
+                            convert_video_format(item, file_path, output_format, video_files, item_metadata)
                             item['file_path'] = file_path + '.' + output_format
                         else:
                             item['file_path'] = file_path + '.mp4'
 
                 item['item_status'] = 'Downloaded'
                 logger.info("Item Successfully Downloaded")
+                item['progress'] = 100
                 if self.gui:
                     self.progress.emit(item, self.tr("Downloaded"), 100)
-
+                try:
+                    config.set('total_downloaded_data', config.get('total_downloaded_data') + os.path.getsize(item['file_path']))
+                    config.set('total_downloaded_items', config.get('total_downloaded_items') + 1)
+                    config.save()
+                except Exception:
+                    pass
                 time.sleep(config.get("download_delay"))
                 self.readd_item_to_download_queue(item)
                 continue

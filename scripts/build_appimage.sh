@@ -14,7 +14,7 @@ cd build
 curl -L -o appimagetool-x86_64.AppImage https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
 chmod +x appimagetool-x86_64.AppImage
 
-curl -L -o python.AppImage https://github.com/niess/python-appimage/releases/download/python3.12/python3.12.8-cp312-cp312-manylinux2014_x86_64.AppImage
+curl -L -o python.AppImage https://github.com/niess/python-appimage/releases/download/python3.12/python3.12.9-cp312-cp312-manylinux2014_x86_64.AppImage
 chmod +x python.AppImage
 
 ./python.AppImage --appimage-extract

@@ -49,18 +49,18 @@ class FillAccountPool(QThread):
         self.finished.emit()
 
 
-def get_account_token(item_service):
+def get_account_token(item_service, rotate=False):
     if item_service in ('bandcamp', 'youtube_music', 'generic'):
         return
     parsing_index = config.get('active_account_number')
-    account_service = account_pool[parsing_index]['service']
-    if item_service == account_service and not config.get("rotate_active_account_number"):
+    if item_service == account_pool[parsing_index]['service'] and not rotate:
         return globals()[f"{item_service}_get_token"](parsing_index)
     else:
         for i in range(parsing_index + 1, parsing_index + len(account_pool) + 1):
             index = i % len(account_pool)
             if item_service == account_pool[index]['service']:
                 if config.get("rotate_active_account_number"):
+                    logger.debug(f"Returning {account_pool[index]['service']} account number {index}: {account_pool[index]['uuid']}")
                     config.set('active_account_number', index)
-                    #config.update()
+                    config.save()
                 return globals()[f"{item_service}_get_token"](index)

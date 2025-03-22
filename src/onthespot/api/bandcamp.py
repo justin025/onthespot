@@ -46,7 +46,7 @@ def bandcamp_add_account():
         }
     cfg_copy.append(new_user)
     config.set('accounts', cfg_copy)
-    config.update()
+    config.save()
 
 
 def bandcamp_get_search_results(_, search_term, content_types):

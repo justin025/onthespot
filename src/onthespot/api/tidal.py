@@ -68,7 +68,7 @@ def tidal_add_account_pt2(device_code):
             }
             cfg_copy.append(new_user)
             config.set('accounts', cfg_copy)
-            config.update()
+            config.save()
             return True
 
 
@@ -100,7 +100,7 @@ def tidal_login_user(account):
                     acc['login']['expires_in'] = auth_data["expires_in"] + time.time()
                     account = acc
             config.set('accounts', cfg_copy)
-            config.update()
+            config.save()
 
         account_pool.append({
             "uuid": account['uuid'],
@@ -226,7 +226,7 @@ def tidal_get_track_metadata(token, item_id):
 
     # Track Number
     track_number = None
-    for i, track in enumerate(album_data.get('included', [])):
+    for i, track in enumerate(album_data.get('data', {}).get('relationships', {}).get('items', {}).get('data', [])):
         if track.get('id') == str(item_id):
             track_number = i + 1
             break

@@ -167,12 +167,12 @@ def format_item_path(item, item_metadata):
         album=sanitize_data(album),
         album_artist=sanitize_data(item_metadata.get('album_artists')),
         album_type=item_metadata.get('album_type', 'single').title(),
-        disc_number=item_metadata.get('disc_number', 1),
-        track_number=item_metadata.get('track_number', 1),
+        disc_number=item_metadata.get('disc_number', 1) if not config.get('use_double_digit_path_numbers') else str(item_metadata.get('disc_number', 1)).zfill(2),
+        track_number=item_metadata.get('track_number', 1) if not config.get('use_double_digit_path_numbers') else str(item_metadata.get('track_number', 1)).zfill(2),
         genre=sanitize_data(item_metadata.get('genre')),
         label=sanitize_data(item_metadata.get('label')),
-        trackcount=item_metadata.get('total_tracks', 1),
-        disccount=item_metadata.get('total_discs', 1),
+        trackcount=item_metadata.get('total_tracks', 1) if not config.get('use_double_digit_path_numbers') else str(item_metadata.get('total_tracks', 1)).zfill(2),
+        disccount=item_metadata.get('total_discs', 1) if not config.get('use_double_digit_path_numbers') else str(item_metadata.get('total_discs', 1)).zfill(2),
         isrc=str(item_metadata.get('isrc')),
         playlist_name=sanitize_data(item.get('playlist_name')),
         playlist_owner=sanitize_data(item.get('playlist_by')),
@@ -180,8 +180,8 @@ def format_item_path(item, item_metadata):
 
         # Show
         show_name=sanitize_data(item_metadata.get('show_name')),
-        season_number=sanitize_data(str(item_metadata.get('season_number'))),
-        episode_number=sanitize_data(str(item_metadata.get('episode_number'))),
+        season_number=item_metadata.get('season_number', 1) if not config.get('use_double_digit_path_numbers') else str(item_metadata.get('season_number', 1)).zfill(2),
+        episode_number=item_metadata.get('episode_number', 1) if not config.get('use_double_digit_path_numbers') else str(item_metadata.get('episode_number', 1)).zfill(2),
     )
 
     return item_path
@@ -209,13 +209,16 @@ def convert_audio_format(filename, bitrate, default_format):
             command += ['-loglevel', 'error', '-hide_banner', '-nostats']
 
         # Check if media format is service default
-        if filetype == default_format:
+
+        if filetype == default_format and config.get('use_custom_file_bitrate'):
+            command += ['-b:a', bitrate]
+        elif filetype == default_format:
             command += ['-c:a', 'copy']
-        elif filetype != '.opus':
+        else:
             command += [
                 #'-f', filetype.split('.')[1],
                 '-ac', '2',
-                '-ar', f'{config.get("file_hertz")}',
+                '-ar', f'{config.get("file_hertz") if filetype != ".opus" else 48000}',
                 '-b:a', bitrate
                 ]
 
@@ -236,7 +239,7 @@ def convert_audio_format(filename, bitrate, default_format):
         os.remove(temp_name)
 
 
-def convert_video_format(output_path, output_format, video_file_parts, subtitle_files):
+def convert_video_format(item, output_path, output_format, video_files, item_metadata):
     target_path = os.path.abspath(output_path)
     file_name = os.path.basename(target_path)
     filetype = os.path.splitext(file_name)[1]
@@ -248,21 +251,47 @@ def convert_video_format(output_path, output_format, video_file_parts, subtitle_
     # Existing command initialization
     command = [config.get('_ffmpeg_bin_path')]
 
-    for file in video_file_parts:
-        command += ['-i', file]
+    current_type = ''
+    format_map = []
+    for map_index, file in enumerate(video_files):
+        if current_type != file["type"]:
+            i = 0
+            current_type = file["type"]
+        command += ['-i', file['path']]
 
-    for file in subtitle_files:
-        command += ['-i', file]
+        if current_type != 'chapter':
+            format_map += ['-map', f'{map_index}:{current_type[:1]}']
+            if file.get('language'):
+                language = file.get('language')
+                format_map += [f'-metadata:s:{current_type[:1]}:{i}', f'title={file.get("language")}']
+                format_map += [f'-metadata:s:{current_type[:1]}:{i}', f'language={file.get("language")[:2]}']
+
+        i += 1
+
+    format_map += [f'-metadata', f'title={item_metadata.get("title")}']
+    #format_map += [f'-metadata', f'genre={item_metadata.get("genre")}']
+    format_map += [f'-metadata', f'copyright={item_metadata.get("copyright")}']
+    format_map += [f'-metadata', f'description={item_metadata.get("description")}']
+    #format_map += [f'-metadata', f'year={item_metadata.get("release_year")}']
+    # TV Show Specific Tags
+    if item['item_type'] == 'episode':
+        format_map += [f'-metadata', f'show={item_metadata.get("show_name")}']
+        format_map += [f'-metadata', f'episode_id={item_metadata.get("episode_number")}']
+        format_map += [f'-metadata', f'tvsn={item_metadata.get("season_number")}']
+
+    command += format_map
 
     # Set log level based on environment variable
     if int(os.environ.get('SHOW_FFMPEG_OUTPUT', 0)) == 0:
         command += ['-loglevel', 'error', '-hide_banner', '-nostats']
 
-    command += ['-c', 'copy']
-
     # Add user defined parameters
     for param in config.get('ffmpeg_args'):
         command.append(param)
+
+    command += ['-c', 'copy']
+    if output_format == 'mp4':
+        command += ['-c:s', 'mov_text']
 
     # Add output parameter at last
     command += [temp_file_path]
@@ -275,14 +304,9 @@ def convert_video_format(output_path, output_format, video_file_parts, subtitle_
     else:
         subprocess.check_call(command, shell=False)
 
-    for file in video_file_parts:
-        if os.path.exists(file):
-            os.remove(file)
-
-    if output_format == "mkv":
-        for file in subtitle_files:
-            if os.path.exists(file):
-                os.remove(file)
+    for file in video_files:
+        if os.path.exists(file['path']):
+            os.remove(file['path'])
 
     os.rename(temp_file_path, output_path + '.' + output_format)
 
@@ -489,6 +513,7 @@ def embed_metadata(item, metadata):
 
 
 def set_music_thumbnail(filename, metadata):
+    if metadata['image_url']:
         target_path = os.path.abspath(filename)
         file_name = os.path.basename(target_path)
         filetype = os.path.splitext(file_name)[1]
@@ -636,13 +661,13 @@ def add_to_m3u_file(item, item_metadata):
         album_type=item_metadata.get('album_type', 'single').title(),
         name=item_metadata.get('title'),
         year=item_metadata.get('release_year'),
-        disc_number=item_metadata.get('disc_number', 1),
-        track_number=item_metadata.get('track_number', 1),
+        disc_number=item_metadata.get('disc_number', 1) if not config.get('use_double_digit_path_numbers') else str(item_metadata.get('disc_number', 1)).zfill(2),
+        track_number=item_metadata.get('track_number', 1) if not config.get('use_double_digit_path_numbers') else str(item_metadata.get('track_number', 1)).zfill(2),
         genre=item_metadata.get('genre'),
         label=item_metadata.get('label'),
         explicit=str(config.get('explicit_label')) if item_metadata.get('explicit') else '',
-        trackcount=item_metadata.get('total_tracks', 1),
-        disccount=item_metadata.get('total_discs', 1),
+        trackcount=item_metadata.get('total_tracks', 1) if not config.get('use_double_digit_path_numbers') else str(item_metadata.get('total_tracks', 1)).zfill(2),
+        disccount=item_metadata.get('total_discs', 1) if not config.get('use_double_digit_path_numbers') else str(item_metadata.get('total_discs', 1)).zfill(2),
         isrc=str(item_metadata.get('isrc')),
         playlist_name=item.get('playlist_name'),
         playlist_owner=item.get('playlist_by'),
@@ -651,7 +676,11 @@ def add_to_m3u_file(item, item_metadata):
 
     # Check if the item_path is already in the M3U file
     with open(m3u_path, 'r', encoding='utf-8') as m3u_file:
-        m3u_item_header = f"#EXTINF:{round(int(item_metadata['length'])/1000)}, {EXTINF}"
+        try:
+            ext_length = round(int(item_metadata['length'])/1000)
+        except Exception:
+            ext_length = '-1'
+        m3u_item_header = f"#EXTINF:{ext_length}, {EXTINF}"
         m3u_contents = m3u_file.readlines()
         if m3u_item_header not in [line.strip() for line in m3u_contents]:
             with open(m3u_path, 'a', encoding='utf-8') as m3u_file:
@@ -693,3 +722,12 @@ def strip_metadata(item):
         else:
             subprocess.check_call(command, shell=False)
         os.remove(temp_name)
+
+
+def format_bytes(size):
+    units = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB']
+    index = 0
+    while size >= 1024 and index < len(units) - 1:
+        size /= 1024
+        index += 1
+    return f"{size:.2f} {units[index]}"

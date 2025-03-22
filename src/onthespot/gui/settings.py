@@ -2,6 +2,7 @@ import os
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QSpinBox, QComboBox, QWidget
 from ..otsconfig import config
+from ..utils import format_bytes
 
 
 class NonScrollableSpinBox(QSpinBox):
@@ -15,6 +16,9 @@ class NonScrollableComboBox(QComboBox):
 
 
 def load_config(self):
+    self.version.setText(config.get("version"))
+    self.statistics.setText(self.tr("{0} / {1}").format(config.get('total_downloaded_items'), format_bytes(config.get('total_downloaded_data'))))
+
     # Dev Tools
     self.settings_scrollarea_value.valueChanged.connect(self.settings_scroll_area.verticalScrollBar().setValue)
     if not config.get('debug_mode'):
@@ -26,13 +30,13 @@ def load_config(self):
 
     # Icons
     self.toggle_theme_button.setIcon(self.get_icon('light'))
+    self.clear_cache.setIcon(self.get_icon('trash'))
     self.export_logs.setIcon(self.get_icon('export_file'))
+    self.donate.setIcon(self.get_icon('filled_heart'))
 
     self.language.insertItem(0, self.get_icon('en_US'), "English")
     self.language.insertItem(1, self.get_icon('de_DE'), "Deutsch")
     self.language.insertItem(2, self.get_icon('pt_PT'), "Português")
-    self.language.insertItem(999, self.get_icon('pirate_flag'), "Contribute")
-    self.language.currentIndexChanged.connect(self.contribute)
 
     self.login_service.insertItem(0, "Audio")
     self.login_service.insertItem(1, self.get_icon('apple_music'), "Apple Music")
@@ -136,6 +140,13 @@ def load_config(self):
     self.enable_search_episodes.setChecked(config.get("enable_search_episodes"))
     self.enable_search_podcasts.setChecked(config.get("enable_search_podcasts"))
     self.enable_search_audiobooks.setChecked(config.get("enable_search_audiobooks"))
+
+    # Download Queue Filter Settings
+    self.download_queue_show_waiting.setChecked(config.get("download_queue_show_waiting"))
+    self.download_queue_show_failed.setChecked(config.get("download_queue_show_failed"))
+    self.download_queue_show_cancelled.setChecked(config.get("download_queue_show_cancelled"))
+    self.download_queue_show_unavailable.setChecked(config.get("download_queue_show_unavailable"))
+    self.download_queue_show_completed.setChecked(config.get("download_queue_show_completed"))
 
     # Audio Download Settings
     self.audio_download_path.setText(config.get("audio_download_path"))
@@ -250,6 +261,13 @@ def save_config(self):
     config.set('enable_search_podcasts', self.enable_search_podcasts.isChecked())
     config.set('enable_search_audiobooks', self.enable_search_audiobooks.isChecked())
 
+    # Download Queue Filter Settings
+    config.set('download_queue_show_waiting', self.download_queue_show_waiting.isChecked())
+    config.set('download_queue_show_failed', self.download_queue_show_failed.isChecked())
+    config.set('download_queue_show_cancelled', self.download_queue_show_cancelled.isChecked())
+    config.set('download_queue_show_unavailable', self.download_queue_show_unavailable.isChecked())
+    config.set('download_queue_show_completed', self.download_queue_show_completed.isChecked())
+
     # Audio Download Settings
     config.set('audio_download_path', self.audio_download_path.text())
     config.set('track_file_format', self.track_file_format.text())
@@ -326,4 +344,4 @@ def save_config(self):
     config.set('download_all_available_audio', self.download_all_available_audio.isChecked())
     config.set('download_all_available_subtitles', self.download_all_available_subtitles.isChecked())
 
-    config.update()
+    config.save()

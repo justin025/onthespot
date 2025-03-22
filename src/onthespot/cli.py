@@ -34,36 +34,14 @@ else:
 
 def parse_args():
     parser = argparse.ArgumentParser(description="OnTheSpot CLI Downloader")
-    
     parser.add_argument('--download', help="Parse and download the URL specified")
-    
     args, unknown_args = parser.parse_known_args()
 
-    overrides = {}
-    for arg in unknown_args:
-        if arg.startswith('--') and '=' in arg:
-            key, value = arg[2:].split('=', 1)
-            overrides[key] = value
-
     if args.download:
         if not (args.download.startswith("http://") or args.download.startswith("https://")):
             parser.error("Parameter --download only accept URLs.")
 
-    return args, overrides
-
-
-    overrides = {}
-    for arg in unknown_args:
-        if arg.startswith('--') and '=' in arg:
-            key, value = arg[2:].split('=', 1)
-            overrides[key] = value
-
-    if args.download:
-        if not (args.download.startswith("http://") or args.download.startswith("https://")):
-            parser.error("Parameter --download only accept URLs.")
-
-    return args, overrides
-
+    return args
 
 class QueueWorker(threading.Thread):
     def __init__(self):
@@ -105,11 +83,7 @@ class QueueWorker(threading.Thread):
 
 
 def main():
-    args, cli_overrides = parse_args()
-    config.apply_overrides(cli_overrides)
-
-    for key, value in cli_overrides.items():
-        print(f"{key}={value}")
+    args = parse_args()
 
     print('\033[32mLogging In...\033[0m\n', end='', flush=True)
 
@@ -141,16 +115,19 @@ def main():
         mirrorplayback.start()
 
     if args.download:
-        print(f"\033[32mSearching and downloading: {args.download}\033[0m")
-        CLI().onecmd(f"search {args.download}")
-
-        while not any(item['item_status'] in ("Waiting", "Downloading") for item in download_queue.values()):
-            time.sleep(0.1)
-
-        while any(item['item_status'] not in ("Downloaded", "Failed", "Cancelled") for item in download_queue.values()):
+        print(f"\033[32mParsing URL: {args.download}\033[0m")
+        parse_url(args.download)
+        while not download_queue:
             time.sleep(1)
 
-        print("\033[32mDownload finished. Exiting...\033[0m")
+            while any(item['item_status'] not in ('Downloaded', 'Already Exists', 'Failed', 'Unavailable') for item in download_queue.values()):
+                time.sleep(1)
+
+            for item in download_queue.values():
+                if item['item_status'] in ('Unavailable', 'Failed'):
+                    print(f"\033[31mItem ID {item['item_id']} {item['item_status']}'\033[0m")
+
+        print("\033[32mDownload Completed. Exiting...\033[0m")
         os._exit(0)
 
     CLI().cmdloop()
@@ -174,7 +151,7 @@ class CLI(Cmd):
         parts = arg.split(maxsplit=1)
 
         if arg == "reset_settings":
-            config.rollback()
+            config.reset()
             print('\033[32mSettings reset, please restart the app.\033[0m')
             return
 
@@ -191,7 +168,7 @@ class CLI(Cmd):
                         pass
 
                     config.set(key, value)
-                    config.update()
+                    config.save()
                     print(f"\033[32mUpdated {key} to {value}.\033[0m")
                 else:
                     print(f"\033[31mError: {key} is not a valid configuration key.\033[0m")
@@ -241,8 +218,6 @@ class CLI(Cmd):
                     try:
                         apple_music_add_account(media_user_token)
                         print("\033[32mApple Music account added successfully. Please restart the app.\033[0m")
-                        config.set('active_account_number', config.get('active_account_number') + 1)
-                        config.update()
                     except Exception as e:
                         print(f"\033[31mError while adding Apple Music account: {e}\033[0m")
                 else:
@@ -254,8 +229,6 @@ class CLI(Cmd):
                 try:
                     bandcamp_add_account()
                     print("\033[32mBandcamp account added successfully. Please restart the app.\033[0m")
-                    config.set('active_account_number', config.get('active_account_number') + 1)
-                    config.update()
                 except Exception as e:
                     print(f"\033[31mError while adding Bandcamp account: {e}\033[0m")
             elif parts[1] == "crunchyroll":
@@ -268,22 +241,18 @@ class CLI(Cmd):
                     try:
                         crunchyroll_add_account(email, password)
                         print("\033[32mCrunchyroll account added successfully. Please restart the app.\033[0m")
-                        config.set('active_account_number', config.get('active_account_number') + 1)
-                        config.update()
                     except Exception as e:
                         print(f"\033[31mError while adding Crunchyroll account: {e}\033[0m")
                 else:
                     print("\033[31mUsage: add_account crunchyroll <email> <password>\033[0m")
                 return
             elif parts[1] == "deezer":
-                if len(parts) == 3 and parts[2] != 'public':
+                if len(parts) == 3 and parts[2] != 'public_deezer':
                     print("\033[32mAdding Deezer account with provided ARL token...\033[0m")
                     arl = parts[2]
                     try:
                         deezer_add_account(arl)
                         print("\033[32mDeezer account added successfully. Please restart the app.\033[0m")
-                        config.set('active_account_number', config.get('active_account_number') + 1)
-                        config.update()
                     except Exception as e:
                         print(f"\033[31mError while adding Deezer account: {e}\033[0m")
                 else:
@@ -294,8 +263,6 @@ class CLI(Cmd):
                 try:
                     generic_add_account()
                     print("\033[32mGeneric platform support added successfully. Please restart the app.\033[0m")
-                    config.set('active_account_number', config.get('active_account_number') + 1)
-                    config.update()
                 except Exception as e:
                     print(f"\033[31mError while adding Generic platform support: {e}\033[0m")
                 return
@@ -309,23 +276,23 @@ class CLI(Cmd):
                     try:
                         qobuz_add_account(email, password)
                         print("\033[32mQobuz account added successfully. Please restart the app.\033[0m")
-                        config.set('active_account_number', config.get('active_account_number') + 1)
-                        config.update()
                     except Exception as e:
                         print(f"\033[31mError while adding Qobuz account: {e}\033[0m")
                 else:
                     print("\033[31mUsage: add_account qobuz <email> <password>\033[0m")
                 return
             elif parts[1] == "soundcloud":
-                print("\033[32mInitializing SoundCloud account login...\033[0m")
-
-                try:
-                    soundcloud_add_account()
-                    print("\033[32mSoundCloud account added successfully. Please restart the app.\033[0m")
-                    config.set('active_account_number', config.get('active_account_number') + 1)
-                    config.update()
-                except Exception as e:
-                    print(f"\033[31mError while adding SoundCloud account: {e}\033[0m")
+                if len(parts) == 3 and parts[2] != 'public_soundcloud':
+                    print("\033[32mAdding SoundCloud account with provided OAuth token...\033[0m")
+                    oauth_token = parts[2]
+                    try:
+                        soundcloud_add_account(oauth_token)
+                        print("\033[32mSoundCloud account added successfully. Please restart the app.\033[0m")
+                    except Exception as e:
+                        print(f"\033[31mError while adding SoundCloud account: {e}\033[0m")
+                else:
+                     print("\033[31mUsage: add_account soundcloud <arl>\033[0m")
+                return
             elif parts[1] == "spotify":
                 print("\033[32mLogin service started, select 'OnTheSpot' under devices in the Spotify Desktop App.\033[0m")
 
@@ -333,8 +300,6 @@ class CLI(Cmd):
                     session = spotify_new_session()
                     if session:
                         print("\033[32mAccount added, please restart the app.\n\033[0m")
-                        config.set('active_account_number', config.get('active_account_number') + 1)
-                        config.update()
                     else:
                         print("\033[31mAccount already exists.\033[0m")
 
@@ -352,8 +317,7 @@ class CLI(Cmd):
                         result = tidal_add_account_pt2(device_code)
                         if result:
                             print("\033[32mTidal account added successfully. Please restart the app.\033[0m")
-                            config.set('active_account_number', config.get('active_account_number') + 1)
-                            config.update()
+
                         else:
                             print("\033[31mFailed to add Tidal account.\033[0m")
                     except Exception as e:
@@ -368,13 +332,14 @@ class CLI(Cmd):
                 try:
                     youtube_music_add_account()
                     print("\033[32mYouTube Music public account added successfully. Please restart the app.\033[0m")
-                    config.set('active_account_number', config.get('active_account_number') + 1)
-                    config.update()
                 except Exception as e:
                     print(f"\033[31mError while adding YouTube Music account: {e}\033[0m")
                 return
             else:
                 print("\033[31mUnknown service.\033[0m")
+                return
+            config.set('active_account_number', config.get('active_account_number') + 1)
+            config.save()
             return
 
         if arg.startswith("select_account"):
@@ -385,7 +350,7 @@ class CLI(Cmd):
                     if not isinstance(account_number, int) or account_number > len(config.get('accounts')):
                         raise ValueError
                     config.set('active_account_number', account_number)
-                    config.update()
+                    config.save()
                     print(f"\033[32mSelected account number: {account_number}\033[0m")
                 except ValueError:
                     print("\033[31mInvalid account number. Please enter a valid integer.\033[0m")
@@ -403,7 +368,7 @@ class CLI(Cmd):
                     accounts = config.get('accounts').copy()
                     del accounts[account_number]
                     config.set('accounts', accounts)
-                    config.update()
+                    config.save()
                     del account_pool[account_number]
                     print(f"\033[32mDeleted account number: {account_number}\033[0m")
                 except ValueError:
@@ -423,6 +388,7 @@ class CLI(Cmd):
         print("  select_account <index>                 - Select an account")
         print("  delete_account <index>                 - Delete an account")
         print("  reset_settings                         - Reset all settings to default")
+        print(f"  \033[36mAdditional options can be found at {config_dir()}{os.path.sep}otsconfig.json\033[0m")
 
 
     def do_search(self, arg):
@@ -519,9 +485,9 @@ class CLI(Cmd):
                     selected_index = min(selected_index, num_items_to_display - 1)
             elif key == curses.KEY_DOWN:
                 if selected_index < num_items_to_display - 1:
-                    selected_index  = 1
+                    selected_index += 1
                 elif first_item_index + num_items_to_display < num_items:
-                    first_item_index  = 1
+                    first_item_index += 1
                     selected_index = min(selected_index, num_items_to_display - 1)
             elif key == ord('q'):
                 keep_running = False
@@ -589,13 +555,13 @@ def start_snake_game(win):
 
             head_y, head_x = snake[0]
             if direction == curses.KEY_RIGHT:
-                head_x  += 1
+                head_x += 1
             elif direction == curses.KEY_LEFT:
                 head_x -= 1
             elif direction == curses.KEY_UP:
                 head_y -= 1
             elif direction == curses.KEY_DOWN:
-                head_y  += 1
+                head_y += 1
 
             if (head_x in [0, win.getmaxyx()[1] - 2] or
                 head_y in [0, win.getmaxyx()[0] - 1] or
@@ -605,7 +571,7 @@ def start_snake_game(win):
                 break
 
             if (head_y, head_x) == food:
-                score  += 1
+                score += 1
                 food = (random.randint(3, win.getmaxyx()[0] - 2), random.randint(1, win.getmaxyx()[1] - 3))
             else:
                 snake.pop()
@@ -650,7 +616,7 @@ def display_game_over(win, score):
     win.clear()
     if score > config.get('snake_high_score', 0):
         config.set('snake_high_score', score)
-        config.update()
+        config.save()
     win.addstr(win.getmaxyx()[0] // 2 - 1, win.getmaxyx()[1] // 2 - 10, 'Game Over!', curses.color_pair(1))
     win.addstr(win.getmaxyx()[0] // 2, win.getmaxyx()[1] // 2 - 10, f'Score: {score}', curses.A_BOLD)
     win.addstr(win.getmaxyx()[0] // 2 + 1, win.getmaxyx()[1] // 2 - 10, f'High Score: {config.get('snake_high_score', 0)}', curses.A_BOLD)

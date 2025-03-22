@@ -110,7 +110,7 @@ def qobuz_add_account(email, password):
         }
         cfg_copy.append(new_user)
         config.set('accounts', cfg_copy)
-        config.update()
+        config.save()
 
     except Exception as e:
         logger.error(f"Unknown Exception: {str(e)}")
