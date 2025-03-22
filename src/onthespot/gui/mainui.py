@@ -6,7 +6,7 @@ import traceback
 from urllib3.exceptions import MaxRetryError, NewConnectionError
 from PyQt6 import uic, QtGui
 from PyQt6.QtCore import QThread, QDir, Qt, pyqtSignal, QObject, QTimer
-from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QIcon, QColor
 from PyQt6.QtWidgets import QApplication, QMainWindow, QHeaderView, QLabel, QPushButton, QProgressBar, QTableWidgetItem, QFileDialog, QRadioButton, QHBoxLayout, QWidget, QColorDialog
 from ..accounts import get_account_token, FillAccountPool
 from ..api.apple_music import apple_music_add_account, apple_music_get_track_metadata
@@ -418,11 +418,13 @@ class MainWindow(QMainWindow):
         item_service = item["item_service"]
         service_label = QTableWidgetItem(str(item_service).replace('_', ' ').title())
         service_label.setIcon(self.get_icon(item_service))
+        service_label.setBackground(QColor(0, 0, 0, 0))
 
         status_label = QLabel(self.tbl_dl_progress)
         status_label.setText(self.tr("Waiting"))
+        status_label.setStyleSheet("background-color: transparent;")
         actions = DownloadActionsButtons(item['local_id'], item_metadata, pbar, copy_btn, cancel_btn, retry_btn, open_btn, locate_btn, delete_btn)
-
+    
         rows = self.tbl_dl_progress.rowCount()
         self.tbl_dl_progress.insertRow(rows)
         if item_metadata.get('explicit'):
@@ -435,6 +437,10 @@ class MainWindow(QMainWindow):
         else:
             item_label = QLabel(self.tbl_dl_progress)
             item_label.setText(title)
+            item_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+            item_label.setAlignment(Qt.AlignmentFlag.AlignVCenter)
+        item_label.setStyleSheet("background-color: transparent;")
+
         # Add To List
         self.tbl_dl_progress.setItem(rows, 0, QTableWidgetItem(str(item['local_id'])))
         self.tbl_dl_progress.setCellWidget(rows, 1, item_label)
@@ -875,6 +881,7 @@ class MainWindow(QMainWindow):
             download_btn = QPushButton(self.tbl_search_results)
             download_btn.setIcon(self.get_icon('download'))
             download_btn.setMinimumHeight(30)
+            download_btn.setStyleSheet("QPushButton { background-color: palette(button);  }")
             download_btn.clicked.connect(lambda x,
                                     item_name=result['item_name'],
                                     item_url=result['item_url'],
@@ -887,6 +894,7 @@ class MainWindow(QMainWindow):
             copy_btn = QPushButton(self.tbl_search_results)
             copy_btn.setIcon(self.get_icon('link'))
             copy_btn.setMinimumHeight(30)
+            copy_btn.setStyleSheet("QPushButton { background-color: palette(button); }")
             copy_btn.clicked.connect(lambda x, item_url=result['item_url']: copy_btn_clicked(item_url))
 
             btn_layout = QHBoxLayout()
@@ -894,6 +902,7 @@ class MainWindow(QMainWindow):
             btn_layout.addWidget(download_btn)
 
             btn_widget = QWidget()
+            btn_widget.setStyleSheet("QWidget { background-color: transparent !important; }")
             btn_widget.setLayout(btn_layout)
 
             service = QTableWidgetItem(result['item_service'].replace('_', ' ').title())
@@ -908,6 +917,8 @@ class MainWindow(QMainWindow):
             else:
                 item_label = QLabel(self.tbl_dl_progress)
                 item_label.setText(result['item_name'])
+            item_label.setStyleSheet("background-color: transparent;")
+
 
             self.tbl_search_results.setCellWidget(rows, 0, item_label)
             self.tbl_search_results.setItem(rows, 1, QTableWidgetItem(str(result['item_by'])))

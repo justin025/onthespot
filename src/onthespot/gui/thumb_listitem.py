@@ -20,6 +20,7 @@ class LabelWithThumb(QWidget):
         item_label.setText(label.strip())
         item_label.setWordWrap(True)  # Allow text to wrap if necessary
         item_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        item_label.setAlignment(Qt.AlignmentFlag.AlignVCenter)
 
         # Create the QLabel for the pixmap
         self.image_label = QLabel(self)
