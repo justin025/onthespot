@@ -173,16 +173,16 @@ class DownloadWorker(QObject):
                     file_path = os.path.join(dl_root, item_path)
                     directory, file_name = os.path.split(file_path)
 
-                    # Additional verification of the NT Win32 API path length limit, see https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation in case the file_name + directory exceeds the path limit 
-                    if os.name == 'nt':
-                        name, ext = os.path.splitext(file_name)
-                        MAX_PATH_LENGTH = 260
-                        available_length = MAX_PATH_LENGTH - len(os.path.join(directory, ''))
-                        if len(file_name) > available_length:
-                            trim_length = available_length - len(ext)
-                            name = name[:trim_length]
-                            file_name = name + ext
-                            file_path = os.path.join(directory, file_name)
+                    # Additional verification of path length limits, see https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation in case the file_name + directory exceeds the path limit 
+                    # and for UNIX systems it's the same https://serverfault.com/questions/9546/filename-length-limits-on-linux
+                    name, ext = os.path.splitext(file_name)
+                    MAX_PATH_LENGTH = 260
+                    available_length = MAX_PATH_LENGTH - len(os.path.join(directory, ''))
+                    if len(file_name) > available_length:
+                        trim_length = available_length - len(ext)
+                        name = name[:trim_length]
+                        file_name = name + ext
+                        file_path = os.path.join(directory, file_name)
                     
                     temp_file_path = os.path.join(directory, '~' + file_name)
 
