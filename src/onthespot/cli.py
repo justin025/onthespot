@@ -115,6 +115,7 @@ def main():
         mirrorplayback.start()
 
     if args.download:
+        failed_download = False
         print(f"\033[32mParsing URL: {args.download}\033[0m")
         parse_url(args.download)
         while not download_queue:
@@ -126,9 +127,14 @@ def main():
             for item in download_queue.values():
                 if item['item_status'] in ('Unavailable', 'Failed'):
                     print(f"\033[31mItem ID {item['item_id']} {item['item_status']}'\033[0m")
+                    failed_download = True
 
-        print("\033[32mDownload Completed. Exiting...\033[0m")
-        os._exit(0)
+        if failed_download:
+            print("\033[31mAt least one track download failed. Exiting with failure...\033[0m")
+            os._exit(1)
+        else:
+            print("\033[32mDownload Completed. Exiting...\033[0m")
+            os._exit(0)
 
     CLI().cmdloop()
 
