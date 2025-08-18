@@ -11,12 +11,16 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     ffmpeg \
     libegl1 \
-    git \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 FROM base AS builder
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN python3 -m venv venv
 COPY requirements.txt .
