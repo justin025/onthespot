@@ -11,13 +11,13 @@ RUN apt-get update && \
 WORKDIR /app
 COPY . /app/
 
-# Force pip to use wheels when available
-ENV PIP_ONLY_BINARY=:all:
 # Upgrade pip & build tools
 RUN python3 -m pip install --upgrade pip setuptools wheel
 
 # Install in a venv to isolate dependencies
-RUN python3 -m venv /venv && /venv/bin/pip install .
+RUN python3 -m venv /venv && \
+    /venv/bin/pip install PyQt6-Qt6 PyQt6-sip && \
+    /venv/bin/pip install .
 
 # ---------------------------------------------------------------------
 
