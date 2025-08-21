@@ -5,11 +5,14 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         gcc build-essential python3-dev \
         ffmpeg git libegl1 libssl-dev libffi-dev zlib1g-dev libjpeg-dev \
+        qt6-base-dev qt6-tools-dev-tools build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY . /app/
 
+# Force pip to use wheels when available
+ENV PIP_ONLY_BINARY=:all:
 # Upgrade pip & build tools
 RUN python3 -m pip install --upgrade pip setuptools wheel
 
