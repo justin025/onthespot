@@ -1,10 +1,12 @@
 services:
  onthespot-webui:
-    image: onthespot-webui
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: onthespot-webui
     restart: unless-stopped
     ports:
-     - 5000:5000
+      - 5000:5000
     volumes:
     - ./Music:/root/Music/OnTheSpot
     - ./Videos:/root/Videos/OnTheSpot

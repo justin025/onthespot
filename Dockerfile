@@ -1,19 +1,38 @@
-FROM python:3.11-slim-bookworm AS base
+FROM python:3.11-slim-bookworm AS builder
 
-FROM base AS updated-system
-
+# System deps for building Python wheels on both amd64 + arm64
 RUN apt-get update && \
-    apt-get install -y ffmpeg git libegl1
+    apt-get install -y --no-install-recommends \
+        gcc build-essential python3-dev \
+        ffmpeg git libegl1 libssl-dev libffi-dev zlib1g-dev libjpeg-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY . /app/
-RUN python3 -m pip install /app
 
-FROM updated-system AS cleaned-system
+# Upgrade pip & build tools
+RUN python3 -m pip install --upgrade pip setuptools wheel
 
-RUN apt-get purge -y git && apt-get autoremove -y && \
-    rm -rf /var/lib/apt/lists/* /root/.cache /app
+# Install in a venv to isolate dependencies
+RUN python3 -m venv /venv && /venv/bin/pip install .
 
-FROM cleaned-system AS prod
+# ---------------------------------------------------------------------
+
+FROM python:3.11-slim-bookworm AS prod
+
+# Runtime deps only (no compilers, git, etc.)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        ffmpeg libegl1 libgl1-mesa-dev libxkbcommon-x11-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy installed venv + app
+COPY --from=builder /venv /venv
+COPY --from=builder /app /app
+
+# Use venv in PATH
+ENV PATH="/venv/bin:$PATH"
+WORKDIR /app
+
 EXPOSE 5000
 CMD ["onthespot-web", "--host", "0.0.0.0", "--port", "5000"]
