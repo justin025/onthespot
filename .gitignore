@@ -2,7 +2,9 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+Config/
+Videos/
+Music/
 # C extensions
 *.so
 
