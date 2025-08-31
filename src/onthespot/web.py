@@ -237,7 +237,7 @@ def restart():
 @login_required
 def get_items():
     with download_queue_lock:
-        return Response(json.dumps(download_queue), mimetype='application/json')
+        return Response(json.dumps(download_queue, sort_keys=True), mimetype='application/json')
 
 @app.route('/api/cancel/<path:local_id>', methods=['POST'])
 @login_required
