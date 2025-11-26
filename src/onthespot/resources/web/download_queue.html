@@ -808,9 +808,19 @@
             sortItems(filteredItems);
 
             if (filteredItems.length === 0) {
+                // Count visible columns dynamically for correct colspan
+                const headerCells = document.querySelectorAll('thead th');
+                let visibleColumnCount = 0;
+                headerCells.forEach(th => {
+                    const style = window.getComputedStyle(th);
+                    if (style.display !== 'none') {
+                        visibleColumnCount++;
+                    }
+                });
+
                 const emptyRow = document.createElement('tr');
                 const emptyCell = document.createElement('td');
-                emptyCell.colSpan = 10;
+                emptyCell.colSpan = visibleColumnCount || 10; // fallback to 10
                 emptyCell.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-state-icon">📥</div>
