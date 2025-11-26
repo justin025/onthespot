@@ -1005,7 +1005,8 @@
                 .then(data => {
                     if (data.success) {
                         console.log('Clear completed');
-                        fetchItems(true);
+                        // Small delay to ensure server has processed the change
+                        setTimeout(() => fetchItems(true), 100);
                     }
                 });
         }
@@ -1016,7 +1017,8 @@
                 .then(data => {
                     if (data.success) {
                         console.log('Cancel completed');
-                        fetchItems(true);
+                        // Small delay to ensure server has processed the change
+                        setTimeout(() => fetchItems(true), 100);
                     }
                 });
         }
@@ -1027,7 +1029,8 @@
                 .then(data => {
                     if (data.success) {
                         console.log('Retry completed');
-                        fetchItems(true);
+                        // Small delay to ensure server has processed the change
+                        setTimeout(() => fetchItems(true), 100);
                     }
                 });
         }
