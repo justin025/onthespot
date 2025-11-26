@@ -26,6 +26,30 @@
             margin-bottom: 16px;
         }
 
+        .auto-redirect-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            font-size: 13px;
+            color: #ccc;
+        }
+
+        .auto-redirect-control input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .auto-redirect-control label {
+            cursor: pointer;
+            user-select: none;
+        }
+
         .search-form {
             display: flex;
             gap: 12px;
@@ -506,6 +530,10 @@
                 </div>
                 <button type="submit">Search</button>
             </form>
+            <div class="auto-redirect-control">
+                <input type="checkbox" id="auto-redirect-checkbox" checked>
+                <label for="auto-redirect-checkbox">Show downloads screen after selection</label>
+            </div>
         </div>
 
         <!-- Filters Panel -->
@@ -771,7 +799,7 @@
 
         function handleDownload(url) {
             showToast('Starting download...', 'success');
-            
+
             fetch(`/api/parse_url/${encodeURIComponent(url)}`, {
                 method: 'POST',
             })
@@ -779,9 +807,14 @@
             .then(data => {
                 if (data.success) {
                     showToast('Download started!', 'success');
-                    setTimeout(() => {
-                        window.location.href = '/download_queue';
-                    }, 1000);
+
+                    // Check if auto-redirect is enabled
+                    const autoRedirect = document.getElementById('auto-redirect-checkbox').checked;
+                    if (autoRedirect) {
+                        setTimeout(() => {
+                            window.location.href = '/download_queue';
+                        }, 1000);
+                    }
                 } else {
                     showToast('Download failed: ' + (data.error || 'Unknown error'), 'error');
                 }
@@ -802,6 +835,18 @@
                 if (e.key === 'Enter') {
                     submitSearch(e);
                 }
+            });
+
+            // Load auto-redirect preference from localStorage
+            const autoRedirectCheckbox = document.getElementById('auto-redirect-checkbox');
+            const savedPreference = localStorage.getItem('autoRedirectToDownloads');
+            if (savedPreference !== null) {
+                autoRedirectCheckbox.checked = savedPreference === 'true';
+            }
+
+            // Save preference when checkbox changes
+            autoRedirectCheckbox.addEventListener('change', (e) => {
+                localStorage.setItem('autoRedirectToDownloads', e.target.checked);
             });
         });
     </script>
