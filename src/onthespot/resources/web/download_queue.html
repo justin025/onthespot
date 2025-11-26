@@ -1035,8 +1035,8 @@
                 .then(data => {
                     if (data.success) {
                         console.log('Clear completed');
-                        // Small delay to ensure server has processed the change
-                        setTimeout(() => fetchItems(true), 100);
+                        // Reload page to ensure proper table layout
+                        setTimeout(() => window.location.reload(), 100);
                     }
                 });
         }
@@ -1047,8 +1047,8 @@
                 .then(data => {
                     if (data.success) {
                         console.log('Cancel completed');
-                        // Small delay to ensure server has processed the change
-                        setTimeout(() => fetchItems(true), 100);
+                        // Reload page to ensure proper table layout
+                        setTimeout(() => window.location.reload(), 100);
                     }
                 });
         }
@@ -1059,8 +1059,8 @@
                 .then(data => {
                     if (data.success) {
                         console.log('Retry completed');
-                        // Small delay to ensure server has processed the change
-                        setTimeout(() => fetchItems(true), 100);
+                        // Reload page to ensure proper table layout
+                        setTimeout(() => window.location.reload(), 100);
                     }
                 });
         }
