@@ -8,7 +8,6 @@
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
     <script src="{{ url_for('static', filename='utils.js') }}" defer></script>
     <style>
-        /* Settings Page Specific Styles */
         .settings-container {
             max-width: 900px;
             margin: 0 auto;
@@ -72,7 +71,6 @@
             filter: brightness(0) invert(1);
         }
 
-        /* Section styling */
         .settings-section {
             background: #1a1a1a;
             border-radius: 12px;
@@ -118,17 +116,15 @@
 
         .section-content {
             padding: 0;
-            max-height: 2000px;
+            max-height: 5000px;
             overflow: hidden;
-            transition: max-height 0.3s ease, padding 0.3s ease;
+            transition: max-height 0.3s ease;
         }
 
         .section-content.collapsed {
             max-height: 0;
-            padding: 0;
         }
 
-        /* Settings rows */
         .setting-row {
             display: flex;
             align-items: center;
@@ -142,7 +138,7 @@
             border-bottom: none;
         }
 
-        .setting-row label {
+        .setting-row label:first-child {
             flex: 1;
             font-size: 14px;
             color: #ddd;
@@ -171,12 +167,14 @@
             box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.2);
         }
 
-        /* Toggle switch */
         .toggle-switch {
             position: relative;
+            display: inline-block;
             width: 48px;
+            min-width: 48px;
             height: 26px;
             flex-shrink: 0;
+            cursor: pointer;
         }
 
         .toggle-switch input {
@@ -217,7 +215,6 @@
             transform: translateX(22px);
         }
 
-        /* Account Pool Table */
         .account-table {
             width: 100%;
             border-collapse: collapse;
@@ -284,7 +281,6 @@
             filter: brightness(0) invert(1);
         }
 
-        /* Add Account Form */
         .add-account-form {
             display: flex;
             flex-wrap: wrap;
@@ -343,7 +339,6 @@
             display: none;
         }
 
-        /* Mobile bottom save bar */
         .mobile-save-bar {
             display: none;
             position: fixed;
@@ -369,7 +364,11 @@
             cursor: pointer;
         }
 
-        /* Responsive */
+        .table-scroll {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
         @media (max-width: 768px) {
             .settings-container {
                 padding: 10px;
@@ -394,22 +393,20 @@
             }
 
             .setting-row {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
+                padding: 10px 15px;
+            }
+
+            .setting-row label:first-child {
+                font-size: 13px;
             }
 
             .setting-row input[type="text"],
             .setting-row input[type="password"],
             .setting-row input[type="number"] {
-                width: 100%;
-                max-width: 100%;
-            }
-
-            .toggle-wrapper {
-                width: 100%;
-                display: flex;
-                justify-content: flex-end;
+                width: 120px;
+                max-width: 45%;
+                padding: 6px 10px;
+                font-size: 13px;
             }
 
             .account-table th:nth-child(4),
@@ -440,12 +437,13 @@
             .account-table td:nth-child(5) {
                 display: none;
             }
-        }
 
-        /* Table scroll wrapper */
-        .table-scroll {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
+            .setting-row input[type="text"],
+            .setting-row input[type="password"],
+            .setting-row input[type="number"] {
+                width: 100px;
+                max-width: 40%;
+            }
         }
     </style>
 </head>
@@ -461,7 +459,6 @@
     </div>
 
     <div class="settings-container">
-        <!-- Header with save button -->
         <div class="settings-header">
             <h2>Settings</h2>
             <div class="header-actions">
@@ -505,9 +502,7 @@
                                     <input type="radio" name="active_account_number" value="{{ loop.index - 1 }}"
                                         {% if loop.index - 1 == config.active_account_number %} checked {% endif %}>
                                 </td>
-                                <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis;">
-                                    {{ account.username }}
-                                </td>
+                                <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis;">{{ account.username }}</td>
                                 <td>
                                     <div class="service-cell">
                                         <img src="/icons/{{ account.service }}.png" alt="{{ account.service }}">
@@ -527,8 +522,6 @@
                         </tbody>
                     </table>
                 </div>
-
-                <!-- Add Account Form -->
                 <div class="add-account-form">
                     <select id="login_services" onchange="handleServiceChange()">
                         <option value="" disabled>── Audio ──</option>
@@ -561,12 +554,10 @@
             <div class="section-content">
                 <div class="setting-row">
                     <label for="use_webui_login">Enable Login Page</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="use_webui_login" {% if config.use_webui_login %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="use_webui_login" {% if config.use_webui_login %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="webui_username">Username</label>
@@ -596,93 +587,73 @@
                 </div>
                 <div class="setting-row">
                     <label for="show_search_thumbnails">Show Thumbnails in Search</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="show_search_thumbnails" {% if config.show_search_thumbnails %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="show_search_thumbnails" {% if config.show_search_thumbnails %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="show_download_thumbnails">Show Thumbnails in Downloads</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="show_download_thumbnails" {% if config.show_download_thumbnails %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="show_download_thumbnails" {% if config.show_download_thumbnails %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="disable_download_popups">Hide Download Popups</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="disable_download_popups" {% if config.disable_download_popups %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="disable_download_popups" {% if config.disable_download_popups %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="download_locate_btn">Show Locate Button</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="download_locate_btn" {% if config.download_locate_btn %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="download_locate_btn" {% if config.download_locate_btn %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="download_delete_btn">Show Delete Button</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="download_delete_btn" {% if config.download_delete_btn %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="download_delete_btn" {% if config.download_delete_btn %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="download_copy_btn">Show Copy Button</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="download_copy_btn" {% if config.download_copy_btn %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="download_copy_btn" {% if config.download_copy_btn %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="download_open_btn">Show Open Button</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="download_open_btn" {% if config.download_open_btn %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="download_open_btn" {% if config.download_open_btn %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="mirror_spotify_playback">Mirror Spotify Playback</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="mirror_spotify_playback" {% if config.mirror_spotify_playback %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="mirror_spotify_playback" {% if config.mirror_spotify_playback %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="check_for_updates">Check for Updates</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="check_for_updates" {% if config.check_for_updates %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="check_for_updates" {% if config.check_for_updates %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="close_to_tray">Close to Tray</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="close_to_tray" {% if config.close_to_tray %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="close_to_tray" {% if config.close_to_tray %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="explicit_label">Explicit Label</label>
@@ -720,30 +691,24 @@
                 </div>
                 <div class="setting-row">
                     <label for="raw_media_download">Skip Media Conversion</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="raw_media_download" {% if config.raw_media_download %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="raw_media_download" {% if config.raw_media_download %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="rotate_active_account_number">Rotate Active Account</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="rotate_active_account_number" {% if config.rotate_active_account_number %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="rotate_active_account_number" {% if config.rotate_active_account_number %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="enable_retry_worker">Enable Retry Worker</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="enable_retry_worker" {% if config.enable_retry_worker %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="enable_retry_worker" {% if config.enable_retry_worker %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="retry_worker_delay">Retry Delay (minutes)</label>
@@ -751,12 +716,10 @@
                 </div>
                 <div class="setting-row">
                     <label for="windows_10_explorer_thumbnails">Old ID3 Format (Win10)</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="windows_10_explorer_thumbnails" {% if config.windows_10_explorer_thumbnails %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="windows_10_explorer_thumbnails" {% if config.windows_10_explorer_thumbnails %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
             </div>
         </div>
@@ -790,12 +753,10 @@
                 </div>
                 <div class="setting-row">
                     <label for="use_playlist_path">Use Playlist Path</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="use_playlist_path" {% if config.use_playlist_path %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="use_playlist_path" {% if config.use_playlist_path %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="playlist_path_formatter">Playlist Path Formatter</label>
@@ -803,12 +764,10 @@
                 </div>
                 <div class="setting-row">
                     <label for="create_m3u_file">Create M3U File</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="create_m3u_file" {% if config.create_m3u_file %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="create_m3u_file" {% if config.create_m3u_file %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="m3u_path_formatter">M3U Path Formatter</label>
@@ -824,12 +783,10 @@
                 </div>
                 <div class="setting-row">
                     <label for="save_album_cover">Save Album Cover</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="save_album_cover" {% if config.save_album_cover %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="save_album_cover" {% if config.save_album_cover %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="album_cover_format">Album Cover Format</label>
@@ -845,21 +802,17 @@
                 </div>
                 <div class="setting-row">
                     <label for="use_custom_file_bitrate">Use Custom Bitrate</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="use_custom_file_bitrate" {% if config.use_custom_file_bitrate %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="use_custom_file_bitrate" {% if config.use_custom_file_bitrate %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="translate_file_path">Translate File Path</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="translate_file_path" {% if config.translate_file_path %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="translate_file_path" {% if config.translate_file_path %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
             </div>
         </div>
@@ -873,39 +826,31 @@
             <div class="section-content">
                 <div class="setting-row">
                     <label for="download_lyrics">Download Lyrics</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="download_lyrics" {% if config.download_lyrics %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="download_lyrics" {% if config.download_lyrics %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="only_download_synced_lyrics">Only Synced Lyrics</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="only_download_synced_lyrics" {% if config.only_download_synced_lyrics %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="only_download_synced_lyrics" {% if config.only_download_synced_lyrics %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="only_download_plain_lyrics">Only Plain Lyrics</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="only_download_plain_lyrics" {% if config.only_download_plain_lyrics %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="only_download_plain_lyrics" {% if config.only_download_plain_lyrics %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="save_lrc_file">Save LRC File</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="save_lrc_file" {% if config.save_lrc_file %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="save_lrc_file" {% if config.save_lrc_file %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
             </div>
         </div>
@@ -923,336 +868,262 @@
                 </div>
                 <div class="setting-row">
                     <label for="overwrite_existing_metadata">Overwrite Existing</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="overwrite_existing_metadata" {% if config.overwrite_existing_metadata %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="overwrite_existing_metadata" {% if config.overwrite_existing_metadata %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_branding">Embed Branding</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_branding" {% if config.embed_branding %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_branding" {% if config.embed_branding %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_cover">Embed Cover</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_cover" {% if config.embed_cover %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_cover" {% if config.embed_cover %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_artist">Embed Artist</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_artist" {% if config.embed_artist %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_artist" {% if config.embed_artist %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_album">Embed Album</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_album" {% if config.embed_album %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_album" {% if config.embed_album %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_albumartist">Embed Album Artist</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_albumartist" {% if config.embed_albumartist %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_albumartist" {% if config.embed_albumartist %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_name">Embed Name</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_name" {% if config.embed_name %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_name" {% if config.embed_name %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_year">Embed Year</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_year" {% if config.embed_year %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_year" {% if config.embed_year %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_discnumber">Embed Disc Number</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_discnumber" {% if config.embed_discnumber %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_discnumber" {% if config.embed_discnumber %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_tracknumber">Embed Track Number</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_tracknumber" {% if config.embed_tracknumber %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_tracknumber" {% if config.embed_tracknumber %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_genre">Embed Genre</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_genre" {% if config.embed_genre %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_genre" {% if config.embed_genre %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_performers">Embed Performers</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_performers" {% if config.embed_performers %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_performers" {% if config.embed_performers %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_producers">Embed Producers</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_producers" {% if config.embed_producers %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_producers" {% if config.embed_producers %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_writers">Embed Writers</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_writers" {% if config.embed_writers %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_writers" {% if config.embed_writers %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_label">Embed Label</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_label" {% if config.embed_label %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_label" {% if config.embed_label %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_copyright">Embed Copyright</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_copyright" {% if config.embed_copyright %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_copyright" {% if config.embed_copyright %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_description">Embed Description</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_description" {% if config.embed_description %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_description" {% if config.embed_description %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_language">Embed Language</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_language" {% if config.embed_language %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_language" {% if config.embed_language %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_isrc">Embed ISRC</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_isrc" {% if config.embed_isrc %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_isrc" {% if config.embed_isrc %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_length">Embed Length</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_length" {% if config.embed_length %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_length" {% if config.embed_length %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_url">Embed URL</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_url" {% if config.embed_url %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_url" {% if config.embed_url %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_key">Embed Key</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_key" {% if config.embed_key %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_key" {% if config.embed_key %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_bpm">Embed BPM</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_bpm" {% if config.embed_bpm %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_bpm" {% if config.embed_bpm %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_compilation">Embed Compilation</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_compilation" {% if config.embed_compilation %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_compilation" {% if config.embed_compilation %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_lyrics">Embed Lyrics</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_lyrics" {% if config.embed_lyrics %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_lyrics" {% if config.embed_lyrics %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_explicit">Embed Explicit</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_explicit" {% if config.embed_explicit %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_explicit" {% if config.embed_explicit %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_upc">Embed UPC</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_upc" {% if config.embed_upc %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_upc" {% if config.embed_upc %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_service_id">Embed Service ID</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_service_id" {% if config.embed_service_id %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_service_id" {% if config.embed_service_id %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_timesignature">Embed Time Signature</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_timesignature" {% if config.embed_timesignature %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_timesignature" {% if config.embed_timesignature %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_acousticness">Embed Acousticness</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_acousticness" {% if config.embed_acousticness %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_acousticness" {% if config.embed_acousticness %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_danceability">Embed Danceability</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_danceability" {% if config.embed_danceability %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_danceability" {% if config.embed_danceability %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_energy">Embed Energy</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_energy" {% if config.embed_energy %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_energy" {% if config.embed_energy %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_instrumentalness">Embed Instrumentalness</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_instrumentalness" {% if config.embed_instrumentalness %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_instrumentalness" {% if config.embed_instrumentalness %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_liveness">Embed Liveness</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_liveness" {% if config.embed_liveness %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_liveness" {% if config.embed_liveness %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_loudness">Embed Loudness</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_loudness" {% if config.embed_loudness %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_loudness" {% if config.embed_loudness %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_speechiness">Embed Speechiness</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_speechiness" {% if config.embed_speechiness %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_speechiness" {% if config.embed_speechiness %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="embed_valence">Embed Valence</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="embed_valence" {% if config.embed_valence %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="embed_valence" {% if config.embed_valence %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
             </div>
         </div>
@@ -1290,12 +1161,10 @@
                 </div>
                 <div class="setting-row">
                     <label for="download_subtitles">Download Subtitles</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="download_subtitles" {% if config.download_subtitles %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="download_subtitles" {% if config.download_subtitles %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="preferred_audio_language">Preferred Audio Language</label>
@@ -1307,27 +1176,22 @@
                 </div>
                 <div class="setting-row">
                     <label for="download_all_available_audio">Download All Audio Tracks</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="download_all_available_audio" {% if config.download_all_available_audio %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="download_all_available_audio" {% if config.download_all_available_audio %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
                 <div class="setting-row">
                     <label for="download_all_available_subtitles">Download All Subtitles</label>
-                    <div class="toggle-wrapper">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="download_all_available_subtitles" {% if config.download_all_available_subtitles %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="download_all_available_subtitles" {% if config.download_all_available_subtitles %}checked{% endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Mobile Save Bar -->
     <div class="mobile-save-bar">
         <button onclick="saveAllSettings()">Save Settings</button>
     </div>
@@ -1335,22 +1199,17 @@
     <script>
         function toggleSection(header) {
             header.classList.toggle('collapsed');
-            const content = header.nextElementSibling;
-            content.classList.toggle('collapsed');
+            header.nextElementSibling.classList.toggle('collapsed');
         }
 
         function saveAllSettings() {
-            const settingsData = returnSettingsData();
-            updateSettings(settingsData);
+            updateSettings(returnSettingsData());
         }
 
         function returnSettingsData() {
-            const activeAccountNumber = document.querySelector('input[name="active_account_number"]:checked')
-                ? document.querySelector('input[name="active_account_number"]:checked').value
-                : '';
-
+            const activeAccountNumber = document.querySelector('input[name="active_account_number"]:checked');
             return {
-                active_account_number: activeAccountNumber,
+                active_account_number: activeAccountNumber ? activeAccountNumber.value : '',
                 use_webui_login: document.getElementById('use_webui_login').checked,
                 webui_username: document.getElementById('webui_username').value,
                 webui_password: document.getElementById('webui_password').value,
@@ -1451,101 +1310,81 @@
         }
 
         function handleServiceChange() {
-            const loginServices = document.getElementById('login_services');
-            const loginUsername = document.getElementById('login_username');
-            const loginPassword = document.getElementById('login_password');
-            const loginButton = document.getElementById('login_button');
-            const loginNotice = document.getElementById('login_notice');
+            const service = document.getElementById('login_services').value;
+            const username = document.getElementById('login_username');
+            const password = document.getElementById('login_password');
+            const button = document.getElementById('login_button');
+            const notice = document.getElementById('login_notice');
 
-            // Reset visibility
-            loginUsername.style.display = 'none';
-            loginPassword.style.display = 'none';
-            loginButton.style.display = 'block';
-            loginNotice.style.display = 'none';
+            username.style.display = 'none';
+            password.style.display = 'none';
+            button.style.display = 'block';
+            notice.style.display = 'none';
 
-            switch(loginServices.value) {
+            switch(service) {
                 case 'apple_music':
-                    loginPassword.style.display = 'block';
-                    loginPassword.placeholder = 'Enter your user-media-token';
-                    loginButton.textContent = 'Add Account';
+                    password.style.display = 'block';
+                    password.placeholder = 'Enter your user-media-token';
+                    button.textContent = 'Add Account';
                     break;
                 case 'bandcamp':
-                    loginButton.textContent = 'Add Public Bandcamp Account';
+                    button.textContent = 'Add Public Bandcamp Account';
                     break;
                 case 'deezer':
-                    loginPassword.style.display = 'block';
-                    loginPassword.placeholder = 'Enter your arl';
-                    loginButton.textContent = 'Add Account';
+                    password.style.display = 'block';
+                    password.placeholder = 'Enter your arl';
+                    button.textContent = 'Add Account';
                     break;
                 case 'qobuz':
-                    loginUsername.style.display = 'block';
-                    loginUsername.placeholder = 'Enter your email';
-                    loginPassword.style.display = 'block';
-                    loginPassword.placeholder = 'Enter your password';
-                    loginButton.textContent = 'Add Account';
+                case 'crunchyroll':
+                    username.style.display = 'block';
+                    username.placeholder = 'Enter your email';
+                    password.style.display = 'block';
+                    password.placeholder = 'Enter your password';
+                    button.textContent = 'Add Account';
                     break;
                 case 'soundcloud':
-                    loginPassword.style.display = 'block';
-                    loginPassword.placeholder = 'Enter your oauth-token';
-                    loginButton.textContent = 'Add Account';
+                    password.style.display = 'block';
+                    password.placeholder = 'Enter your oauth-token';
+                    button.textContent = 'Add Account';
                     break;
                 case 'spotify':
                 case 'tidal':
-                    loginButton.style.display = 'none';
-                    loginNotice.style.display = 'block';
-                    loginNotice.textContent = 'Logins for this service are not currently supported. Please login through the desktop app and modify your config accordingly.';
+                    button.style.display = 'none';
+                    notice.style.display = 'block';
+                    notice.textContent = 'Logins for this service are not currently supported. Please login through the desktop app.';
                     break;
                 case 'youtube_music':
-                    loginButton.textContent = 'Add Public Youtube Music Account';
-                    break;
-                case 'crunchyroll':
-                    loginUsername.style.display = 'block';
-                    loginUsername.placeholder = 'Enter your email';
-                    loginPassword.style.display = 'block';
-                    loginPassword.placeholder = 'Enter your password';
-                    loginButton.textContent = 'Add Account';
+                    button.textContent = 'Add Public Youtube Music Account';
                     break;
                 case 'generic':
-                    loginButton.textContent = 'Add Generic Account';
+                    button.textContent = 'Add Generic Account';
                     break;
             }
         }
 
         function addAccount() {
-            const selectedService = document.getElementById('login_services').value;
-            const loginUsername = document.getElementById('login_username').value;
-            const loginPassword = document.getElementById('login_password').value;
-
+            const data = {
+                service: document.getElementById('login_services').value,
+                username: document.getElementById('login_username').value,
+                password: document.getElementById('login_password').value
+            };
             fetch('/api/add_account', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    username: loginUsername,
-                    password: loginPassword,
-                    service: selectedService
-                })
+                body: JSON.stringify(data)
             })
-            .then(response => response.json())
-            .then(data => {
-                alert('Account added successfully! Please restart the app.');
-                location.reload();
-            })
-            .catch(error => console.error('Error:', error));
+            .then(r => r.json())
+            .then(() => { alert('Account added! Please restart.'); location.reload(); })
+            .catch(e => console.error(e));
         }
 
-        function removeAccount(accountId) {
-            if (!confirm('Are you sure you want to remove this account?')) return;
-            
-            fetch(`/api/remove_account/${accountId}`, { method: 'DELETE' })
-            .then(response => {
-                if (response.ok) {
-                    alert('Account removed successfully! Please restart the app.');
-                    location.reload();
-                }
-            });
+        function removeAccount(uuid) {
+            if (!confirm('Remove this account?')) return;
+            fetch('/api/remove_account/' + uuid, { method: 'DELETE' })
+            .then(r => { if (r.ok) { alert('Account removed! Please restart.'); location.reload(); } });
         }
 
-        // Initialize service dropdown state
         handleServiceChange();
     </script>
 </body>
