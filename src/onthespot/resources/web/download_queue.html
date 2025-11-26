@@ -1002,19 +1002,34 @@
         function clearItems() {
             fetch('/api/clear_items', { method: 'POST' })
                 .then(response => response.json())
-                .then(data => data.success && console.log('Clear completed'));
+                .then(data => {
+                    if (data.success) {
+                        console.log('Clear completed');
+                        fetchItems();
+                    }
+                });
         }
 
         function cancelItems() {
             fetch('/api/cancel_items', { method: 'POST' })
                 .then(response => response.json())
-                .then(data => data.success && console.log('Cancel completed'));
+                .then(data => {
+                    if (data.success) {
+                        console.log('Cancel completed');
+                        fetchItems();
+                    }
+                });
         }
 
         function retryItems() {
             fetch('/api/retry_items', { method: 'POST' })
                 .then(response => response.json())
-                .then(data => data.success && console.log('Retry completed'));
+                .then(data => {
+                    if (data.success) {
+                        console.log('Retry completed');
+                        fetchItems();
+                    }
+                });
         }
 
         function restartWorkers() {
