@@ -465,3 +465,33 @@ input:not(:checked):hover {
         border: 1px solid #ccc;
     }
 }
+
+/* ============= LOGIN PAGE STYLES ============= */
+.col {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.row {
+    margin-bottom: 5px;
+}
+
+#main {
+    margin-left: auto;
+    margin-right: auto;
+    padding-top: 5em;
+    text-align: center;
+}
+
+#formplace {
+    padding: 10px;
+    text-align: left;
+}
+
+#loginButton {
+    float: right;
+}
+
+#logo img {
+    height: 11em;
+}
