@@ -98,7 +98,7 @@ def login():
     if not config.get('use_webui_login') or not config.get('webui_username'):
         user = User('guest')
         login_user(user)
-        return redirect(url_for('download_queue_page'))
+        return redirect(url_for('search'))
 
     if request.method == 'POST':
         username = request.form['username']
@@ -106,7 +106,7 @@ def login():
         if username == config.get('webui_username') and password == config.get('webui_password'):
             user = User(username)
             login_user(user)
-            return redirect(url_for('download_queue_page'))
+            return redirect(url_for('search'))
         flash('Invalid credentials, please try again.')
     return render_template('login.html')
 
@@ -127,7 +127,7 @@ def serve_icons(filename):
 @app.route('/')
 @login_required
 def index():
-    return redirect(url_for('download_queue_page'))
+    return redirect(url_for('search'))
 
 
 @app.route('/search')
