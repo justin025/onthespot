@@ -979,13 +979,13 @@
             fetchInterval = activeCount === 0 ? 2000 : 500;
         }
 
-        function fetchItems() {
+        function fetchItems(forceRebuild = false) {
             fetch('/api/download_queue')
                 .then(response => response.json())
                 .then(data => {
                     currentData = data;
                     adjustFetchInterval(data);
-                    renderTable();
+                    renderTable(forceRebuild);
                     scheduleFetch();
                 })
                 .catch(error => {
@@ -1005,7 +1005,7 @@
                 .then(data => {
                     if (data.success) {
                         console.log('Clear completed');
-                        fetchItems();
+                        fetchItems(true);
                     }
                 });
         }
@@ -1016,7 +1016,7 @@
                 .then(data => {
                     if (data.success) {
                         console.log('Cancel completed');
-                        fetchItems();
+                        fetchItems(true);
                     }
                 });
         }
@@ -1027,7 +1027,7 @@
                 .then(data => {
                     if (data.success) {
                         console.log('Retry completed');
-                        fetchItems();
+                        fetchItems(true);
                     }
                 });
         }
