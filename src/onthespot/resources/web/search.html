@@ -794,11 +794,9 @@
 
         // ============= INITIALIZATION =============
         document.addEventListener('DOMContentLoaded', () => {
-            // Focus search input on load (desktop only)
-            if (window.innerWidth > 768) {
-                document.getElementById('search-bar').focus();
-            }
-            
+            // Focus search input on load
+            document.getElementById('search-bar').focus();
+
             // Handle Enter key in search
             document.getElementById('search-bar').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
