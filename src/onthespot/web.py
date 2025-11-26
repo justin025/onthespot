@@ -25,7 +25,7 @@ from .api.generic import generic_add_account
 from .downloader import DownloadWorker, RetryWorker
 from .otsconfig import cache_dir, config_dir, config
 from .parse_item import parsingworker, parse_url
-from .runtimedata import get_logger, account_pool, pending, download_queue, download_queue_lock, pending_lock
+from .runtimedata import get_logger, account_pool, pending, download_queue, download_queue_lock, pending_lock, parsing, parsing_lock
 from .search import get_search_results
 from .utils import format_bytes
 
@@ -67,6 +67,9 @@ class QueueWorker(threading.Thread):
                                 'playlist_name': item.get('playlist_name'),
                                 'playlist_by': item.get('playlist_by'),
                                 'playlist_number': item.get('playlist_number'),
+                                'track_number': item_metadata.get('track_number'),
+                                'album_name': item_metadata.get('album_name'),
+                                'item_album_name': item_metadata.get('album_name'),
                                 'item_thumbnail': item_metadata["image_url"],
                                 'item_url': item_metadata["item_url"],
                                 'progress': 0
@@ -200,24 +203,32 @@ def clear_items():
 @app.route('/api/cancel_items', methods=['POST'])
 @login_required
 def cancel_items():
+    """Cancel all pending and waiting items, and mark downloading items for cancellation."""
+    # Clear parsing queue
     with parsing_lock:
         parsing.clear()
+    
+    # Clear pending queue
     with pending_lock:
         pending.clear()
-    for local_id, item in download_queue.items():
-        if item["item_status"] == "Waiting":
-            with download_queue_lock:
+    
+    # Cancel all items in download queue that are waiting or downloading
+    with download_queue_lock:
+        for local_id, item in download_queue.items():
+            if item["item_status"] in ("Waiting", "Downloading"):
                 download_queue[local_id]['item_status'] = 'Cancelled'
+    
     return jsonify(success=True)
 
 
 @app.route('/api/retry_items', methods=['POST'])
 @login_required
 def retry_items():
-    for local_id, item in download_queue.items():
-        if item["item_status"] in ("Failed", "Cancelled"):
-            with download_queue_lock:
+    with download_queue_lock:
+        for local_id, item in download_queue.items():
+            if item["item_status"] in ("Failed", "Cancelled"):
                 download_queue[local_id]['item_status'] = 'Waiting'
+                download_queue[local_id]['available'] = True
     return jsonify(success=True)
 
 
@@ -242,14 +253,19 @@ def get_items():
 @app.route('/api/cancel/<path:local_id>', methods=['POST'])
 @login_required
 def cancel_item(local_id):
-    download_queue[local_id]['item_status'] = 'Cancelled'
+    with download_queue_lock:
+        if local_id in download_queue:
+            download_queue[local_id]['item_status'] = 'Cancelled'
     return jsonify(success=True)
 
 
 @app.route('/api/retry/<path:local_id>', methods=['POST'])
 @login_required
 def retry_item(local_id):
-    download_queue[local_id]['item_status'] = 'Waiting'
+    with download_queue_lock:
+        if local_id in download_queue:
+            download_queue[local_id]['item_status'] = 'Waiting'
+            download_queue[local_id]['available'] = True
     return jsonify(success=True)
 
 

@@ -1,187 +1,812 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>OnTheSpot - Download Queue</title>
-        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-        <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
-        <script src="{{ url_for('static', filename='utils.js') }}" defer></script>
-    </head>
-    <body>
-        <div class="header">
-            <ul>
-                <li class="hide-on-mobile"><a href="https://github.com/justin025/onthespot/" target="_blank">OnTheSpot</a></li>
-                <li><a class="active" href="/search">Search</a></li>
-                <li><a href="/download_queue">Downloads</a></li>
-                <li><a href="/settings">Settings</a></li>
-                <li><a href="/about">About</a></li>
-            </ul>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OnTheSpot - Search</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <script src="{{ url_for('static', filename='utils.js') }}" defer></script>
+    <style>
+        /* ============= MOBILE-SPECIFIC OVERRIDES ============= */
+        
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        /* Search section */
+        .search-section {
+            background: linear-gradient(135deg, rgba(29, 185, 84, 0.15) 0%, rgba(29, 185, 84, 0.05) 100%);
+            border: 1px solid rgba(29, 185, 84, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 12px;
+            align-items: stretch;
+        }
+
+        .search-input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .search-input-wrapper input {
+            width: 100%;
+            padding: 14px 16px;
+            padding-left: 44px;
+            font-size: 15px;
+            border-radius: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            transition: all 0.2s ease;
+        }
+
+        .search-input-wrapper input:focus {
+            border-color: var(--accent);
+            outline: none;
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .search-input-wrapper input::placeholder {
+            color: #888;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .search-form button[type="submit"] {
+            padding: 14px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        .filter-toggle-btn {
+            padding: 14px;
+            margin: 0;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .filter-toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .filter-toggle-btn img {
+            width: 18px;
+            height: 18px;
+            filter: brightness(0) invert(0.8);
+        }
+
+        /* Filters panel */
+        .filters-panel {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .filters-panel.visible {
+            display: block;
+            animation: slideDown 0.25s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .filters-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #888;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .filter-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            transition: background 0.2s ease;
+            cursor: pointer;
+        }
+
+        .filter-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .filter-item label {
+            font-size: 13px;
+            color: #ccc;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .filter-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .filters-actions {
+            display: flex;
+            justify-content: flex-end;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .filters-actions button {
+            padding: 10px 16px;
+            font-size: 12px;
+            margin: 0;
+        }
+
+        /* Table wrapper */
+        .table-wrapper {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .table-scroll {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            width: 100%;
+        }
+
+        th, td {
+            padding: 12px 10px;
+            font-size: 13px;
+        }
+
+        /* Result item styling */
+        .item-thumbnail {
+            border-radius: 6px;
+            object-fit: cover;
+        }
+
+        .item-name {
+            font-weight: 500;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .item-by {
+            color: #aaa;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Type badges */
+        .type-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .type-track {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+
+        .type-album {
+            background: rgba(168, 85, 247, 0.2);
+            color: #c084fc;
+        }
+
+        .type-playlist {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+        }
+
+        .type-artist {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+        }
+
+        .type-episode, .type-podcast {
+            background: rgba(236, 72, 153, 0.2);
+            color: #f472b6;
+        }
+
+        .type-audiobook {
+            background: rgba(249, 115, 22, 0.2);
+            color: #fb923c;
+        }
+
+        /* Service icon */
+        .service-cell {
+            white-space: nowrap;
+        }
+
+        .service-cell img {
+            border-radius: 4px;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        .service-cell span {
+            vertical-align: middle;
+        }
+
+        /* Action button cell */
+        .action-cell {
+            display: flex;
+            gap: 4px;
+            flex-wrap: nowrap;
+        }
+
+        .action-cell .download-action-button {
+            padding: 6px;
+            min-width: 32px;
+            min-height: 32px;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            margin: 0 0 8px;
+            color: #888;
+        }
+
+        .empty-state p {
+            margin: 0;
+            font-size: 14px;
+        }
+
+        /* Loading state */
+        .loading-state {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .toast.visible {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-color: rgba(34, 197, 94, 0.5);
+        }
+
+        .toast.error {
+            border-color: rgba(239, 68, 68, 0.5);
+        }
+
+        .toast-icon {
+            font-size: 18px;
+        }
+
+        .toast-message {
+            font-size: 14px;
+            color: #e4e4e7;
+        }
+
+        /* ============= RESPONSIVE BREAKPOINTS ============= */
+        @media screen and (max-width: 768px) {
+            .search-section {
+                padding: 16px;
+            }
+
+            .search-form {
+                flex-direction: column;
+            }
+
+            .search-form button[type="submit"] {
+                width: 100%;
+            }
+
+            .search-row {
+                display: flex;
+                gap: 8px;
+            }
+
+            .search-row .search-input-wrapper {
+                flex: 1;
+            }
+
+            .filters-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            th, td {
+                padding: 10px 8px;
+                font-size: 12px;
+            }
+
+            .hide-on-mobile {
+                display: none !important;
+            }
+
+            .item-name {
+                max-width: 140px;
+            }
+
+            /* Compact type badge on mobile */
+            .type-badge {
+                padding: 3px 8px;
+                font-size: 10px;
+            }
+
+            /* Compact action buttons */
+            .action-cell {
+                gap: 2px;
+            }
+
+            .action-cell .download-action-button {
+                padding: 5px;
+                min-width: 28px;
+                min-height: 28px;
+            }
+
+            .action-cell .download-action-button img {
+                width: 14px;
+                height: 14px;
+            }
+
+            .toast {
+                left: 16px;
+                right: 16px;
+                transform: translateX(0) translateY(100px);
+                bottom: calc(16px + env(safe-area-inset-bottom));
+            }
+
+            .toast.visible {
+                transform: translateX(0) translateY(0);
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            .container {
+                padding: 12px;
+            }
+
+            .search-section {
+                padding: 12px;
+            }
+
+            .filters-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+
+            .filter-item {
+                padding: 8px 10px;
+            }
+
+            .filter-item label {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 8px 6px;
+                font-size: 11px;
+            }
+
+            .item-name {
+                max-width: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <ul>
+            <li class="hide-on-mobile"><a href="https://github.com/justin025/onthespot/" target="_blank">OnTheSpot</a></li>
+            <li><a class="active" href="/search">Search</a></li>
+            <li><a href="/download_queue">Downloads</a></li>
+            <li><a href="/settings">Settings</a></li>
+            <li><a href="/about">About</a></li>
+        </ul>
+    </div>
+
+    <div class="container">
+        <!-- Search Section -->
+        <div class="search-section">
+            <form class="search-form" onsubmit="submitSearch(event)">
+                <div class="search-row" style="display: flex; gap: 8px; flex: 1;">
+                    <div class="search-input-wrapper">
+                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="m21 21-4.35-4.35"/>
+                        </svg>
+                        <input type="text" id="search-bar" name="q" placeholder="Search for music, podcasts, audiobooks..." autocomplete="off">
+                    </div>
+                    <button type="button" class="filter-toggle-btn download-action-button" onclick="toggleFilters()" title="Toggle Filters">
+                        <img id="collapse_button_icon" src="/icons/collapse_down.png" loading="lazy">
+                    </button>
+                </div>
+                <button type="submit">Search</button>
+            </form>
         </div>
 
-        <br>
-
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
-            <div style="display: flex; align-items: center;">
-                <form onsubmit="submitSearch(event)">
-                    <input style="margin-right: 0px;" type="text" id="search-bar" name="q" placeholder="Search by name">
-                    <button type="submit">Search</button>
-                </form>
+        <!-- Filters Panel -->
+        <div id="filters-panel" class="filters-panel">
+            <div class="filters-title">Search For</div>
+            <div class="filters-grid">
+                <div class="filter-item">
+                    <input type="checkbox" id="enable_search_tracks" {% if config.enable_search_tracks %}checked{% endif %}>
+                    <label for="enable_search_tracks">Tracks</label>
+                </div>
+                <div class="filter-item">
+                    <input type="checkbox" id="enable_search_albums" {% if config.enable_search_albums %}checked{% endif %}>
+                    <label for="enable_search_albums">Albums</label>
+                </div>
+                <div class="filter-item">
+                    <input type="checkbox" id="enable_search_playlists" {% if config.enable_search_playlists %}checked{% endif %}>
+                    <label for="enable_search_playlists">Playlists</label>
+                </div>
+                <div class="filter-item">
+                    <input type="checkbox" id="enable_search_artists" {% if config.enable_search_artists %}checked{% endif %}>
+                    <label for="enable_search_artists">Artists</label>
+                </div>
+                <div class="filter-item">
+                    <input type="checkbox" id="enable_search_episodes" {% if config.enable_search_episodes %}checked{% endif %}>
+                    <label for="enable_search_episodes">Episodes</label>
+                </div>
+                <div class="filter-item">
+                    <input type="checkbox" id="enable_search_podcasts" {% if config.enable_search_podcasts %}checked{% endif %}>
+                    <label for="enable_search_podcasts">Podcasts</label>
+                </div>
+                <div class="filter-item">
+                    <input type="checkbox" id="enable_search_audiobooks" {% if config.enable_search_audiobooks %}checked{% endif %}>
+                    <label for="enable_search_audiobooks">Audiobooks</label>
+                </div>
             </div>
-
-            <div style="display: flex; align-items: center;">
-                <button class="download-action-button"  onclick="toggleVisibility()" class="hide-on-mobile">
-                    <img id="collapse_button_icon" src="/icons/collapse_down.png" loading="lazy" style="width: 20px; height: 20px;">
+            <div class="filters-actions">
+                <button onclick="updateSettings(returnSearchFilters())">
+                    <img src="/icons/save.png" loading="lazy" style="width: 14px; height: 14px; margin-right: 6px; vertical-align: middle;">
+                    Save Filters
                 </button>
             </div>
         </div>
 
-        <div id="toggle_visibility" style="display: none;  margin-top: 20px; margin-bottom: 15px;">
-            <hr style="border: 1px solid #fff; margin-bottom: 20px;">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-                <div style="display: flex; align-items: center;">
-                    <p style="margin-right: 5px; margin-left: 15px;">Search For:</p>
-                    <label style="margin-right: 5px; margin-left: 15px;" for="enable_search_tracks">Tracks</label>
-                    <input type="checkbox" id="enable_search_tracks" {% if config.enable_search_tracks %}checked{% endif %}>
-                    <label style="margin-right: 5px; margin-left: 15px;" for="enable_search_albums">Albums</label>
-                    <input type="checkbox" id="enable_search_albums" {% if config.enable_search_albums %}checked{% endif %}>
-                    <label style="margin-right: 5px; margin-left: 15px;" for="enable_search_playlists">Playlists</label>
-                    <input type="checkbox" id="enable_search_playlists" {% if config.enable_search_playlists %}checked{% endif %}>
-                    <label style="margin-right: 5px; margin-left: 15px;" for="enable_search_artists">Artists</label>
-                    <input type="checkbox" id="enable_search_artists" {% if config.enable_search_artists %}checked{% endif %}>
-                    <label style="margin-right: 5px; margin-left: 15px;" for="enable_search_episodes">Episodes</label>
-                    <input type="checkbox" id="enable_search_episodes" {% if config.enable_search_episodes %}checked{% endif %}>
-                    <label style="margin-right: 5px; margin-left: 15px;" for="enable_search_podcasts">Podcasts</label>
-                    <input type="checkbox" id="enable_search_podcasts" {% if config.enable_search_podcasts %}checked{% endif %}>
-                    <label style="margin-right: 5px; margin-left: 15px;" for="enable_search_audiobooks">Audiobooks</label>
-                    <input type="checkbox" id="enable_search_audiobooks" {% if config.enable_search_audiobooks %}checked{% endif %}>
-                </div>
-                <div style="display: flex; align-items: center;">
-                    <button class="download-action-button"  onclick="updateSettings(returnSearchFilters())">
-                        <img src="/icons/save.png" loading="lazy" style="width: 20px; height: 20px;">
-                    </button>
-                </div>
+        <!-- Results Table -->
+        <div class="table-wrapper">
+            <div class="table-scroll">
+                <table id="results-table">
+                    <thead>
+                        <tr>
+                            {% if config.show_search_thumbnails %}
+                            <th></th>
+                            {% endif %}
+                            <th>Name</th>
+                            <th class="hide-on-mobile">By</th>
+                            <th>Type</th>
+                            <th class="hide-on-mobile">Service</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-body">
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">🔍</div>
+                                    <h3>Search for music</h3>
+                                    <p>Enter a song, artist, album, or playlist name above</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
+    </div>
 
-        <br>
+    <!-- Toast notification -->
+    <div id="toast" class="toast">
+        <span class="toast-icon"></span>
+        <span class="toast-message"></span>
+    </div>
 
-        <table border="1" id="results-table">
-            <thead>
-                <tr>
-                    {% if config.show_search_thumbnails %}
-                    <th>Image</th> <!-- This header is shown only if thumbnails are enabled -->
-                    {% endif %}
-                    <th>Name</th>
-                    <th class="hide-on-mobile">By</th>
-                    <th>Type</th>
-                    <th>Service</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Results will be populated here -->
-            </tbody>
-        </table>
+    <script>
+        let filtersVisible = false;
+        let isSearching = false;
 
-        <script>
-            function returnSearchFilters() {
-                const filterData = {
-                    enable_search_tracks: document.getElementById('enable_search_tracks').checked,
-                    enable_search_albums: document.getElementById('enable_search_albums').checked,
-                    enable_search_artists: document.getElementById('enable_search_artists').checked,
-                    enable_search_playlists: document.getElementById('enable_search_playlists').checked,
-                    enable_search_episodes: document.getElementById('enable_search_episodes').checked,
-                    enable_search_podcasts: document.getElementById('enable_search_podcasts').checked,
-                    enable_search_audiobooks: document.getElementById('enable_search_audiobooks').checked,
-                    }
-                return filterData
-                }
-
-            function submitSearch(event) {
-                event.preventDefault();
-                const query = document.getElementById('search-bar').value;
-                fetch(`/api/search_results?q=${encodeURIComponent(query)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        const tableBody = document.getElementById('results-table').getElementsByTagName('tbody')[0];
-                        tableBody.innerHTML = '';
-                        data.forEach(item => {
-                            const showThumbnails = {{ config.show_search_thumbnails|tojson }};
-
-                            const itemImage = showThumbnails && item.item_thumbnail_url
-                                ? `<img src="${item.item_thumbnail_url}" loading="lazy" style="width: {{ config.thumbnail_size }}px; height: {{ config.thumbnail_size }}px;">`
-                                : '';
-
-                            const serviceIcon = item.item_service
-                                ? `<img src="/icons/${item.item_service}.png" loading="lazy" style="width: 20px; height: 20px; margin-right: 5px;">`
-                                : '';
-
-                            const serviceNameSpan = document.createElement('span');
-                            serviceNameSpan.className = 'hide-on-mobile';
-                            serviceNameSpan.textContent = formatServiceName(item.item_service);
-
-                            const copyButton = createButton('icons/link.png', 'Copy Link', `copyToClipboard('${item.item_url}')`, `${item.item_url}`);
-                            const downloadButton = createButton('icons/download.png', 'Download', `handleDownload('${item.item_url}')`);
-
-
-                            const row = document.createElement('tr');
-
-                            // Conditionally create the cell for the image if thumbnails are enabled
-                            if (itemImage) {
-                                const cellImage = document.createElement('td');
-                                cellImage.innerHTML = itemImage; // Insert the item image
-                                row.appendChild(cellImage);
-                            }
-
-                            // Cell for item name
-                            const cell1 = document.createElement('td');
-                            cell1.textContent = item.item_name;
-                            row.appendChild(cell1);
-
-                            // Cell for item by
-                            const cell2 = document.createElement('td');
-                            cell2.className = 'hide-on-mobile';
-                            cell2.textContent = item.item_by;
-                            row.appendChild(cell2);
-
-                            // Cell for item type
-                            const cell3 = document.createElement('td');
-                            cell3.textContent = capitalizeFirstLetter(item.item_type);
-                            row.appendChild(cell3);
-
-                            // Cell for the service icon and name
-                            const cell4 = document.createElement('td');
-                            cell4.innerHTML = `${serviceIcon}`; // Add the service icon
-                            cell4.appendChild(serviceNameSpan); // Append the service name span
-                            row.appendChild(cell4);
-
-                            // Cell for copy and download buttons
-                            const cell5 = document.createElement('td');
-                            cell5.innerHTML = `${copyButton}${downloadButton}`;
-                            row.appendChild(cell5);
-
-                            // Append the completed row to the table body
-                            tableBody.appendChild(row);
-                        });
-                });
-                document.getElementById('search-bar').value = '';
+        // ============= UI FUNCTIONS =============
+        function toggleFilters() {
+            const panel = document.getElementById('filters-panel');
+            filtersVisible = !filtersVisible;
+            
+            if (filtersVisible) {
+                panel.classList.add('visible');
+            } else {
+                panel.classList.remove('visible');
             }
+        }
 
-            function handleDownload(url) {
-                fetch(`/api/parse_url/${encodeURIComponent(url)}`, {
-                    method: 'POST',
-                })
+        // Keep original function name for compatibility
+        function toggleVisibility() {
+            toggleFilters();
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = toast.querySelector('.toast-icon');
+            const msg = toast.querySelector('.toast-message');
+            
+            icon.textContent = type === 'success' ? '✓' : '✕';
+            msg.textContent = message;
+            
+            toast.className = `toast ${type}`;
+            toast.classList.add('visible');
+            
+            setTimeout(() => {
+                toast.classList.remove('visible');
+            }, 3000);
+        }
+
+        function showLoading() {
+            const tableBody = document.getElementById('results-body');
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="6">
+                        <div class="loading-state">
+                            <div class="loading-spinner"></div>
+                            <p>Searching...</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        function showEmpty() {
+            const tableBody = document.getElementById('results-body');
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🔍</div>
+                            <h3>No results found</h3>
+                            <p>Try a different search term</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        // ============= FILTER FUNCTIONS =============
+        function returnSearchFilters() {
+            return {
+                enable_search_tracks: document.getElementById('enable_search_tracks').checked,
+                enable_search_albums: document.getElementById('enable_search_albums').checked,
+                enable_search_artists: document.getElementById('enable_search_artists').checked,
+                enable_search_playlists: document.getElementById('enable_search_playlists').checked,
+                enable_search_episodes: document.getElementById('enable_search_episodes').checked,
+                enable_search_podcasts: document.getElementById('enable_search_podcasts').checked,
+                enable_search_audiobooks: document.getElementById('enable_search_audiobooks').checked,
+            };
+        }
+
+        // ============= TYPE BADGE =============
+        function createTypeBadge(type) {
+            const typeClasses = {
+                'track': 'type-track',
+                'album': 'type-album',
+                'playlist': 'type-playlist',
+                'artist': 'type-artist',
+                'episode': 'type-episode',
+                'podcast': 'type-podcast',
+                'audiobook': 'type-audiobook'
+            };
+            const className = typeClasses[type?.toLowerCase()] || '';
+            return `<span class="type-badge ${className}">${capitalizeFirstLetter(type)}</span>`;
+        }
+
+        // ============= SEARCH FUNCTIONS =============
+        function submitSearch(event) {
+            event.preventDefault();
+            
+            if (isSearching) return;
+            
+            const query = document.getElementById('search-bar').value.trim();
+            if (!query) return;
+            
+            isSearching = true;
+            showLoading();
+            
+            fetch(`/api/search_results?q=${encodeURIComponent(query)}`)
                 .then(response => response.json())
                 .then(data => {
-                    if (data.success) {
-                        console.log('Download successful');
-                    } else {
-                        console.error('Download failed:', data.error);
-                    }
+                    isSearching = false;
+                    renderResults(data);
                 })
-                .catch(error => console.error('Error:', error));
+                .catch(error => {
+                    isSearching = false;
+                    console.error('Search error:', error);
+                    showEmpty();
+                    showToast('Search failed. Please try again.', 'error');
+                });
+        }
+
+        function renderResults(data) {
+            const tableBody = document.getElementById('results-body');
+            tableBody.innerHTML = '';
+            
+            if (!data || data.length === 0) {
+                showEmpty();
+                return;
             }
-        </script>
-    </body>
+            
+            const showThumbnails = {{ config.show_search_thumbnails|tojson }};
+            const thumbnailSize = {{ config.thumbnail_size }};
+            
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                
+                // Thumbnail (visible on mobile too)
+                if (showThumbnails) {
+                    const imgCell = document.createElement('td');
+                    if (item.item_thumbnail_url) {
+                        imgCell.innerHTML = `<img src="${item.item_thumbnail_url}" class="item-thumbnail" loading="lazy" style="width: ${thumbnailSize}px; height: ${thumbnailSize}px;">`;
+                    }
+                    row.appendChild(imgCell);
+                }
+                
+                // Name
+                const nameCell = document.createElement('td');
+                nameCell.className = 'item-name';
+                nameCell.textContent = item.item_name;
+                nameCell.title = item.item_name;
+                row.appendChild(nameCell);
+                
+                // By
+                const byCell = document.createElement('td');
+                byCell.className = 'hide-on-mobile item-by';
+                byCell.textContent = item.item_by || '';
+                byCell.title = item.item_by || '';
+                row.appendChild(byCell);
+                
+                // Type
+                const typeCell = document.createElement('td');
+                typeCell.innerHTML = createTypeBadge(item.item_type);
+                row.appendChild(typeCell);
+                
+                // Service (icon and text inline)
+                const serviceCell = document.createElement('td');
+                serviceCell.className = 'service-cell hide-on-mobile';
+                if (item.item_service) {
+                    serviceCell.innerHTML = `<img src="/icons/${item.item_service}.png" loading="lazy" style="width: 20px; height: 20px;"><span>${formatServiceName(item.item_service)}</span>`;
+                }
+                row.appendChild(serviceCell);
+                
+                // Actions
+                const actionCell = document.createElement('td');
+                const copyButton = createButton('icons/link.png', 'Copy Link', `copyToClipboard('${item.item_url}')`, `${item.item_url}`);
+                const downloadButton = createButton('icons/download.png', 'Download', `handleDownload('${item.item_url}')`);
+                actionCell.innerHTML = `<div class="action-cell">${copyButton}${downloadButton}</div>`;
+                row.appendChild(actionCell);
+                
+                tableBody.appendChild(row);
+            });
+        }
+
+        function handleDownload(url) {
+            showToast('Starting download...', 'success');
+            
+            fetch(`/api/parse_url/${encodeURIComponent(url)}`, {
+                method: 'POST',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Download started!', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/download_queue';
+                    }, 1000);
+                } else {
+                    showToast('Download failed: ' + (data.error || 'Unknown error'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Error starting download', 'error');
+            });
+        }
+
+        // ============= INITIALIZATION =============
+        document.addEventListener('DOMContentLoaded', () => {
+            // Focus search input on load (desktop only)
+            if (window.innerWidth > 768) {
+                document.getElementById('search-bar').focus();
+            }
+            
+            // Handle Enter key in search
+            document.getElementById('search-bar').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    submitSearch(e);
+                }
+            });
+        });
+    </script>
+</body>
 </html>

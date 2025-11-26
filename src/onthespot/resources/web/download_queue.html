@@ -1,365 +1,1055 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>OnTheSpot - Download Queue</title>
-        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-        <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
-        <script src="{{ url_for('static', filename='utils.js') }}" defer></script>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OnTheSpot - Download Queue</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <script src="{{ url_for('static', filename='utils.js') }}" defer></script>
+    <style>
+        /* ============= MOBILE-SPECIFIC OVERRIDES ============= */
+        
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 16px;
+        }
 
-        <!-- ADDED: tiny sorting styles -->
-        <style>
-            th.sortable {
-                cursor: pointer;
-                user-select: none;
+        /* Sortable headers */
+        th[data-sort] {
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.2s ease;
+        }
+        th[data-sort]:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        th[data-sort]::after {
+            content: ' ⇅';
+            opacity: 0.3;
+            font-size: 0.8em;
+        }
+        th[data-sort].sort-asc::after {
+            content: ' ↑';
+            opacity: 1;
+        }
+        th[data-sort].sort-desc::after {
+            content: ' ↓';
+            opacity: 1;
+        }
+
+        /* Progress bar */
+        .progress-bar-fill {
+            transition: width 0.3s ease-out;
+        }
+
+        /* Status bar card */
+        .status-bar {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(76, 175, 80, 0.05) 100%);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .status-bar-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .status-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4); }
+            50% { opacity: 0.8; box-shadow: 0 0 0 8px rgba(76, 175, 80, 0); }
+        }
+
+        #queue-status-message {
+            font-size: 14px;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        /* Action buttons container */
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .action-buttons button {
+            padding: 8px 14px;
+            font-size: 12px;
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        /* Filters panel */
+        .filters-panel {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .filters-panel.visible {
+            display: block;
+            animation: slideDown 0.25s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .filter-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            transition: background 0.2s ease;
+        }
+
+        .filter-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .filter-item label {
+            font-size: 13px;
+            color: #ccc;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .filter-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .filters-actions {
+            display: flex;
+            justify-content: flex-end;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Table wrapper for horizontal scroll on mobile */
+        .table-wrapper {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .table-scroll {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            width: 100%;
+            table-layout: fixed;
+        }
+
+        th, td {
+            padding: 12px 10px;
+            font-size: 13px;
+        }
+
+        /* Compact columns with fixed widths to prevent shifting */
+        th, td {
+            padding: 12px 10px;
+            font-size: 13px;
+        }
+
+        /* Fixed column widths */
+        .col-track { width: 50px; text-align: center; }
+        .col-name { width: 20%; min-width: 120px; }
+        .col-album { width: 15%; min-width: 100px; }
+        .col-by { width: 12%; min-width: 80px; }
+        .col-service { width: 10%; min-width: 90px; }
+        .col-status { width: 12%; min-width: 100px; }
+        .col-progress { width: 15%; min-width: 120px; }
+        .col-action { width: 10%; min-width: 80px; }
+
+        /* Status badges */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .status-downloading {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+
+        .status-waiting {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+        }
+
+        .status-downloaded, .status-exists {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+        }
+
+        .status-failed {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+        }
+
+        .status-cancelled {
+            background: rgba(156, 163, 175, 0.2);
+            color: #9ca3af;
+        }
+
+        /* Progress bar styling */
+        .progress-container {
+            width: 100%;
+            min-width: 80px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            overflow: hidden;
+            height: 22px;
+            position: relative;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent) 0%, #66bb6a 100%);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        /* Action button cell */
+        .action-cell {
+            display: flex;
+            gap: 4px;
+            flex-wrap: nowrap;
+        }
+
+        .action-cell .download-action-button {
+            padding: 6px;
+            min-width: 32px;
+            min-height: 32px;
+        }
+
+        /* Thumbnail styling */
+        .item-thumbnail {
+            border-radius: 6px;
+            object-fit: cover;
+        }
+
+        /* Service icon */
+        .service-cell {
+            white-space: nowrap;
+        }
+
+        .service-cell img {
+            border-radius: 4px;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        .service-cell span {
+            vertical-align: middle;
+        }
+
+        /* Mobile bottom action bar */
+        .mobile-action-bar {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px 16px;
+            padding-bottom: calc(12px + env(safe-area-inset-bottom));
+            z-index: 100;
+        }
+
+        .mobile-action-bar .action-buttons {
+            justify-content: space-around;
+        }
+
+        .mobile-action-bar button {
+            flex: 1;
+            max-width: 80px;
+            padding: 10px 8px;
+            font-size: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            background: transparent;
+            color: #ccc;
+        }
+
+        .mobile-action-bar button:hover,
+        .mobile-action-bar button:active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .mobile-action-bar button img {
+            width: 20px;
+            height: 20px;
+            filter: brightness(0) invert(0.8);
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            margin: 0 0 8px;
+            color: #888;
+        }
+
+        .empty-state p {
+            margin: 0;
+            font-size: 14px;
+        }
+
+        /* ============= RESPONSIVE BREAKPOINTS ============= */
+        
+        /* Tablet */
+        @media screen and (max-width: 900px) {
+            .hide-on-tablet {
+                display: none !important;
             }
-            th.sortable .sort-indicator {
-                font-size: 0.8em;
-                opacity: 0.7;
-                margin-left: 6px;
+        }
+
+        @media screen and (max-width: 768px) {
+            body {
+                padding-bottom: 80px;
             }
-        </style>
-    </head>
-    <body>
-        <div class="header">
-            <ul>
-                <li class="hide-on-mobile"><a href="https://github.com/justin025/onthespot/" target="_blank">OnTheSpot</a></li>
-                <li><a href="/search">Search</a></li>
-                <li><a class="active" href="/download_queue">Downloads</a></li>
-                <li><a href="/settings">Settings</a></li>
-                <li><a href="/about">About</a></li>
-            </ul>
-        </div>
 
-        <br>
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
-            <div style="display: flex; align-items: center;">
-                <p id="queue-status-message" style="margin-right: 10px;">Total Items: 0 | Progress: 0%</p>
-            </div>
+            .status-bar {
+                padding: 12px;
+            }
 
-            <div style="display: flex; align-items: center;">
-                <button onclick="clearItems()" class="hide-on-mobile">Clear Completed/Cancelled</button>
-                <button onclick="cancelItems()" class="hide-on-mobile">Cancel All</button>
-                <button onclick="retryItems()" class="hide-on-mobile">Retry Cancelled/Failed</button>
-                <button class="hide-on-mobile" onclick="restartWorkers()" style="margin-left: 10px;">Restart Workers</button>
-                <button class="download-action-button"  onclick="toggleVisibility()" class="hide-on-mobile">
-                    <img id="collapse_button_icon" src="/icons/collapse_down.png" loading="lazy" style="width: 20px; height: 20px;">
-                </button>
-            </div>
-        </div>
+            .status-bar-content {
+                flex-direction: column;
+                align-items: stretch;
+            }
 
-        <div id="toggle_visibility" style="display: none;  margin-top: 20px; margin-bottom: 15px;">
-            <hr style="border: 1px solid #fff; margin-bottom: 20px;">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-                <div style="display: flex; align-items: center;">
-                    <label for="download_queue_show_waiting" style="margin-right: 5px; margin-left: 15px;">Show Waiting:</label>
-                    <input type="checkbox" id="download_queue_show_waiting" {% if config.download_queue_show_waiting %}checked{% endif %}>
-                    <label for="download_queue_show_failed" style="margin-right: 5px; margin-left: 15px;">Show Failed:</label>
-                    <input type="checkbox" id="download_queue_show_failed" {% if config.download_queue_show_failed %}checked{% endif %}>
-                    <label for="download_queue_show_cancelled" style="margin-right: 5px; margin-left: 15px;">Show Cancelled:</label>
-                    <input type="checkbox" id="download_queue_show_cancelled" {% if config.download_queue_show_cancelled %}checked{% endif %}>
-                    <label for="download_queue_show_unavailable" style="margin-right: 5px; margin-left: 15px;">Show Unavailable:</label>
-                    <input type="checkbox" id="download_queue_show_unavailable" {% if config.download_queue_show_unavailable %}checked{% endif %}>
-                    <label for="download_queue_show_completed" style="margin-right: 5px; margin-left: 15px;">Show Completed:</label>
-                    <input type="checkbox" id="download_queue_show_completed" {% if config.download_queue_show_completed %}checked{% endif %}>
+            .status-info {
+                justify-content: center;
+            }
+
+            .action-buttons.desktop-only {
+                display: none;
+            }
+
+            .mobile-action-bar {
+                display: block;
+            }
+
+            .filters-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            th, td {
+                padding: 10px 8px;
+                font-size: 12px;
+            }
+
+            .hide-on-mobile {
+                display: none !important;
+            }
+
+            /* Make name column take available space */
+            .name-cell {
+                max-width: 120px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            /* Compact status badge on mobile */
+            .status-badge {
+                padding: 3px 8px;
+                font-size: 10px;
+            }
+
+            /* Stack action buttons if needed */
+            .action-cell {
+                flex-wrap: wrap;
+                gap: 2px;
+            }
+
+            .action-cell .download-action-button {
+                padding: 5px;
+                min-width: 28px;
+                min-height: 28px;
+            }
+
+            .action-cell .download-action-button img {
+                width: 14px;
+                height: 14px;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            .container {
+                padding: 12px;
+            }
+
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-item {
+                padding: 10px 12px;
+            }
+
+            th, td {
+                padding: 8px 6px;
+                font-size: 11px;
+            }
+
+            .mobile-action-bar button {
+                font-size: 9px;
+                padding: 8px 4px;
+            }
+
+            .name-cell {
+                max-width: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <ul>
+            <li class="hide-on-mobile"><a href="https://github.com/justin025/onthespot/" target="_blank">OnTheSpot</a></li>
+            <li><a href="/search">Search</a></li>
+            <li><a class="active" href="/download_queue">Downloads</a></li>
+            <li><a href="/settings">Settings</a></li>
+            <li><a href="/about">About</a></li>
+        </ul>
+    </div>
+
+    <div class="container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-bar-content">
+                <div class="status-info">
+                    <div class="status-dot"></div>
+                    <p id="queue-status-message">Total Items: 0 | Progress: 0%</p>
                 </div>
-                <div style="display: flex; align-items: center;">
-                    <button class="download-action-button"  onclick="updateSettings(returnFilterData())" class="hide-on-mobile">
-                        <img src="/icons/save.png" loading="lazy" style="width: 20px; height: 20px;">
+
+                <div class="action-buttons desktop-only">
+                    <button onclick="clearItems()">Clear Done</button>
+                    <button onclick="cancelItems()">Cancel All</button>
+                    <button onclick="retryItems()">Retry Failed</button>
+                    <button onclick="restartWorkers()">Restart</button>
+                    <button class="download-action-button" onclick="toggleFilters()" title="Toggle Filters">
+                        <img id="collapse_button_icon" src="/icons/collapse_down.png" loading="lazy" style="width: 18px; height: 18px;">
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- ADDED: id to table so we can bind sorting -->
-        <table id="download-queue-table-root">
-            <thead>
-                <tr>
-                    <th style="display: none;">Local ID</th>
+        <!-- Filters Panel -->
+        <div id="filters-panel" class="filters-panel">
+            <div class="filters-grid">
+                <div class="filter-item">
+                    <input type="checkbox" id="download_queue_show_waiting" onchange="renderTable(true)" {% if config.download_queue_show_waiting %}checked{% endif %}>
+                    <label for="download_queue_show_waiting">Waiting</label>
+                </div>
+                <div class="filter-item">
+                    <input type="checkbox" id="download_queue_show_failed" onchange="renderTable(true)" {% if config.download_queue_show_failed %}checked{% endif %}>
+                    <label for="download_queue_show_failed">Failed</label>
+                </div>
+                <div class="filter-item">
+                    <input type="checkbox" id="download_queue_show_cancelled" onchange="renderTable(true)" {% if config.download_queue_show_cancelled %}checked{% endif %}>
+                    <label for="download_queue_show_cancelled">Cancelled</label>
+                </div>
+                <div class="filter-item">
+                    <input type="checkbox" id="download_queue_show_unavailable" onchange="renderTable(true)" {% if config.download_queue_show_unavailable %}checked{% endif %}>
+                    <label for="download_queue_show_unavailable">Unavailable</label>
+                </div>
+                <div class="filter-item">
+                    <input type="checkbox" id="download_queue_show_completed" onchange="renderTable(true)" {% if config.download_queue_show_completed %}checked{% endif %}>
+                    <label for="download_queue_show_completed">Completed</label>
+                </div>
+            </div>
+            <div class="filters-actions">
+                <button onclick="updateSettings(returnFilterData())">
+                    <img src="/icons/save.png" loading="lazy" style="width: 14px; height: 14px; margin-right: 6px; vertical-align: middle;">
+                    Save Filters
+                </button>
+            </div>
+        </div>
 
-                    {% if config.show_download_thumbnails %}
-                    <th>Image</th>
-                    {% endif %}
+        <!-- Table -->
+        <div class="table-wrapper">
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="display: none;">Local ID</th>
+                            {% if config.show_download_thumbnails %}
+                            <th class="hide-on-mobile"></th>
+                            {% endif %}
+                            <th class="col-track" data-sort="track_number">#</th>
+                            <th class="col-name" data-sort="item_name">Name</th>
+                            <th class="col-album hide-on-mobile" data-sort="album_name">Album</th>
+                            <th class="col-by hide-on-tablet hide-on-mobile" data-sort="item_by">By</th>
+                            <th class="col-service hide-on-mobile" data-sort="item_service">Service</th>
+                            <th class="col-status" data-sort="item_status">Status</th>
+                            <th class="col-progress hide-on-tablet hide-on-mobile" data-sort="progress">Progress</th>
+                            <th class="col-action">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="download-queue-table">
+                        <!-- Items will be added here dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
-                    <!-- ADDED: sortable headers -->
-                    <th class="sortable" data-sort-key="item_name" data-sort-type="string">Name</th>
-                    <th class="sortable hide-on-mobile" data-sort-key="parent_category" data-sort-type="string">By</th>
-                    <th class="sortable" data-sort-key="item_service" data-sort-type="string">Service</th>
-                    <th class="sortable" data-sort-key="item_status" data-sort-type="string">Status</th>
-                    <th class="sortable hide-on-mobile" data-sort-key="progress" data-sort-type="number">Progress</th>
+    <!-- Mobile Bottom Action Bar -->
+    <div class="mobile-action-bar">
+        <div class="action-buttons">
+            <button onclick="clearItems()">
+                <img src="/icons/trash.png" loading="lazy">
+                Clear
+            </button>
+            <button onclick="cancelItems()">
+                <img src="/icons/stop.png" loading="lazy">
+                Cancel
+            </button>
+            <button onclick="retryItems()">
+                <img src="/icons/retry.png" loading="lazy">
+                Retry
+            </button>
+            <button onclick="restartWorkers()">
+                <img src="/icons/file.png" loading="lazy">
+                Restart
+            </button>
+            <button onclick="toggleFilters()">
+                <img src="/icons/collapse_down.png" loading="lazy">
+                Filter
+            </button>
+        </div>
+    </div>
 
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="download-queue-table">
-                <!-- Items will be added here dynamically -->
-            </tbody>
-        </table>
+    <script>
+        const config = {{ config | tojson | safe }};
+        
+        // ============= STATE MANAGEMENT =============
+        let currentData = {};
+        let sortState = { key: "track_number", dir: "asc" };
+        let fetchInterval = 500;
+        let filtersVisible = false;
 
-        <script>
-            const config = {{ config | tojson | safe }};
-
-            // ADDED: global sort state (persists across refresh)
-            let sortKey = null;      // e.g. "item_name"
-            let sortDir = "asc";     // "asc" or "desc"
-            let sortType = "string";
-
-            function returnFilterData() {
-                const filterData = {
-                    download_queue_show_waiting: document.getElementById('download_queue_show_waiting').checked,
-                    download_queue_show_completed: document.getElementById('download_queue_show_completed').checked,
-                    download_queue_show_cancelled: document.getElementById('download_queue_show_cancelled').checked,
-                    download_queue_show_failed: document.getElementById('download_queue_show_failed').checked,
-                    download_queue_show_unavailable: document.getElementById('download_queue_show_unavailable').checked,
-                    }
-                return filterData
-                }
-
-            // ADDED: helper to update arrows
-            function updateSortIndicators() {
-                document.querySelectorAll("th.sortable .sort-indicator").forEach(el => el.remove());
-                document.querySelectorAll("th.sortable").forEach(th => {
-                    if (th.dataset.sortKey === sortKey) {
-                        const span = document.createElement("span");
-                        span.className = "sort-indicator";
-                        span.textContent = sortDir === "asc" ? "▲" : "▼";
-                        th.appendChild(span);
-                    }
-                });
+        // ============= UI FUNCTIONS =============
+        function toggleFilters() {
+            const panel = document.getElementById('filters-panel');
+            filtersVisible = !filtersVisible;
+            
+            if (filtersVisible) {
+                panel.classList.add('visible');
+            } else {
+                panel.classList.remove('visible');
             }
+        }
 
-            // ADDED: attach click handlers to headers
-            document.addEventListener("DOMContentLoaded", () => {
-                document.querySelectorAll("th.sortable").forEach(th => {
-                    th.addEventListener("click", () => {
-                        const key = th.dataset.sortKey;
-                        const type = th.dataset.sortType || "string";
+        // Keep original function name for compatibility
+        function toggleVisibility() {
+            toggleFilters();
+        }
 
-                        if (sortKey === key) {
-                            sortDir = sortDir === "asc" ? "desc" : "asc";
-                        } else {
-                            sortKey = key;
-                            sortDir = "asc";
-                            sortType = type;
-                        }
-                        updateSortIndicators();
-                        fetchItems(); // re-render immediately with new sort
-                    });
+        // ============= FILTER FUNCTIONS =============
+        function returnFilterData() {
+            return {
+                download_queue_show_waiting: document.getElementById('download_queue_show_waiting').checked,
+                download_queue_show_completed: document.getElementById('download_queue_show_completed').checked,
+                download_queue_show_cancelled: document.getElementById('download_queue_show_cancelled').checked,
+                download_queue_show_failed: document.getElementById('download_queue_show_failed').checked,
+                download_queue_show_unavailable: document.getElementById('download_queue_show_unavailable').checked,
+            };
+        }
+
+        function shouldShowItem(item) {
+            const filters = returnFilterData();
+            const statusMap = {
+                'Waiting': 'download_queue_show_waiting',
+                'Failed': 'download_queue_show_failed',
+                'Cancelled': 'download_queue_show_cancelled',
+                'Unavailable': 'download_queue_show_unavailable'
+            };
+            
+            if (item.item_status === 'Downloaded' || item.item_status === 'Already Exists') {
+                return filters.download_queue_show_completed;
+            }
+            
+            const filterKey = statusMap[item.item_status];
+            return filterKey ? filters[filterKey] : true;
+        }
+
+        // ============= SORTING FUNCTIONS =============
+        function getTrackNumber(item) {
+            const tn = item.track_number ?? item.item_track_number;
+            return (tn === null || tn === undefined) ? null : tn;
+        }
+
+        function getAlbumName(item) {
+            return item.album_name ?? item.item_album_name ?? '';
+        }
+
+        function sortItems(items) {
+            const { key, dir } = sortState;
+            
+            items.sort((a, b) => {
+                let result = 0;
+                
+                if (key === "album_name") {
+                    const albumA = getAlbumName(a).toLowerCase();
+                    const albumB = getAlbumName(b).toLowerCase();
+                    
+                    if (albumA !== albumB) {
+                        if (!albumA) return 1;
+                        if (!albumB) return -1;
+                        result = albumA.localeCompare(albumB);
+                    } else {
+                        const trackA = getTrackNumber(a);
+                        const trackB = getTrackNumber(b);
+                        const numA = (trackA === null) ? 999999 : Number(trackA) || 999999;
+                        const numB = (trackB === null) ? 999999 : Number(trackB) || 999999;
+                        result = numA - numB;
+                    }
+                }
+                else if (key === "track_number") {
+                    const trackA = getTrackNumber(a);
+                    const trackB = getTrackNumber(b);
+                    const numA = (trackA === null) ? 999999 : Number(trackA) || 999999;
+                    const numB = (trackB === null) ? 999999 : Number(trackB) || 999999;
+                    result = numA - numB;
+                }
+                else if (key === "progress") {
+                    result = (Number(a[key]) || 0) - (Number(b[key]) || 0);
+                }
+                else {
+                    const valA = String(a[key] || '').toLowerCase();
+                    const valB = String(b[key] || '').toLowerCase();
+                    result = valA.localeCompare(valB);
+                }
+                
+                return dir === "asc" ? result : -result;
+            });
+            
+            return items;
+        }
+
+        function updateSortHeaders() {
+            document.querySelectorAll("th[data-sort]").forEach(th => {
+                th.classList.remove('sort-asc', 'sort-desc');
+                if (th.dataset.sort === sortState.key) {
+                    th.classList.add(sortState.dir === 'asc' ? 'sort-asc' : 'sort-desc');
+                }
+            });
+        }
+
+        function setupSorting() {
+            document.querySelectorAll("th[data-sort]").forEach(th => {
+                th.addEventListener("click", () => {
+                    const key = th.dataset.sort;
+                    sortState.dir = (sortState.key === key && sortState.dir === "asc") ? "desc" : "asc";
+                    sortState.key = key;
+                    updateSortHeaders();
+                    renderTable(true);
                 });
             });
+            updateSortHeaders();
+        }
 
-            function parseSortValue(val, type) {
-                if (type === "number") {
-                    const n = parseFloat(String(val).replace(",", ".").match(/[-+]?\d*\.?\d+/));
-                    return isNaN(n) ? -Infinity : n;
-                }
-                return String(val || "").toLowerCase();
+        // ============= SMART UPDATE LOGIC =============
+        function needsFullRebuild(newData) {
+            const tableBody = document.getElementById('download-queue-table');
+            const existingRows = tableBody.querySelectorAll('tr');
+            
+            const newItems = Object.values(newData).filter(shouldShowItem);
+            sortItems(newItems);
+            
+            if (existingRows.length !== newItems.length) {
+                return true;
             }
-
-            function createRow(item) {
-                const row = document.createElement('tr');
-
-                const cell0 = document.createElement('td');
-                cell0.style.display = 'none';
-                cell0.dataset.localId = item.local_id;
-                row.appendChild(cell0);
-
-                // image column
-                const showThumbnails = {{ config.show_download_thumbnails|tojson }};
-                const itemImage = showThumbnails && item.item_thumbnail
-                    ? `<img src="${item.item_thumbnail}" loading="lazy" style="width: {{ config.thumbnail_size }}px; height: {{ config.thumbnail_size }}px;">`
-                    : '';
-                if (itemImage) {
-                    const cellImage = document.createElement('td');
-                    cellImage.innerHTML = itemImage;
-                    row.appendChild(cellImage);
+            
+            for (let i = 0; i < newItems.length; i++) {
+                const row = existingRows[i];
+                const newItem = newItems[i];
+                const firstCell = row.querySelector('td:first-child');
+                if (!firstCell) return true;
+                const existingId = firstCell.dataset.localId;
+                
+                if (existingId !== newItem.local_id) {
+                    return true;
                 }
+            }
+            
+            return false;
+        }
 
-                const cell1 = document.createElement('td');
-                const maxLength = 24;
-                cell1.innerHTML = item.item_name.length > maxLength ? `${item.item_name.substring(0, maxLength)}...` : item.item_name;
-                row.appendChild(cell1);
+        function updateExistingRows(newData) {
+            const tableBody = document.getElementById('download-queue-table');
+            const rows = tableBody.querySelectorAll('tr');
+            
+            rows.forEach(row => {
+                const firstCell = row.querySelector('td:first-child');
+                if (!firstCell) return;
+                const localId = firstCell.dataset.localId;
+                const newItem = newData[localId];
+                
+                if (!newItem) return;
+                
+                const statusCell = row.querySelector('[data-cell="status"]');
+                const progressCell = row.querySelector('[data-cell="progress"]');
+                const actionCell = row.querySelector('[data-cell="action"]');
+                
+                // Update status badge
+                if (statusCell) {
+                    const currentStatus = statusCell.querySelector('.status-badge')?.textContent;
+                    if (currentStatus !== newItem.item_status) {
+                        statusCell.innerHTML = createStatusBadge(newItem.item_status);
+                        if (actionCell) {
+                            actionCell.innerHTML = createActionButtons(newItem);
+                        }
+                    }
+                }
+                
+                // Update progress bar
+                if (progressCell) {
+                    const newProgress = newItem.progress || 0;
+                    const progressBar = progressCell.querySelector('.progress-bar-fill');
+                    if (progressBar) {
+                        progressBar.style.width = `${newProgress}%`;
+                        progressBar.textContent = `${newProgress}%`;
+                    }
+                }
+            });
+        }
 
-                const cell2 = document.createElement('td');
-                cell2.className = 'hide-on-mobile';
-                cell2.textContent = capitalizeFirstLetter(item.parent_category) || 'N/A';
-                row.appendChild(cell2);
+        // ============= TABLE RENDERING =============
+        function renderTable(forceRebuild = false) {
+            if (!forceRebuild && !needsFullRebuild(currentData)) {
+                updateExistingRows(currentData);
+                updateProgressHeader();
+                return;
+            }
+            
+            const tableBody = document.getElementById('download-queue-table');
+            tableBody.innerHTML = '';
 
-                const serviceNameSpan = document.createElement('span');
-                serviceNameSpan.className = 'hide-on-mobile';
-                serviceNameSpan.textContent = formatServiceName(item.item_service);
-                const serviceIcon = item.item_service ? `<img src="/icons/${item.item_service}.png" loading="lazy" style="width: 20px; height: 20px; margin-right: 5px;">` : '';
-                const cell3 = document.createElement('td');
-                cell3.innerHTML = `${serviceIcon}`;
-                cell3.appendChild(serviceNameSpan);
-                row.appendChild(cell3);
+            const itemsArray = Object.values(currentData);
+            const filteredItems = itemsArray.filter(shouldShowItem);
+            sortItems(filteredItems);
 
-                const cell4 = document.createElement('td');
-                cell4.textContent = item.item_status || 'N/A';
-                row.appendChild(cell4);
-
-                const progressCell = document.createElement('td');
-                progressCell.className = 'hide-on-mobile';
-                const progressValue = item.progress || 0;
-                progressCell.innerHTML = `
-                    <div style="width: 100%; background-color: #777777; border-radius: 5px; position: relative;">
-                        <div style="font-weight: bold; text-align: center; width: ${progressValue}%; background-color: #4caf50; height: 20px; border-radius: 5px; position: relative;">
-                            ${progressValue}%
-                        </div>
+            if (filteredItems.length === 0) {
+                const emptyRow = document.createElement('tr');
+                const emptyCell = document.createElement('td');
+                emptyCell.colSpan = 10;
+                emptyCell.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📥</div>
+                        <h3>No downloads yet</h3>
+                        <p>Search for music to start downloading</p>
                     </div>
                 `;
-                row.appendChild(progressCell);
+                emptyRow.appendChild(emptyCell);
+                tableBody.appendChild(emptyRow);
+            } else {
+                filteredItems.forEach(item => {
+                    const row = createTableRow(item);
+                    tableBody.appendChild(row);
+                });
+            }
+            
+            updateProgressHeader();
+        }
 
-                let copyButton = '';
-                let cancelButton = '';
-                let retryButton = '';
-                let downloadButton = '';
-                let deleteButton = '';
-                if (config.download_copy_btn) {
-                    copyButton = createButton('icons/link.png', 'Copy Link', `copyToClipboard('${item.item_url}')`, `${item.item_url}`);
+        function createStatusBadge(status) {
+            const statusClasses = {
+                'Downloading': 'status-downloading',
+                'Waiting': 'status-waiting',
+                'Downloaded': 'status-downloaded',
+                'Already Exists': 'status-exists',
+                'Failed': 'status-failed',
+                'Cancelled': 'status-cancelled',
+                'Unavailable': 'status-failed'
+            };
+            const className = statusClasses[status] || '';
+            return `<span class="status-badge ${className}">${status || 'N/A'}</span>`;
+        }
+
+        function createTableRow(item) {
+            const row = document.createElement('tr');
+
+            // Hidden local_id cell
+            const idCell = document.createElement('td');
+            idCell.style.display = 'none';
+            idCell.dataset.localId = item.local_id;
+            row.appendChild(idCell);
+
+            // Thumbnail
+            if (config.show_download_thumbnails) {
+                const imgCell = document.createElement('td');
+                imgCell.className = 'hide-on-mobile';
+                if (item.item_thumbnail) {
+                    imgCell.innerHTML = `<img src="${item.item_thumbnail}" class="item-thumbnail" loading="lazy" style="width: ${config.thumbnail_size}px; height: ${config.thumbnail_size}px;">`;
                 }
-                if (!['Failed', 'Cancelled', 'Deleted', 'Already Exists', 'Downloaded'].includes(item.item_status)) {
-                    cancelButton = createButton('icons/stop.png', 'Stop Download', `handleCancel('${item.local_id}')`);
+                row.appendChild(imgCell);
+            }
+
+            // Track number
+            const trackCell = document.createElement('td');
+            trackCell.className = 'col-track';
+            const trackNum = getTrackNumber(item);
+            trackCell.textContent = trackNum !== null ? trackNum : '';
+            row.appendChild(trackCell);
+
+            // Item name
+            const nameCell = document.createElement('td');
+            nameCell.className = 'col-name name-cell';
+            nameCell.textContent = item.item_name.length > 30 ? item.item_name.substring(0, 30) + '...' : item.item_name;
+            nameCell.title = item.item_name;
+            row.appendChild(nameCell);
+
+            // Album name
+            const albumCell = document.createElement('td');
+            albumCell.className = 'col-album hide-on-mobile';
+            const albumName = getAlbumName(item);
+            albumCell.textContent = albumName ? (albumName.length > 20 ? albumName.substring(0, 20) + '...' : albumName) : 'N/A';
+            albumCell.title = albumName;
+            row.appendChild(albumCell);
+
+            // By (artist name)
+            const byCell = document.createElement('td');
+            byCell.className = 'col-by hide-on-tablet hide-on-mobile';
+            const artistName = item.item_by || '';
+            byCell.textContent = artistName ? (artistName.length > 15 ? artistName.substring(0, 15) + '...' : artistName) : 'N/A';
+            byCell.title = artistName;
+            row.appendChild(byCell);
+
+            // Service (icon and text inline)
+            const serviceCell = document.createElement('td');
+            serviceCell.className = 'col-service service-cell hide-on-mobile';
+            if (item.item_service) {
+                serviceCell.innerHTML = `<img src="/icons/${item.item_service}.png" loading="lazy" style="width: 20px; height: 20px;"><span>${formatServiceName(item.item_service)}</span>`;
+            }
+            row.appendChild(serviceCell);
+
+            // Status
+            const statusCell = document.createElement('td');
+            statusCell.className = 'col-status';
+            statusCell.dataset.cell = 'status';
+            statusCell.innerHTML = createStatusBadge(item.item_status);
+            row.appendChild(statusCell);
+
+            // Progress bar
+            const progressCell = document.createElement('td');
+            progressCell.className = 'col-progress hide-on-tablet hide-on-mobile';
+            progressCell.dataset.cell = 'progress';
+            const progress = item.progress || 0;
+            progressCell.innerHTML = `
+                <div class="progress-container">
+                    <div class="progress-bar-fill" style="width: ${progress}%;">
+                        ${progress}%
+                    </div>
+                </div>
+            `;
+            row.appendChild(progressCell);
+
+            // Action buttons
+            const actionCell = document.createElement('td');
+            actionCell.className = 'col-action';
+            actionCell.dataset.cell = 'action';
+            actionCell.innerHTML = createActionButtons(item);
+            row.appendChild(actionCell);
+
+            return row;
+        }
+
+        function createActionButtons(item) {
+            let buttons = '<div class="action-cell">';
+            
+            if (config.download_copy_btn) {
+                buttons += createButton('icons/link.png', 'Copy Link', `copyToClipboard('${item.item_url}')`, item.item_url);
+            }
+            
+            if (!['Failed', 'Cancelled', 'Deleted', 'Already Exists', 'Downloaded'].includes(item.item_status)) {
+                buttons += createButton('icons/stop.png', 'Stop Download', `handleCancel('${item.local_id}')`);
+            }
+            
+            if (['Failed', 'Cancelled', 'Deleted'].includes(item.item_status)) {
+                buttons += createButton('icons/retry.png', 'Retry Download', `handleRetry('${item.local_id}')`);
+            }
+            
+            if (['Downloaded', 'Already Exists'].includes(item.item_status)) {
+                if (config.download_open_btn) {
+                    buttons += createButton('icons/file.png', 'Open File', `window.location.href='/api/download/${item.local_id}'`, `/api/download/${item.local_id}`);
                 }
-                if (['Failed', 'Cancelled', 'Deleted'].includes(item.item_status)) {
-                    retryButton = createButton('icons/retry.png', 'Retry Download', `handleRetry('${item.local_id}')`);
+                if (config.download_delete_btn) {
+                    buttons += createButton('icons/trash.png', 'Delete File', `handleDelete('${item.local_id}')`);
                 }
-                if (['Downloaded', 'Already Exists'].includes(item.item_status)) {
-                    if (config.download_open_btn) {
-                        downloadButton = createButton('icons/file.png', 'Open File', `window.location.href='/api/download/${item.local_id}'`, `/api/download/${item.local_id}`);
-                    }
-                    if (config.download_delete_btn) {
-                        deleteButton = createButton('icons/trash.png', 'Delete File', `handleDelete('${item.local_id}')`);
-                    }
+            }
+            
+            buttons += '</div>';
+            return buttons;
+        }
+
+        // ============= PROGRESS HEADER =============
+        function updateProgressHeader() {
+            let total = 0;
+            let completed = 0;
+            
+            Object.values(currentData).forEach(item => {
+                total++;
+                if (['Downloaded', 'Already Exists', 'Cancelled'].includes(item.item_status)) {
+                    completed++;
                 }
-                const cell5 = document.createElement('td');
-                cell5.innerHTML = `${copyButton}${cancelButton}${retryButton}${downloadButton}${deleteButton}`;
-                row.appendChild(cell5);
+            });
+            
+            const percent = total > 0 ? ((completed / total) * 100).toFixed(1) : 0;
+            document.getElementById('queue-status-message').textContent = `${completed}/${total} completed • ${percent}%`;
+        }
 
-                return row;
-            }
+        // ============= DATA FETCHING =============
+        function adjustFetchInterval(data) {
+            const activeCount = Object.values(data).filter(item => 
+                item.item_status === 'Downloading' || item.item_status === 'Waiting'
+            ).length;
+            
+            fetchInterval = activeCount === 0 ? 2000 : 500;
+        }
 
-            function fetchItems() {
-                fetch('/api/download_queue')
-                    .then(response => response.json())
-                    .then(data => {
-                        let totalCount = 0;
-                        let completedCount = 0;
-
-                        const isWaitingChecked = document.getElementById('download_queue_show_waiting').checked;
-                        const isCompletedChecked = document.getElementById('download_queue_show_completed').checked;
-                        const isCancelledChecked = document.getElementById('download_queue_show_cancelled').checked;
-                        const isFailedChecked = document.getElementById('download_queue_show_failed').checked;
-                        const isUnavailableChecked = document.getElementById('download_queue_show_unavailable').checked;
-
-                        const tableBody = document.getElementById('download-queue-table');
-                        tableBody.innerHTML = '';
-
-                        // ADDED: collect items first, then sort, then render
-                        const itemsToShow = [];
-
-                        for (const key in data) {
-                            if (!data.hasOwnProperty(key)) continue;
-                            const item = data[key];
-
-                            // Count For Progress Header (same logic as before)
-                            totalCount++;
-                            if (['Downloaded', 'Already Exists', 'Cancelled'].includes(item.item_status)) {
-                                completedCount++;
-                            }
-
-                            // Filter logic (same as before)
-                            if (!isWaitingChecked && item.item_status === 'Waiting') continue;
-                            if (!isCompletedChecked && (item.item_status === 'Downloaded' || item.item_status === 'Already Exists')) continue;
-                            if (!isCancelledChecked && item.item_status === 'Cancelled') continue;
-                            if (!isFailedChecked && item.item_status === 'Failed') continue;
-                            if (!isUnavailableChecked && item.item_status === 'Unavailable') continue;
-
-                            itemsToShow.push(item);
-                        }
-
-                        // ADDED: apply sorting if selected
-                        if (sortKey) {
-                            itemsToShow.sort((a, b) => {
-                                const av = parseSortValue(a[sortKey], sortType);
-                                const bv = parseSortValue(b[sortKey], sortType);
-
-                                if (av < bv) return sortDir === "asc" ? -1 : 1;
-                                if (av > bv) return sortDir === "asc" ? 1 : -1;
-                                return 0;
-                            });
-                        }
-
-                        // Render sorted items
-                        for (const item of itemsToShow) {
-                            tableBody.appendChild(createRow(item));
-                        }
-
-                        // Update Progress Header
-                        const percentComplete = totalCount > 0 ? ((completedCount / totalCount) * 100).toFixed(2) : 0;
-                        document.getElementById('queue-status-message').textContent = `Total Items: ${completedCount}/${totalCount} | Progress: ${percentComplete}%`;
-
-                        updateSortIndicators();
-                    });
-            }
-
-            function clearItems() {
-                fetch('/api/clear_items', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => { if (data.success) console.log('Clear completed successful'); });
-            }
-
-            function cancelItems() {
-                fetch('/api/cancel_items', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => { if (data.success) console.log('Cancel completed successful'); });
-            }
-
-            function retryItems() {
-                fetch('/api/retry_items', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => { if (data.success) console.log('Retry completed successful'); });
-            }
-
-            function restartWorkers() {
-                fetch('/api/restart', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => { if (data.success) console.log('Clear completed successful'); });
-            }
-
-            function handleDelete(local_id) {
-                fetch(`/api/delete/${local_id}`, { method: 'DELETE' })
+        function fetchItems() {
+            fetch('/api/download_queue')
                 .then(response => response.json())
                 .then(data => {
-                    if (data.success) console.log('Delete successful');
-                    else console.error('Delete failed:', data.error);
+                    currentData = data;
+                    adjustFetchInterval(data);
+                    renderTable();
+                    scheduleFetch();
                 })
-                .catch(error => console.error('Error:', error));
-            }
+                .catch(error => {
+                    console.error('Error fetching download queue:', error);
+                    scheduleFetch();
+                });
+        }
 
-            function handleCancel(local_id) {
-                fetch(`/api/cancel/${local_id}`, { method: 'POST' })
+        function scheduleFetch() {
+            setTimeout(fetchItems, fetchInterval);
+        }
+
+        // ============= API ACTIONS =============
+        function clearItems() {
+            fetch('/api/clear_items', { method: 'POST' })
                 .then(response => response.json())
-                .then(data => {
-                    if (data.success) console.log('Cancel successful');
-                    else console.error('Cancel failed:', data.error);
-                })
-                .catch(error => console.error('Error:', error));
-            }
+                .then(data => data.success && console.log('Clear completed'));
+        }
 
-            function handleRetry(local_id) {
-                fetch(`/api/retry/${local_id}`, { method: 'POST' })
+        function cancelItems() {
+            fetch('/api/cancel_items', { method: 'POST' })
                 .then(response => response.json())
-                .then(data => {
-                    if (data.success) console.log('Retry successful');
-                    else console.error('Retry failed:', data.error);
-                })
-                .catch(error => console.error('Error:', error));
-            }
+                .then(data => data.success && console.log('Cancel completed'));
+        }
 
-            window.onload = fetchItems;
-            setInterval(fetchItems, 2000);
-        </script>
-    </body>
+        function retryItems() {
+            fetch('/api/retry_items', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => data.success && console.log('Retry completed'));
+        }
+
+        function restartWorkers() {
+            fetch('/api/restart', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => data.success && console.log('Restart completed'));
+        }
+
+        function handleDelete(local_id) {
+            fetch(`/api/delete/${local_id}`, { method: 'DELETE' })
+                .then(response => response.json())
+                .then(data => data.success ? console.log('Delete successful') : console.error('Delete failed:', data.error))
+                .catch(error => console.error('Error:', error));
+        }
+
+        function handleCancel(local_id) {
+            fetch(`/api/cancel/${local_id}`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => data.success ? console.log('Cancel successful') : console.error('Cancel failed:', data.error))
+                .catch(error => console.error('Error:', error));
+        }
+
+        function handleRetry(local_id) {
+            fetch(`/api/retry/${local_id}`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => data.success ? console.log('Retry successful') : console.error('Retry failed:', data.error))
+                .catch(error => console.error('Error:', error));
+        }
+
+        // ============= INITIALIZATION =============
+        window.onload = () => {
+            setupSorting();
+            fetchItems();
+        };
+    </script>
+</body>
 </html>

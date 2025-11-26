@@ -467,11 +467,24 @@ def spotify_get_album_track_ids(token, album_id):
     return item_ids
 
 
-def spotify_get_search_results(token, search_term, content_types):
+def spotify_get_search_results(token, search_term, content_types, _retry=False):
     logger.info(f"Get search result for term '{search_term}'")
 
     headers = {}
-    headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+    try:
+        headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+    except (RuntimeError, OSError) as e:
+        if _retry:
+            logger.error(f"Failed to get token after retry: {e}")
+            raise
+        logger.warning(f"Token retrieval failed, attempting session reconnect: {e}")
+        # Re-initialize the session
+        parsing_index = config.get('active_account_number')
+        spotify_re_init_session(account_pool[parsing_index])
+        # Get the new token
+        new_token = account_pool[parsing_index]['login']['session']
+        # Retry the search with the new token
+        return spotify_get_search_results(new_token, search_term, content_types, _retry=True)
 
     params = {}
     params['limit'] = config.get("max_search_results")
