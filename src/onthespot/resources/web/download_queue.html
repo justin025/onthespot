@@ -546,6 +546,20 @@
         <div class="table-wrapper">
             <div class="table-scroll">
                 <table>
+                    <colgroup>
+                        <col style="display: none;"> <!-- Local ID -->
+                        {% if config.show_download_thumbnails %}
+                        <col class="hide-on-mobile" style="width: 60px;"> <!-- Thumbnail -->
+                        {% endif %}
+                        <col style="width: 50px;"> <!-- # -->
+                        <col> <!-- Name - flexible -->
+                        <col class="hide-on-mobile" style="width: 15%;"> <!-- Album -->
+                        <col class="hide-on-tablet hide-on-mobile" style="width: 12%;"> <!-- By -->
+                        <col class="hide-on-mobile" style="width: 10%;"> <!-- Service -->
+                        <col style="width: 100px;"> <!-- Status -->
+                        <col class="hide-on-tablet hide-on-mobile" style="width: 15%;"> <!-- Progress -->
+                        <col style="width: 80px;"> <!-- Action -->
+                    </colgroup>
                     <thead>
                         <tr>
                             <th style="display: none;">Local ID</th>
