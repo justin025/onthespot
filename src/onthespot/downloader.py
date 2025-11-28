@@ -279,7 +279,6 @@ class DownloadWorker(QObject):
                     logger.error(f"Failed to fetch metadata for '{item_id}', Error: {str(e)}\nTraceback: {traceback.format_exc()}")
                     item['item_status'] = "Failed"
                     self.update_progress(item, self.tr("Failed") if self.gui else "Failed", 0)
-                    logger.info(f"DEBUG item_path from format_item_path: {item_path}")
                     self.readd_item_to_download_queue(item)
                     continue
 
