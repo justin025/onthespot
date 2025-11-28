@@ -434,6 +434,11 @@ class DownloadWorker(QObject):
                                     last_progress_time = time.time()  # Update progress time when data received
                                 if len(data) == 0:
                                     break
+
+                        # Validate that the complete file was downloaded
+                        if downloaded < total_size:
+                            raise RuntimeError(f"Incomplete download: received {downloaded}/{total_size} bytes, stream ended prematurely")
+
                         stream.input_stream.stream().close()
                         stream_internal = stream.input_stream.stream()
                         del stream_internal, stream.input_stream

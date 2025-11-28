@@ -194,43 +194,50 @@ def convert_audio_format(filename, bitrate, default_format):
             os.remove(temp_name)
 
         os.rename(filename, temp_name)
-        # Prepare default parameters
-        # Existing command initialization
-        command = [config.get('_ffmpeg_bin_path'), '-i', temp_name]
 
-        # Set log level based on environment variable
-        if int(os.environ.get('SHOW_FFMPEG_OUTPUT', 0)) == 0:
-            command += ['-loglevel', 'error', '-hide_banner', '-nostats']
+        try:
+            # Prepare default parameters
+            # Existing command initialization
+            command = [config.get('_ffmpeg_bin_path'), '-i', temp_name]
 
-        # Check if media format is service default
+            # Set log level based on environment variable
+            if int(os.environ.get('SHOW_FFMPEG_OUTPUT', 0)) == 0:
+                command += ['-loglevel', 'error', '-hide_banner', '-nostats']
 
-        if filetype == default_format and config.get('use_custom_file_bitrate'):
-            command += ['-b:a', bitrate]
-        elif filetype == default_format:
-            command += ['-c:a', 'copy']
-        else:
-            command += [
-                #'-f', filetype.split('.')[1],
-                '-ac', '2',
-                '-ar', f'{config.get("file_hertz") if filetype != ".opus" else 48000}',
-                '-b:a', bitrate
-                ]
+            # Check if media format is service default
 
-        # Add user defined parameters
-        for param in config.get('ffmpeg_args'):
-            command.append(param)
+            if filetype == default_format and config.get('use_custom_file_bitrate'):
+                command += ['-b:a', bitrate]
+            elif filetype == default_format:
+                command += ['-c:a', 'copy']
+            else:
+                command += [
+                    #'-f', filetype.split('.')[1],
+                    '-ac', '2',
+                    '-ar', f'{config.get("file_hertz") if filetype != ".opus" else 48000}',
+                    '-b:a', bitrate
+                    ]
 
-        # Add output parameter at last
-        command += [filename]
-        logger.debug(
-            f'Converting media with ffmpeg. Built commandline {command}'
-            )
-        # Run subprocess with CREATE_NO_WINDOW flag on Windows
-        if os.name == 'nt':
-            subprocess.check_call(command, shell=False, creationflags=subprocess.CREATE_NO_WINDOW)
-        else:
-            subprocess.check_call(command, shell=False)
-        os.remove(temp_name)
+            # Add user defined parameters
+            for param in config.get('ffmpeg_args'):
+                command.append(param)
+
+            # Add output parameter at last
+            command += [filename]
+            logger.debug(
+                f'Converting media with ffmpeg. Built commandline {command}'
+                )
+            # Run subprocess with CREATE_NO_WINDOW flag on Windows
+            if os.name == 'nt':
+                subprocess.check_call(command, shell=False, creationflags=subprocess.CREATE_NO_WINDOW)
+            else:
+                subprocess.check_call(command, shell=False)
+            os.remove(temp_name)
+        except subprocess.CalledProcessError as e:
+            # Clean up the corrupted temp file and re-raise to trigger retry
+            if os.path.isfile(temp_name):
+                os.remove(temp_name)
+            raise RuntimeError(f"Failed to convert audio file (corrupted or invalid data): {e}")
 
 
 def convert_video_format(item, output_path, output_format, video_files, item_metadata):
