@@ -156,7 +156,7 @@ class DownloadWorker(QObject):
                     return stream, token, current_account_idx
                 except (RuntimeError, OSError) as e:
                     error_str = str(e)
-                    if any(x in error_str for x in ['Bad file descriptor', 'Cannot get alternative track', 'Unable to']):
+                    if any(x in error_str for x in ['Bad file descriptor', 'Cannot get alternative track', 'Unable to', 'Failed fetching audio key']):
                         if attempt < max_retries_per_account - 1:
                             logger.warning(f"Download stream failed (attempt {attempt + 1}) on account {current_account_idx}, reconnecting session: {e}")
                             try:
@@ -201,7 +201,7 @@ class DownloadWorker(QObject):
                         return stream, fallback_token, account_idx
                     except (RuntimeError, OSError) as e:
                         error_str = str(e)
-                        if any(x in error_str for x in ['Bad file descriptor', 'Cannot get alternative track', 'Unable to']):
+                        if any(x in error_str for x in ['Bad file descriptor', 'Cannot get alternative track', 'Unable to', 'Failed fetching audio key']):
                             if attempt < max_retries_per_account - 1:
                                 logger.warning(f"Fallback account {account_idx} stream failed (attempt {attempt + 1}), reconnecting: {e}")
                                 try:
