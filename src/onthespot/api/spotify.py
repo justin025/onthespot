@@ -251,14 +251,27 @@ def spotify_get_token(parsing_index):
     return token
 
 
-def spotify_get_artist_album_ids(token, artist_id):
+def spotify_get_artist_album_ids(token, artist_id, _retry=False):
     logger.info(f"Getting album ids for artist: '{artist_id}'")
     items = []
     offset = 0
     limit = 50
     while True:
         headers = {}
-        headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+        try:
+            headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+        except (RuntimeError, OSError) as e:
+            if _retry:
+                logger.error(f"Failed to get token after retry for artist {artist_id}: {e}")
+                raise
+            logger.warning(f"Token retrieval failed for artist album IDs, attempting session reconnect: {e}")
+            # Re-initialize the session
+            parsing_index = config.get('active_account_number')
+            spotify_re_init_session(account_pool[parsing_index])
+            # Get the new token
+            new_token = account_pool[parsing_index]['login']['session']
+            # Retry with the new token
+            return spotify_get_artist_album_ids(new_token, artist_id, _retry=True)
 
         url = f'{BASE_URL}/artists/{artist_id}/albums?include_groups=album%2Csingle&limit={limit}&offset={offset}' #%2Cappears_on%2Ccompilation
         artist_data = make_call(url, headers=headers)
@@ -275,15 +288,29 @@ def spotify_get_artist_album_ids(token, artist_id):
     return item_ids
 
 
-def spotify_get_playlist_data(token, playlist_id):
+def spotify_get_playlist_data(token, playlist_id, _retry=False):
     logger.info(f"Get playlist data for playlist: {playlist_id}")
     headers = {}
-    headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+    try:
+        headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+    except (RuntimeError, OSError) as e:
+        if _retry:
+            logger.error(f"Failed to get token after retry for playlist {playlist_id}: {e}")
+            raise
+        logger.warning(f"Token retrieval failed for playlist data, attempting session reconnect: {e}")
+        # Re-initialize the session
+        parsing_index = config.get('active_account_number')
+        spotify_re_init_session(account_pool[parsing_index])
+        # Get the new token
+        new_token = account_pool[parsing_index]['login']['session']
+        # Retry with the new token
+        return spotify_get_playlist_data(new_token, playlist_id, _retry=True)
+
     resp = make_call(f'{BASE_URL}/playlists/{playlist_id}', headers=headers, skip_cache=True)
     return resp['name'], resp['owner']['display_name']
 
 
-def spotify_get_lyrics(token, item_id, item_type, metadata, filepath):
+def spotify_get_lyrics(token, item_id, item_type, metadata, filepath, _retry=False):
     if config.get('download_lyrics'):
         lyrics = []
         try:
@@ -294,7 +321,21 @@ def spotify_get_lyrics(token, item_id, item_type, metadata, filepath):
 
             headers = {}
             headers['app-platform'] = 'WebPlayer'
-            headers['Authorization'] = f'Bearer {token.tokens().get("user-read-email")}'
+            try:
+                headers['Authorization'] = f'Bearer {token.tokens().get("user-read-email")}'
+            except (RuntimeError, OSError) as e:
+                if _retry:
+                    logger.error(f"Failed to get token after retry for lyrics {item_id}: {e}")
+                    raise
+                logger.warning(f"Token retrieval failed for lyrics, attempting session reconnect: {e}")
+                # Re-initialize the session
+                parsing_index = config.get('active_account_number')
+                spotify_re_init_session(account_pool[parsing_index])
+                # Get the new token
+                new_token = account_pool[parsing_index]['login']['session']
+                # Retry with the new token
+                return spotify_get_lyrics(new_token, item_id, item_type, metadata, filepath, _retry=True)
+
             headers['user-agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36'
 
             resp = make_call(url, headers=headers)
@@ -379,7 +420,7 @@ def spotify_get_lyrics(token, item_id, item_type, metadata, filepath):
         return False
 
 
-def spotify_get_playlist_items(token, playlist_id):
+def spotify_get_playlist_items(token, playlist_id, _retry=False):
     logger.info(f"Getting items in playlist: '{playlist_id}'")
     items = []
     offset = 0
@@ -388,7 +429,20 @@ def spotify_get_playlist_items(token, playlist_id):
     while True:
         url = f'{BASE_URL}/playlists/{playlist_id}/tracks?additional_types=track%2Cepisode&offset={offset}&limit={limit}'
         headers = {}
-        headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+        try:
+            headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+        except (RuntimeError, OSError) as e:
+            if _retry:
+                logger.error(f"Failed to get token after retry for playlist items {playlist_id}: {e}")
+                raise
+            logger.warning(f"Token retrieval failed for playlist items, attempting session reconnect: {e}")
+            # Re-initialize the session
+            parsing_index = config.get('active_account_number')
+            spotify_re_init_session(account_pool[parsing_index])
+            # Get the new token
+            new_token = account_pool[parsing_index]['login']['session']
+            # Retry with the new token
+            return spotify_get_playlist_items(new_token, playlist_id, _retry=True)
 
         resp = make_call(url, headers=headers, skip_cache=True)
 
@@ -400,7 +454,7 @@ def spotify_get_playlist_items(token, playlist_id):
     return items
 
 
-def spotify_get_liked_songs(token):
+def spotify_get_liked_songs(token, _retry=False):
     logger.info("Getting liked songs")
     items = []
     offset = 0
@@ -409,7 +463,20 @@ def spotify_get_liked_songs(token):
     while True:
         url = f'{BASE_URL}/me/tracks?offset={offset}&limit={limit}'
         headers = {}
-        headers['Authorization'] = f"Bearer {token.tokens().get('user-library-read')}"
+        try:
+            headers['Authorization'] = f"Bearer {token.tokens().get('user-library-read')}"
+        except (RuntimeError, OSError) as e:
+            if _retry:
+                logger.error(f"Failed to get token after retry for liked songs: {e}")
+                raise
+            logger.warning(f"Token retrieval failed for liked songs, attempting session reconnect: {e}")
+            # Re-initialize the session
+            parsing_index = config.get('active_account_number')
+            spotify_re_init_session(account_pool[parsing_index])
+            # Get the new token
+            new_token = account_pool[parsing_index]['login']['session']
+            # Retry with the new token
+            return spotify_get_liked_songs(new_token, _retry=True)
 
         resp = make_call(url, headers=headers, skip_cache=True)
 
@@ -421,7 +488,7 @@ def spotify_get_liked_songs(token):
     return items
 
 
-def spotify_get_your_episodes(token):
+def spotify_get_your_episodes(token, _retry=False):
     logger.info("Getting your episodes")
     items = []
     offset = 0
@@ -429,7 +496,21 @@ def spotify_get_your_episodes(token):
 
     while True:
         headers = {}
-        headers['Authorization'] = f"Bearer {token.tokens().get('user-library-read')}"
+        try:
+            headers['Authorization'] = f"Bearer {token.tokens().get('user-library-read')}"
+        except (RuntimeError, OSError) as e:
+            if _retry:
+                logger.error(f"Failed to get token after retry for your episodes: {e}")
+                raise
+            logger.warning(f"Token retrieval failed for your episodes, attempting session reconnect: {e}")
+            # Re-initialize the session
+            parsing_index = config.get('active_account_number')
+            spotify_re_init_session(account_pool[parsing_index])
+            # Get the new token
+            new_token = account_pool[parsing_index]['login']['session']
+            # Retry with the new token
+            return spotify_get_your_episodes(new_token, _retry=True)
+
         url = f'{BASE_URL}/me/episodes?offset={offset}&limit={limit}'
 
         resp = make_call(url, headers=headers, skip_cache=True)
@@ -442,7 +523,7 @@ def spotify_get_your_episodes(token):
     return items
 
 
-def spotify_get_album_track_ids(token, album_id):
+def spotify_get_album_track_ids(token, album_id, _retry=False):
     logger.info(f"Getting tracks from album: {album_id}")
     tracks = []
     offset = 0
@@ -451,7 +532,21 @@ def spotify_get_album_track_ids(token, album_id):
     while True:
         url=f'{BASE_URL}/albums/{album_id}/tracks?offset={offset}&limit={limit}'
         headers = {}
-        headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+        try:
+            headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+        except (RuntimeError, OSError) as e:
+            if _retry:
+                logger.error(f"Failed to get token after retry for album {album_id}: {e}")
+                raise
+            logger.warning(f"Token retrieval failed for album track IDs, attempting session reconnect: {e}")
+            # Re-initialize the session
+            parsing_index = config.get('active_account_number')
+            spotify_re_init_session(account_pool[parsing_index])
+            # Get the new token
+            new_token = account_pool[parsing_index]['login']['session']
+            # Retry with the new token
+            return spotify_get_album_track_ids(new_token, album_id, _retry=True)
+
         resp = make_call(url, headers=headers)
 
         offset += limit
@@ -544,9 +639,22 @@ def spotify_get_search_results(token, search_term, content_types, _retry=False):
     return search_results
 
 
-def spotify_get_track_metadata(token, item_id):
+def spotify_get_track_metadata(token, item_id, _retry=False):
     headers = {}
-    headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+    try:
+        headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+    except (RuntimeError, OSError) as e:
+        if _retry:
+            logger.error(f"Failed to get token after retry for track {item_id}: {e}")
+            raise
+        logger.warning(f"Token retrieval failed for track metadata, attempting session reconnect: {e}")
+        # Re-initialize the session
+        parsing_index = config.get('active_account_number')
+        spotify_re_init_session(account_pool[parsing_index])
+        # Get the new token
+        new_token = account_pool[parsing_index]['login']['session']
+        # Retry with the new token
+        return spotify_get_track_metadata(new_token, item_id, _retry=True)
 
     track_data = make_call(f'{BASE_URL}/tracks?ids={item_id}&market=from_token', headers=headers)
     album_data = make_call(f"{BASE_URL}/albums/{track_data.get('tracks', [])[0].get('album', {}).get('id')}", headers=headers)
@@ -647,10 +755,24 @@ def spotify_get_track_metadata(token, item_id):
     return info
 
 
-def spotify_get_podcast_episode_metadata(token, episode_id):
+def spotify_get_podcast_episode_metadata(token, episode_id, _retry=False):
     logger.info(f"Get episode info for episode by id '{episode_id}'")
     headers = {}
-    headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+    try:
+        headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+    except (RuntimeError, OSError) as e:
+        if _retry:
+            logger.error(f"Failed to get token after retry for episode {episode_id}: {e}")
+            raise
+        logger.warning(f"Token retrieval failed for episode metadata, attempting session reconnect: {e}")
+        # Re-initialize the session
+        parsing_index = config.get('active_account_number')
+        spotify_re_init_session(account_pool[parsing_index])
+        # Get the new token
+        new_token = account_pool[parsing_index]['login']['session']
+        # Retry with the new token
+        return spotify_get_podcast_episode_metadata(new_token, episode_id, _retry=True)
+
     episode_data = make_call(f"{BASE_URL}/episodes/{episode_id}", headers=headers)
     show_episode_ids = spotify_get_podcast_episode_ids(token, episode_data.get('show', {}).get('id'))
     # I believe audiobook ids start with a 7 but to verify you can use https://api.spotify.com/v1/audiobooks/{id}
@@ -692,7 +814,7 @@ def spotify_get_podcast_episode_metadata(token, episode_id):
     return info
 
 
-def spotify_get_podcast_episode_ids(token, show_id):
+def spotify_get_podcast_episode_ids(token, show_id, _retry=False):
     logger.info(f"Getting show episodes: {show_id}'")
     episodes = []
     offset = 0
@@ -701,7 +823,21 @@ def spotify_get_podcast_episode_ids(token, show_id):
     while True:
         url = f'{BASE_URL}/shows/{show_id}/episodes?offset={offset}&limit={limit}'
         headers = {}
-        headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+        try:
+            headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+        except (RuntimeError, OSError) as e:
+            if _retry:
+                logger.error(f"Failed to get token after retry for podcast episode IDs {show_id}: {e}")
+                raise
+            logger.warning(f"Token retrieval failed for podcast episode IDs, attempting session reconnect: {e}")
+            # Re-initialize the session
+            parsing_index = config.get('active_account_number')
+            spotify_re_init_session(account_pool[parsing_index])
+            # Get the new token
+            new_token = account_pool[parsing_index]['login']['session']
+            # Retry with the new token
+            return spotify_get_podcast_episode_ids(new_token, show_id, _retry=True)
+
         resp = make_call(url, headers=headers)
 
         offset += limit
