@@ -312,31 +312,35 @@ class DownloadWorker(QObject):
                     # Skip download if file exists under different extension
                     file_directory = os.path.dirname(file_path)
                     target_filename = os.path.basename(file_path)
-                    
+
                     logger.info(f"Checking for existing files matching: '{target_filename}.*' in {file_directory}")
 
-                    try:
-                        for entry in os.listdir(file_directory):
-                            full_path = os.path.join(file_directory, entry)
-                            
-                            if not os.path.isfile(full_path):
+                    # Check if directory exists first to avoid exception overhead
+                    if os.path.isdir(file_directory):
+                        # Use set for O(1) lookup instead of list
+                        audio_exts = {".mp3", ".flac", ".ogg", ".m4a", ".opus", ".wav", ".aac", ".wma"}
+                        subtitle_exts = {".lrc", ".ass", ".srt", ".vtt"}
+
+                        # Use scandir instead of listdir - avoids separate stat calls
+                        for entry in os.scandir(file_directory):
+                            # entry.is_file() uses cached stat info from scandir
+                            if not entry.is_file():
                                 continue
-                            
+
                             # Skip subtitle/lyrics files
-                            if entry.endswith((".lrc", ".ass", ".srt", ".vtt")):
+                            if any(entry.name.endswith(ext) for ext in subtitle_exts):
                                 continue
-                            
+
                             # Check if file matches target (strip audio extension)
-                            audio_exts = [".mp3", ".flac", ".ogg", ".m4a", ".opus", ".wav", ".aac", ".wma"]
-                            entry_base = entry
-                            for ext in audio_exts:
-                                if entry.endswith(ext):
-                                    entry_base = entry[:-len(ext)]
-                                    break
-                            
+                            # Use os.path.splitext for cleaner extension handling
+                            entry_base, entry_ext = os.path.splitext(entry.name)
+                            if entry_ext.lower() not in audio_exts:
+                                # Not an audio file, use full name
+                                entry_base = entry.name
+
                             if entry_base == target_filename:
-                                logger.info(f"MATCH FOUND! File '{entry}' matches target '{target_filename}' - Skipping download")
-                                item['file_path'] = full_path
+                                logger.info(f"MATCH FOUND! File '{entry.name}' matches target '{target_filename}' - Skipping download")
+                                item['file_path'] = entry.path
                                 if item_type in ['track', 'podcast_episode']:
                                     if config.get('overwrite_existing_metadata'):
 
@@ -377,14 +381,11 @@ class DownloadWorker(QObject):
                                 if item['item_status'] in ('Downloading', 'Setting Thumbnail', 'Adding To M3U', 'Getting Lyrics'):
                                     self.update_progress(item, self.tr("Already Exists") if self.gui else "Already Exists", 100)
                                 item['item_status'] = 'Already Exists'
-                                logger.info(f"File already exists (found as {entry}), Skipping download for track by id '{item_id}'")
+                                logger.info(f"File already exists (found as {entry.name}), Skipping download for track by id '{item_id}'")
                                 time.sleep(0.2)
                                 item['progress'] = 100
                                 self.readd_item_to_download_queue(item)
                                 break
-                    except FileNotFoundError:
-                        # Directory doesn't exist yet, will be created later
-                        pass
 
                 if item['item_status'] == 'Already Exists':
                     continue
