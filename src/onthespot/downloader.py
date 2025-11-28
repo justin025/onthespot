@@ -414,16 +414,24 @@ class DownloadWorker(QObject):
 
                         total_size = stream.input_stream.size
                         downloaded = 0
+                        last_progress_time = time.time()
+                        stall_timeout = config.get("download_stall_timeout")
                         with open(temp_file_path, 'wb') as file:
                             while downloaded < total_size:
                                 if item['item_status'] == 'Cancelled':
                                    raise Exception("Download cancelled by user.")
+
+                                # Check for stalled download
+                                if time.time() - last_progress_time > stall_timeout:
+                                    raise Exception(f"Download stalled (no progress for {stall_timeout}s), reconnecting...")
+
                                 data = stream.input_stream.stream().read(config.get("download_chunk_size"))
                                 downloaded += len(data)
                                 if len(data) != 0:
                                     file.write(data)
                                     progress_pct = int((downloaded / total_size) * 100)
                                     self.update_progress(item, self.tr("Downloading") if self.gui else "Downloading", progress_pct)
+                                    last_progress_time = time.time()  # Update progress time when data received
                                 if len(data) == 0:
                                     break
                         stream.input_stream.stream().close()
@@ -492,8 +500,14 @@ class DownloadWorker(QObject):
                             total_size = int(file.headers.get('content-length', 0))
                             downloaded = 0
                             data_chunks = b''
+                            last_progress_time = time.time()
+                            stall_timeout = config.get("download_stall_timeout")
 
                             for data in file.iter_content(chunk_size=config.get("download_chunk_size")):
+                                # Check for stalled download
+                                if time.time() - last_progress_time > stall_timeout:
+                                    raise Exception(f"Download stalled (no progress for {stall_timeout}s), reconnecting...")
+
                                 downloaded += len(data)
                                 data_chunks += data
 
@@ -502,6 +516,7 @@ class DownloadWorker(QObject):
                                         raise Exception("Download cancelled by user.")
                                     progress_pct = int((downloaded / total_size) * 100)
                                     self.update_progress(item, self.tr("Downloading") if self.gui else "Downloading", progress_pct)
+                                    last_progress_time = time.time()  # Update progress time when data received
 
                             key = calcbfkey(song["SNG_ID"])
 
@@ -557,8 +572,14 @@ class DownloadWorker(QObject):
                         total_size = int(response.headers.get('Content-Length', 0))
                         downloaded = 0
                         data_chunks = b''
+                        last_progress_time = time.time()
+                        stall_timeout = config.get("download_stall_timeout")
                         with open(temp_file_path, 'wb') as file:
                             for data in response.iter_content(chunk_size=config.get("download_chunk_size", 1024)):
+                                # Check for stalled download
+                                if time.time() - last_progress_time > stall_timeout:
+                                    raise Exception(f"Download stalled (no progress for {stall_timeout}s), reconnecting...")
+
                                 if data:
                                     downloaded += len(data)
                                     data_chunks += data
@@ -569,6 +590,7 @@ class DownloadWorker(QObject):
                                             raise Exception("Download cancelled by user.")
                                         progress_pct = int((downloaded / total_size) * 100)
                                         self.update_progress(item, self.tr("Downloading") if self.gui else "Downloading", progress_pct)
+                                        last_progress_time = time.time()  # Update progress time when data received
 
                     elif item_service == "apple_music":
                         default_format = '.m4a'

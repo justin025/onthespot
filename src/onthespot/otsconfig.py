@@ -115,6 +115,7 @@ class Config:
             "maximum_download_workers": 2, # Maximum number of download workers
             "enable_retry_worker": False, # Enable retry worker, automatically retries failed downloads after a set time
             "retry_worker_delay": 10, # Amount of time to wait before retrying failed downloads, in minutes
+            "download_stall_timeout": 10, # Seconds of no progress before reconnecting and restarting download
 
             # Search Settings
             "enable_search_tracks": True, # Enable listed category in search

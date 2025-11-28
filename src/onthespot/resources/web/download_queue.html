@@ -666,6 +666,11 @@
 
         // ============= SORTING FUNCTIONS =============
         function getTrackNumber(item) {
+            // Prioritize playlist_number if available, otherwise use track_number
+            const pn = item.playlist_number ?? item.item_playlist_number;
+            if (pn !== null && pn !== undefined) {
+                return pn;
+            }
             const tn = item.track_number ?? item.item_track_number;
             return (tn === null || tn === undefined) ? null : tn;
         }
