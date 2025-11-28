@@ -112,7 +112,7 @@ class Config:
             "download_delay": 3, # Seconds to wait before next download attempt
             "download_chunk_size": 50000, # Chunk size in bytes to download in
             "maximum_queue_workers": 1, # Maximum number of queue workers
-            "maximum_download_workers": 1, # Maximum number of download workers
+            "maximum_download_workers": 2, # Maximum number of download workers
             "enable_retry_worker": False, # Enable retry worker, automatically retries failed downloads after a set time
             "retry_worker_delay": 10, # Amount of time to wait before retrying failed downloads, in minutes
 
