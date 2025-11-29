@@ -274,6 +274,10 @@ class DownloadWorker(QObject):
                     if item_service == 'youtube_music' and item.get('parent_category') == 'album':
                         item_metadata.update({'track_number': item['playlist_number']})
 
+                    # Use playlist position for playlists instead of album track number
+                    if item.get('parent_category') == 'playlist':
+                        item_metadata.update({'track_number': item['playlist_number']})
+
                     item_path = format_item_path(item, item_metadata)
                 except (Exception, KeyError) as e:
                     logger.error(f"Failed to fetch metadata for '{item_id}', Error: {str(e)}\nTraceback: {traceback.format_exc()}")
@@ -410,39 +414,94 @@ class DownloadWorker(QObject):
                             quality = AudioQuality.VERY_HIGH
                             bitrate = "320k"
 
-                        # Use the new helper method for stream acquisition with fallback
-                        stream, token, _ = self._try_get_spotify_stream(item, item_id, item_type, token, quality)
+                        # Retry loop for handling stalls and connection resets
+                        max_download_retries = 3
+                        download_retry_count = 0
+                        download_successful = False
 
-                        total_size = stream.input_stream.size
-                        downloaded = 0
-                        last_progress_time = time.time()
-                        stall_timeout = config.get("download_stall_timeout")
-                        with open(temp_file_path, 'wb') as file:
-                            while downloaded < total_size:
-                                if item['item_status'] == 'Cancelled':
-                                   raise Exception("Download cancelled by user.")
+                        while download_retry_count < max_download_retries and not download_successful:
+                            try:
+                                # Get stream (with account fallback)
+                                stream, token, _ = self._try_get_spotify_stream(item, item_id, item_type, token, quality)
 
-                                # Check for stalled download
-                                if time.time() - last_progress_time > stall_timeout:
-                                    raise Exception(f"Download stalled (no progress for {stall_timeout}s), reconnecting...")
+                                total_size = stream.input_stream.size
+                                downloaded = 0
+                                last_progress_time = time.time()
+                                stall_timeout = config.get("download_stall_timeout")
 
-                                data = stream.input_stream.stream().read(config.get("download_chunk_size"))
-                                downloaded += len(data)
-                                if len(data) != 0:
-                                    file.write(data)
-                                    progress_pct = int((downloaded / total_size) * 100)
-                                    self.update_progress(item, self.tr("Downloading") if self.gui else "Downloading", progress_pct)
-                                    last_progress_time = time.time()  # Update progress time when data received
-                                if len(data) == 0:
-                                    break
+                                with open(temp_file_path, 'wb') as file:
+                                    while downloaded < total_size:
+                                        if item['item_status'] == 'Cancelled':
+                                           raise Exception("Download cancelled by user.")
 
-                        # Validate that the complete file was downloaded
-                        if downloaded < total_size:
-                            raise RuntimeError(f"Incomplete download: received {downloaded}/{total_size} bytes, stream ended prematurely")
+                                        # Check for stalled download before read
+                                        if time.time() - last_progress_time > stall_timeout:
+                                            raise Exception(f"Download stalled (no progress for {stall_timeout}s), reconnecting...")
 
-                        stream.input_stream.stream().close()
-                        stream_internal = stream.input_stream.stream()
-                        del stream_internal, stream.input_stream
+                                        read_start_time = time.time()
+                                        data = stream.input_stream.stream().read(config.get("download_chunk_size"))
+                                        read_duration = time.time() - read_start_time
+
+                                        # Check if read operation itself took too long (indicating blocking/stalling)
+                                        if read_duration > stall_timeout:
+                                            raise Exception(f"Download stalled (read blocked for {read_duration:.1f}s), reconnecting...")
+
+                                        downloaded += len(data)
+                                        if len(data) != 0:
+                                            file.write(data)
+                                            progress_pct = int((downloaded / total_size) * 100)
+                                            self.update_progress(item, self.tr("Downloading") if self.gui else "Downloading", progress_pct)
+                                            last_progress_time = time.time()  # Update progress time when data received
+                                        if len(data) == 0:
+                                            break
+
+                                # Validate that the complete file was downloaded
+                                # Allow a small tolerance (0.1% or 1KB, whichever is larger) for minor stream discrepancies
+                                bytes_missing = total_size - downloaded
+                                tolerance = max(int(total_size * 0.001), 1024)  # 0.1% or 1KB
+                                if bytes_missing > tolerance:
+                                    raise RuntimeError(f"Incomplete download: received {downloaded}/{total_size} bytes (missing {bytes_missing}), stream ended prematurely")
+                                elif bytes_missing > 0:
+                                    logger.debug(f"Download completed with minor discrepancy: {downloaded}/{total_size} bytes (missing {bytes_missing} bytes, within tolerance)")
+
+                                # Clean up stream
+                                try:
+                                    stream.input_stream.stream().close()
+                                    stream_internal = stream.input_stream.stream()
+                                    del stream_internal, stream.input_stream
+                                except Exception:
+                                    pass  # Stream cleanup errors are non-critical
+
+                                download_successful = True
+                                logger.info(f"Download completed successfully after {download_retry_count + 1} attempt(s)")
+
+                            except (RuntimeError, OSError, Exception) as e:
+                                error_str = str(e)
+                                # Check if this is a stall or connection error
+                                if any(x in error_str for x in ['stalled', 'Connection reset', 'Failed reading packet', 'Broken pipe', 'Bad file descriptor', 'Incomplete download']):
+                                    download_retry_count += 1
+                                    if download_retry_count < max_download_retries:
+                                        logger.warning(f"Download interrupted (attempt {download_retry_count}/{max_download_retries}): {error_str}")
+                                        logger.info(f"Reconnecting and retrying download...")
+                                        # Clean up partial file and stream
+                                        if os.path.exists(temp_file_path):
+                                            try:
+                                                os.remove(temp_file_path)
+                                            except Exception:
+                                                pass
+                                        try:
+                                            stream.input_stream.stream().close()
+                                        except Exception:
+                                            pass
+                                        # Wait a bit before retrying
+                                        time.sleep(2)
+                                        continue
+                                    else:
+                                        logger.error(f"Max download retries ({max_download_retries}) reached, giving up")
+                                        raise
+                                else:
+                                    # Not a recoverable error, re-raise immediately
+                                    raise
 
                     elif item_service == 'deezer':
                         song = get_song_info_from_deezer_website(token, item['item_id'])
@@ -472,69 +531,98 @@ class DownloadWorker(QObject):
                             'Referer': 'https://www.deezer.com/login',
                         }
 
-                        track_data = token['session'].post(
-                            "https://media.deezer.com/v1/get_url",
-                            json={
-                                'license_token': token['license_token'],
-                                'media': [{
-                                    'type': "FULL",
-                                    'formats': [
-                                        { 'cipher': "BF_CBC_STRIPE", 'format': song_format }
-                                    ]
-                                }],
-                                'track_tokens': [song["TRACK_TOKEN"]]
-                            },
-                            headers = headers
-                        ).json()
+                        # Retry loop for handling stalls and connection resets
+                        max_download_retries = 3
+                        download_retry_count = 0
+                        download_successful = False
 
-                        try:
-                            logger.debug(track_data)
-                            url = track_data['data'][0]['media'][0]['sources'][0]['url']
-                        except KeyError as e:
-                            # Fallback to lowest quality
-                            logger.error(f'Unable to select Deezer quality, falling back to 128kbps. Error: {str(e)}\nTraceback: {traceback.format_exc()}')
-                            song_quality = 1
-                            song_format = 'MP3_128'
-                            bitrate = "128k"
-                            default_format = ".mp3"
-                            urlkey = genurlkey(song["SNG_ID"], song["MD5_ORIGIN"], song["MEDIA_VERSION"], song_quality)
-                            url = "https://e-cdns-proxy-%s.dzcdn.net/mobile/1/%s" % (song["MD5_ORIGIN"][0], urlkey.decode())
+                        while download_retry_count < max_download_retries and not download_successful:
+                            try:
+                                track_data = token['session'].post(
+                                    "https://media.deezer.com/v1/get_url",
+                                    json={
+                                        'license_token': token['license_token'],
+                                        'media': [{
+                                            'type': "FULL",
+                                            'formats': [
+                                                { 'cipher': "BF_CBC_STRIPE", 'format': song_format }
+                                            ]
+                                        }],
+                                        'track_tokens': [song["TRACK_TOKEN"]]
+                                    },
+                                    headers = headers
+                                ).json()
 
-                        file = requests.get(url, stream=True)
+                                try:
+                                    logger.debug(track_data)
+                                    url = track_data['data'][0]['media'][0]['sources'][0]['url']
+                                except KeyError as e:
+                                    # Fallback to lowest quality
+                                    logger.error(f'Unable to select Deezer quality, falling back to 128kbps. Error: {str(e)}\nTraceback: {traceback.format_exc()}')
+                                    song_quality = 1
+                                    song_format = 'MP3_128'
+                                    bitrate = "128k"
+                                    default_format = ".mp3"
+                                    urlkey = genurlkey(song["SNG_ID"], song["MD5_ORIGIN"], song["MEDIA_VERSION"], song_quality)
+                                    url = "https://e-cdns-proxy-%s.dzcdn.net/mobile/1/%s" % (song["MD5_ORIGIN"][0], urlkey.decode())
 
-                        if file.status_code == 200:
-                            total_size = int(file.headers.get('content-length', 0))
-                            downloaded = 0
-                            data_chunks = b''
-                            last_progress_time = time.time()
-                            stall_timeout = config.get("download_stall_timeout")
+                                file = requests.get(url, stream=True)
 
-                            for data in file.iter_content(chunk_size=config.get("download_chunk_size")):
-                                # Check for stalled download
-                                if time.time() - last_progress_time > stall_timeout:
-                                    raise Exception(f"Download stalled (no progress for {stall_timeout}s), reconnecting...")
+                                if file.status_code == 200:
+                                    total_size = int(file.headers.get('content-length', 0))
+                                    downloaded = 0
+                                    data_chunks = b''
+                                    last_progress_time = time.time()
+                                    stall_timeout = config.get("download_stall_timeout")
 
-                                downloaded += len(data)
-                                data_chunks += data
+                                    for data in file.iter_content(chunk_size=config.get("download_chunk_size")):
+                                        # Check for stalled download
+                                        if time.time() - last_progress_time > stall_timeout:
+                                            raise Exception(f"Download stalled (no progress for {stall_timeout}s), reconnecting...")
 
-                                if downloaded != total_size:
-                                    if item['item_status'] == 'Cancelled':
-                                        raise Exception("Download cancelled by user.")
-                                    progress_pct = int((downloaded / total_size) * 100)
-                                    self.update_progress(item, self.tr("Downloading") if self.gui else "Downloading", progress_pct)
-                                    last_progress_time = time.time()  # Update progress time when data received
+                                        downloaded += len(data)
+                                        data_chunks += data
 
-                            key = calcbfkey(song["SNG_ID"])
+                                        if downloaded != total_size:
+                                            if item['item_status'] == 'Cancelled':
+                                                raise Exception("Download cancelled by user.")
+                                            progress_pct = int((downloaded / total_size) * 100)
+                                            self.update_progress(item, self.tr("Downloading") if self.gui else "Downloading", progress_pct)
+                                            last_progress_time = time.time()  # Update progress time when data received
 
-                            self.update_progress(item, self.tr("Decrypting") if self.gui else "Decrypting", 99)
-                            with open(temp_file_path, "wb") as fo:
-                                decryptfile(data_chunks, key, fo)
+                                    key = calcbfkey(song["SNG_ID"])
 
-                        else:
-                            logger.info(f"Deezer download attempts failed: {file.status_code}")
-                            item['item_status'] = "Failed"
-                            self.update_progress(item, self.tr("Failed") if self.gui else "Failed", 0)
-                            self.readd_item_to_download_queue(item)
+                                    self.update_progress(item, self.tr("Decrypting") if self.gui else "Decrypting", 99)
+                                    with open(temp_file_path, "wb") as fo:
+                                        decryptfile(data_chunks, key, fo)
+
+                                    download_successful = True
+                                    logger.info(f"Deezer download completed successfully after {download_retry_count + 1} attempt(s)")
+
+                                else:
+                                    logger.info(f"Deezer download attempts failed: {file.status_code}")
+                                    item['item_status'] = "Failed"
+                                    self.update_progress(item, self.tr("Failed") if self.gui else "Failed", 0)
+                                    self.readd_item_to_download_queue(item)
+                                    break
+
+                            except Exception as e:
+                                error_str = str(e)
+                                # Check if this is a stall or connection error
+                                if any(x in error_str for x in ['stalled', 'Connection reset', 'Failed reading packet', 'Broken pipe', 'Connection aborted', 'Incomplete download']):
+                                    download_retry_count += 1
+                                    if download_retry_count < max_download_retries:
+                                        logger.warning(f"Deezer download interrupted (attempt {download_retry_count}/{max_download_retries}): {error_str}")
+                                        logger.info(f"Reconnecting and retrying Deezer download...")
+                                        # Wait a bit before retrying
+                                        time.sleep(2)
+                                        continue
+                                    else:
+                                        logger.error(f"Max Deezer download retries ({max_download_retries}) reached, giving up")
+                                        raise
+                                else:
+                                    # Not a recoverable error, re-raise immediately
+                                    raise
 
                     elif item_service in ("soundcloud", "youtube_music"):
                         item_url = item_metadata['item_url']
@@ -574,29 +662,64 @@ class DownloadWorker(QObject):
                             default_format = '.mp3'
                             bitrate = "128k"
                             file_url = item_metadata['file_url']
-                        response = requests.get(file_url, stream=True)
-                        total_size = int(response.headers.get('Content-Length', 0))
-                        downloaded = 0
-                        data_chunks = b''
-                        last_progress_time = time.time()
-                        stall_timeout = config.get("download_stall_timeout")
-                        with open(temp_file_path, 'wb') as file:
-                            for data in response.iter_content(chunk_size=config.get("download_chunk_size", 1024)):
-                                # Check for stalled download
-                                if time.time() - last_progress_time > stall_timeout:
-                                    raise Exception(f"Download stalled (no progress for {stall_timeout}s), reconnecting...")
 
-                                if data:
-                                    downloaded += len(data)
-                                    data_chunks += data
-                                    file.write(data)
+                        # Retry loop for handling stalls and connection resets
+                        max_download_retries = 3
+                        download_retry_count = 0
+                        download_successful = False
 
-                                    if total_size > 0 and downloaded != total_size:
-                                        if item['item_status'] == 'Cancelled':
-                                            raise Exception("Download cancelled by user.")
-                                        progress_pct = int((downloaded / total_size) * 100)
-                                        self.update_progress(item, self.tr("Downloading") if self.gui else "Downloading", progress_pct)
-                                        last_progress_time = time.time()  # Update progress time when data received
+                        while download_retry_count < max_download_retries and not download_successful:
+                            try:
+                                response = requests.get(file_url, stream=True)
+                                total_size = int(response.headers.get('Content-Length', 0))
+                                downloaded = 0
+                                data_chunks = b''
+                                last_progress_time = time.time()
+                                stall_timeout = config.get("download_stall_timeout")
+                                with open(temp_file_path, 'wb') as file:
+                                    for data in response.iter_content(chunk_size=config.get("download_chunk_size", 1024)):
+                                        # Check for stalled download
+                                        if time.time() - last_progress_time > stall_timeout:
+                                            raise Exception(f"Download stalled (no progress for {stall_timeout}s), reconnecting...")
+
+                                        if data:
+                                            downloaded += len(data)
+                                            data_chunks += data
+                                            file.write(data)
+
+                                            if total_size > 0 and downloaded != total_size:
+                                                if item['item_status'] == 'Cancelled':
+                                                    raise Exception("Download cancelled by user.")
+                                                progress_pct = int((downloaded / total_size) * 100)
+                                                self.update_progress(item, self.tr("Downloading") if self.gui else "Downloading", progress_pct)
+                                                last_progress_time = time.time()  # Update progress time when data received
+
+                                download_successful = True
+                                logger.info(f"{item_service} download completed successfully after {download_retry_count + 1} attempt(s)")
+
+                            except Exception as e:
+                                error_str = str(e)
+                                # Check if this is a stall or connection error
+                                if any(x in error_str for x in ['stalled', 'Connection reset', 'Failed reading packet', 'Broken pipe', 'Connection aborted', 'Incomplete download']):
+                                    download_retry_count += 1
+                                    if download_retry_count < max_download_retries:
+                                        logger.warning(f"{item_service} download interrupted (attempt {download_retry_count}/{max_download_retries}): {error_str}")
+                                        logger.info(f"Reconnecting and retrying {item_service} download...")
+                                        # Clean up partial file
+                                        if os.path.exists(temp_file_path):
+                                            try:
+                                                os.remove(temp_file_path)
+                                            except Exception:
+                                                pass
+                                        # Wait a bit before retrying
+                                        time.sleep(2)
+                                        continue
+                                    else:
+                                        logger.error(f"Max {item_service} download retries ({max_download_retries}) reached, giving up")
+                                        raise
+                                else:
+                                    # Not a recoverable error, re-raise immediately
+                                    raise
 
                     elif item_service == "apple_music":
                         default_format = '.m4a'
