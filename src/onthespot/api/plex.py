@@ -1,5 +1,6 @@
 import os
 import time
+import uuid
 import requests
 from urllib.parse import urljoin, quote
 from ..otsconfig import config
@@ -9,9 +10,18 @@ logger = get_logger('api.plex')
 
 # Plex API constants
 PLEX_TV_URL = 'https://plex.tv'
-PLEX_CLIENT_IDENTIFIER = 'onthespot-plex-integration'
 PLEX_PRODUCT_NAME = 'OnTheSpot'
 PLEX_VERSION = '1.0'
+
+# Get or generate a unique client identifier (UUID format required by Plex)
+def get_plex_client_identifier():
+    client_id = config.get('plex_client_identifier')
+    if not client_id:
+        client_id = str(uuid.uuid4())
+        config.set('plex_client_identifier', client_id)
+        config.save()
+        logger.info(f"Generated new Plex client identifier: {client_id}")
+    return client_id
 
 
 def plex_request_pin():
@@ -23,7 +33,7 @@ def plex_request_pin():
         headers = {
             'X-Plex-Product': PLEX_PRODUCT_NAME,
             'X-Plex-Version': PLEX_VERSION,
-            'X-Plex-Client-Identifier': PLEX_CLIENT_IDENTIFIER,
+            'X-Plex-Client-Identifier': get_plex_client_identifier(),
             'Accept': 'application/json'
         }
 
@@ -62,7 +72,7 @@ def plex_check_pin(pin_id):
     """
     try:
         headers = {
-            'X-Plex-Client-Identifier': PLEX_CLIENT_IDENTIFIER,
+            'X-Plex-Client-Identifier': get_plex_client_identifier(),
             'Accept': 'application/json'
         }
 
@@ -99,7 +109,7 @@ def plex_get_user_info(token):
     try:
         headers = {
             'X-Plex-Token': token,
-            'X-Plex-Client-Identifier': PLEX_CLIENT_IDENTIFIER,
+            'X-Plex-Client-Identifier': get_plex_client_identifier(),
             'Accept': 'application/json'
         }
 
@@ -133,7 +143,7 @@ def plex_get_servers(token):
     try:
         headers = {
             'X-Plex-Token': token,
-            'X-Plex-Client-Identifier': PLEX_CLIENT_IDENTIFIER,
+            'X-Plex-Client-Identifier': get_plex_client_identifier(),
             'Accept': 'application/json'
         }
 
