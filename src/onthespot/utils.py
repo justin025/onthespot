@@ -198,7 +198,7 @@ def convert_audio_format(filename, bitrate, default_format):
         try:
             # Prepare default parameters
             # Existing command initialization
-            command = [config.get('_ffmpeg_bin_path'), '-i', temp_name]
+            command = [config.get('_ffmpeg_bin_path'), '-y', '-i', temp_name]
 
             # Set log level based on environment variable
             if int(os.environ.get('SHOW_FFMPEG_OUTPUT', 0)) == 0:
@@ -234,9 +234,11 @@ def convert_audio_format(filename, bitrate, default_format):
                 subprocess.check_call(command, shell=False)
             os.remove(temp_name)
         except subprocess.CalledProcessError as e:
-            # Clean up the corrupted temp file and re-raise to trigger retry
+            # Clean up both temp input and potentially corrupted output files
             if os.path.isfile(temp_name):
                 os.remove(temp_name)
+            if os.path.isfile(filename):
+                os.remove(filename)
             raise RuntimeError(f"Failed to convert audio file (corrupted or invalid data): {e}")
 
 
@@ -248,9 +250,13 @@ def convert_video_format(item, output_path, output_format, video_files, item_met
 
     temp_file_path = os.path.join(os.path.dirname(target_path), "~" + file_stem + filetype) + '.' + output_format
 
+    # Clean up temp file if it exists from previous failed attempt
+    if os.path.isfile(temp_file_path):
+        os.remove(temp_file_path)
+
     # Prepare default parameters
     # Existing command initialization
-    command = [config.get('_ffmpeg_bin_path')]
+    command = [config.get('_ffmpeg_bin_path'), '-y']
 
     current_type = ''
     format_map = []
@@ -299,17 +305,23 @@ def convert_video_format(item, output_path, output_format, video_files, item_met
     logger.debug(
         f'Converting media with ffmpeg. Built commandline {command}'
         )
-    # Run subprocess with CREATE_NO_WINDOW flag on Windows
-    if os.name == 'nt':
-        subprocess.check_call(command, shell=False, creationflags=subprocess.CREATE_NO_WINDOW)
-    else:
-        subprocess.check_call(command, shell=False)
+    try:
+        # Run subprocess with CREATE_NO_WINDOW flag on Windows
+        if os.name == 'nt':
+            subprocess.check_call(command, shell=False, creationflags=subprocess.CREATE_NO_WINDOW)
+        else:
+            subprocess.check_call(command, shell=False)
 
-    for file in video_files:
-        if os.path.exists(file['path']):
-            os.remove(file['path'])
+        for file in video_files:
+            if os.path.exists(file['path']):
+                os.remove(file['path'])
 
-    os.rename(temp_file_path, output_path + '.' + output_format)
+        os.rename(temp_file_path, output_path + '.' + output_format)
+    except subprocess.CalledProcessError as e:
+        # Clean up temp output file and input files
+        if os.path.isfile(temp_file_path):
+            os.remove(temp_file_path)
+        raise RuntimeError(f"Failed to convert video file: {e}")
 
 
 def embed_metadata(item, metadata):
@@ -327,7 +339,7 @@ def embed_metadata(item, metadata):
         os.rename(item['file_path'], temp_name)
         # Prepare default parameters
         # Existing command initialization
-        command = [config.get('_ffmpeg_bin_path'), '-i', temp_name]
+        command = [config.get('_ffmpeg_bin_path'), '-y', '-i', temp_name]
 
         if int(os.environ.get('SHOW_FFMPEG_OUTPUT', 0)) == 0:
             command += ['-loglevel', 'error', '-hide_banner', '-nostats']
@@ -505,12 +517,20 @@ def embed_metadata(item, metadata):
         logger.debug(
             f'Embed metadata with ffmpeg. Built commandline {command}'
             )
-        # Run subprocess with CREATE_NO_WINDOW flag on Windows
-        if os.name == 'nt':
-            subprocess.check_call(command, shell=False, creationflags=subprocess.CREATE_NO_WINDOW)
-        else:
-            subprocess.check_call(command, shell=False)
-        os.remove(temp_name)
+        try:
+            # Run subprocess with CREATE_NO_WINDOW flag on Windows
+            if os.name == 'nt':
+                subprocess.check_call(command, shell=False, creationflags=subprocess.CREATE_NO_WINDOW)
+            else:
+                subprocess.check_call(command, shell=False)
+            os.remove(temp_name)
+        except subprocess.CalledProcessError as e:
+            # Clean up both temp input and potentially corrupted output files
+            if os.path.isfile(temp_name):
+                os.remove(temp_name)
+            if os.path.isfile(item['file_path']):
+                os.remove(item['file_path'])
+            raise RuntimeError(f"Failed to embed metadata: {e}")
 
 
 def set_music_thumbnail(filename, metadata):
@@ -553,7 +573,7 @@ def set_music_thumbnail(filename, metadata):
 
                 os.rename(filename, temp_name)
 
-                command = [config.get('_ffmpeg_bin_path'), '-i', temp_name]
+                command = [config.get('_ffmpeg_bin_path'), '-y', '-i', temp_name]
 
                 # Set log level based on environment variable
                 if int(os.environ.get('SHOW_FFMPEG_OUTPUT', 0)) == 0:
@@ -588,10 +608,19 @@ def set_music_thumbnail(filename, metadata):
                 logger.debug(
                     f'Setting thumbnail with ffmpeg. Built commandline {command}'
                     )
-                if os.name == 'nt':
-                    subprocess.check_call(command, shell=False, creationflags=subprocess.CREATE_NO_WINDOW)
-                else:
-                    subprocess.check_call(command, shell=False)
+                try:
+                    if os.name == 'nt':
+                        subprocess.check_call(command, shell=False, creationflags=subprocess.CREATE_NO_WINDOW)
+                    else:
+                        subprocess.check_call(command, shell=False)
+                    os.remove(temp_name)
+                except subprocess.CalledProcessError as e:
+                    # Clean up both temp input and potentially corrupted output files
+                    if os.path.isfile(temp_name):
+                        os.remove(temp_name)
+                    if os.path.isfile(filename):
+                        os.remove(filename)
+                    raise RuntimeError(f"Failed to set thumbnail: {e}")
 
             elif config.get('embed_cover') and filetype == '.ogg':
                 with open(image_path, 'rb') as image_file:
@@ -705,7 +734,7 @@ def strip_metadata(item):
         os.rename(item['file_path'], temp_name)
         # Prepare default parameters
         # Existing command initialization
-        command = [config.get('_ffmpeg_bin_path'), '-i', temp_name]
+        command = [config.get('_ffmpeg_bin_path'), '-y', '-i', temp_name]
 
         if int(os.environ.get('SHOW_FFMPEG_OUTPUT', 0)) == 0:
             command += ['-loglevel', 'error', '-hide_banner', '-nostats']
@@ -717,12 +746,20 @@ def strip_metadata(item):
         logger.debug(
             f'Strip metadata with ffmpeg. Built commandline {command}'
             )
-        # Run subprocess with CREATE_NO_WINDOW flag on Windows
-        if os.name == 'nt':
-            subprocess.check_call(command, shell=False, creationflags=subprocess.CREATE_NO_WINDOW)
-        else:
-            subprocess.check_call(command, shell=False)
-        os.remove(temp_name)
+        try:
+            # Run subprocess with CREATE_NO_WINDOW flag on Windows
+            if os.name == 'nt':
+                subprocess.check_call(command, shell=False, creationflags=subprocess.CREATE_NO_WINDOW)
+            else:
+                subprocess.check_call(command, shell=False)
+            os.remove(temp_name)
+        except subprocess.CalledProcessError as e:
+            # Clean up both temp input and potentially corrupted output files
+            if os.path.isfile(temp_name):
+                os.remove(temp_name)
+            if os.path.isfile(item['file_path']):
+                os.remove(item['file_path'])
+            raise RuntimeError(f"Failed to strip metadata: {e}")
 
 
 def format_bytes(size):
