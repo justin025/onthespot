@@ -377,12 +377,12 @@ def plex_playlists():
     logger.debug(f"M3U formatter from config: {m3u_formatter}")
 
     # Remove any trailing / and filename patterns
-    m3u_directory = m3u_formatter.rsplit('/', 1)[0] if '/' in m3u_formatter else './m3u'
+    m3u_directory = m3u_formatter.rsplit(os.path.sep, 1)[0] if os.path.sep in m3u_formatter else m3u_formatter.rsplit('/', 1)[0] if '/' in m3u_formatter else 'M3U'
     logger.debug(f"M3U directory (relative): {m3u_directory}")
 
-    # Expand the path to absolute path
-    if m3u_directory.startswith('./'):
-        m3u_directory = os.path.join(config_data.get('audio_download_path', './downloads'), m3u_directory[2:])
+    # Expand the path to absolute path - always join with audio_download_path if it's a relative path
+    if not os.path.isabs(m3u_directory):
+        m3u_directory = os.path.join(config_data.get('audio_download_path', './downloads'), m3u_directory)
 
     logger.debug(f"M3U directory (absolute): {m3u_directory}")
     logger.debug(f"Directory exists: {os.path.exists(m3u_directory)}")

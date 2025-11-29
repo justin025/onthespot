@@ -42,7 +42,7 @@ class Config:
             "language_index": 0, # Language Index
             "total_downloaded_items": 0, # Total downloaded items
             "total_downloaded_data": 0, # Total downloaded data in bytes
-            "m3u_format": "m3u8", # M3U file format
+            "m3u_format": "m3u", # M3U file format
             "use_double_digit_path_numbers": False, # Append a 0 to single digit path numbers, for instance 1 -> 01
             "ffmpeg_args": [], # Extra arguments for ffmpeg
 

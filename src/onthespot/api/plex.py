@@ -113,6 +113,50 @@ class PlexAPI:
         logger.info(f"Set Plex library section ID to: {library_id}")
         return True
 
+    def scan_library(self):
+        """Trigger a library scan to update playlists"""
+        if not self.auth_token or not self.library_section_id:
+            return False
+
+        try:
+            params = {'X-Plex-Token': self.auth_token}
+            scan_url = f"{self.server_url}/library/sections/{self.library_section_id}/refresh"
+            logger.debug(f"Triggering library scan: {scan_url}")
+            response = requests.get(scan_url, params=params, timeout=10)
+            return response.status_code == 200
+        except Exception as e:
+            logger.warning(f"Failed to trigger library scan: {e}")
+            return False
+
+    def get_playlists(self):
+        """Get all playlists from Plex server"""
+        if not self.auth_token:
+            return None
+
+        try:
+            params = {'X-Plex-Token': self.auth_token}
+            playlists_url = f"{self.server_url}/playlists"
+            logger.debug(f"Fetching playlists: {playlists_url}")
+            response = requests.get(playlists_url, params=params, timeout=10)
+
+            if response.status_code == 200:
+                # Parse XML response
+                import xml.etree.ElementTree as ET
+                root = ET.fromstring(response.text)
+                playlists = []
+                for playlist in root.findall('.//Playlist'):
+                    playlists.append({
+                        'title': playlist.get('title'),
+                        'key': playlist.get('key'),
+                        'playlistType': playlist.get('playlistType'),
+                        'smart': playlist.get('smart') == '1'
+                    })
+                return playlists
+            return None
+        except Exception as e:
+            logger.warning(f"Failed to get playlists: {e}")
+            return None
+
     def upload_playlist(self, m3u_file_path):
         """Upload a playlist to Plex"""
         logger.debug(f"=== Starting playlist upload ===")
@@ -129,6 +173,14 @@ class PlexAPI:
             logger.error("No library section selected")
             return {'success': False, 'error': 'No library selected'}
 
+        # Get playlist name for verification
+        import os
+        playlist_name = os.path.splitext(os.path.basename(m3u_file_path))[0]
+
+        # Get existing playlists before upload
+        playlists_before = self.get_playlists()
+        before_names = [p['title'] for p in playlists_before] if playlists_before else []
+
         try:
             params = {
                 'sectionID': self.library_section_id,
@@ -137,19 +189,72 @@ class PlexAPI:
             }
 
             upload_url = f"{self.server_url}/playlists/upload"
+
+            # Build complete URL with parameters for debugging
+            from urllib.parse import urlencode
+            token_masked = self.auth_token[:10] + '...' if self.auth_token else 'None'
+            params_debug = {
+                'sectionID': self.library_section_id,
+                'path': m3u_file_path,
+                'X-Plex-Token': token_masked
+            }
+            full_url_debug = f"{upload_url}?{urlencode(params_debug)}"
+
+            logger.debug(f"=== Request Details ===")
             logger.debug(f"Upload URL: {upload_url}")
-            logger.debug(f"Request params: sectionID={self.library_section_id}, path={m3u_file_path}")
+            logger.debug(f"Full URL (token masked): {full_url_debug}")
+            logger.debug(f"sectionID: {self.library_section_id}")
+            logger.debug(f"path: {m3u_file_path}")
+            logger.debug(f"X-Plex-Token: {token_masked}")
+
+            # Check M3U file exists and peek at contents
+            if os.path.exists(m3u_file_path):
+                file_size = os.path.getsize(m3u_file_path)
+                logger.debug(f"M3U file size: {file_size} bytes")
+                try:
+                    with open(m3u_file_path, 'r', encoding='utf-8') as f:
+                        lines = f.readlines()[:10]  # First 10 lines
+                        logger.debug(f"M3U file first {len(lines)} lines:")
+                        for i, line in enumerate(lines, 1):
+                            logger.debug(f"  Line {i}: {line.rstrip()}")
+                except Exception as e:
+                    logger.warning(f"Could not read M3U file: {e}")
+            else:
+                logger.error(f"M3U file does not exist at: {m3u_file_path}")
 
             logger.info(f"Sending POST request to Plex...")
             response = requests.post(upload_url, params=params, timeout=30)
 
             logger.debug(f"Response status code: {response.status_code}")
             logger.debug(f"Response headers: {dict(response.headers)}")
-            logger.debug(f"Response body: {response.text[:500]}")  # First 500 chars
+            logger.debug(f"Response body: {response.text[:500] if response.text else '(empty)'}")
 
             if response.status_code == 200:
-                logger.info(f"✓ Successfully uploaded playlist: {m3u_file_path}")
-                return {'success': True}
+                # Empty 200 response is normal for Plex
+                logger.info(f"✓ Plex accepted playlist upload: {m3u_file_path}")
+
+                # Trigger library scan to refresh playlists
+                logger.info("Triggering library scan to refresh playlists...")
+                self.scan_library()
+
+                # Wait a moment for the scan to process
+                time.sleep(2)
+
+                # Check if playlist was created
+                playlists_after = self.get_playlists()
+                after_names = [p['title'] for p in playlists_after] if playlists_after else []
+
+                if playlist_name in after_names:
+                    if playlist_name not in before_names:
+                        logger.info(f"✓ Playlist '{playlist_name}' created successfully!")
+                        return {'success': True, 'message': f"Playlist '{playlist_name}' created successfully"}
+                    else:
+                        logger.info(f"✓ Playlist '{playlist_name}' updated successfully!")
+                        return {'success': True, 'message': f"Playlist '{playlist_name}' updated"}
+                else:
+                    logger.warning(f"⚠ Playlist upload accepted but '{playlist_name}' not found in Plex. The playlist may be empty if tracks are not in the library.")
+                    return {'success': True, 'warning': f"Upload accepted but playlist not visible. Ensure tracks at paths in M3U file are scanned into Plex library section {self.library_section_id}."}
+
             else:
                 error_msg = f"HTTP {response.status_code}: {response.text}"
                 logger.error(f"✗ Failed to upload playlist: {error_msg}")
