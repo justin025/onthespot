@@ -114,6 +114,22 @@
             transform: none;
         }
 
+        .btn-delete {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+
+        .btn-delete:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+        }
+
+        .btn-delete:disabled {
+            background: #333;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .btn-back {
             background: #333;
             color: white;
@@ -209,6 +225,9 @@
                     <button class="btn btn-import" onclick="importPlaylist('{{ playlist.path }}', {{ loop.index0 }})">
                         Import to Plex
                     </button>
+                    <button class="btn btn-delete" onclick="deletePlaylist('{{ playlist.path }}', {{ loop.index0 }})">
+                        Delete
+                    </button>
                 </div>
                 <div class="playlist-status" id="status-{{ loop.index0 }}"></div>
             </div>
@@ -282,6 +301,63 @@
             }
 
             alert('Finished importing all playlists!');
+        }
+
+        async function deletePlaylist(playlistPath, index) {
+            if (!confirm(`Are you sure you want to delete this playlist?\n\n${playlistPath}`)) {
+                return;
+            }
+
+            const card = document.getElementById(`playlist-${index}`);
+            const button = card.querySelector('.btn-delete');
+            const statusDiv = document.getElementById(`status-${index}`);
+
+            button.disabled = true;
+            button.textContent = 'Deleting...';
+            statusDiv.textContent = 'Deleting playlist file...';
+            statusDiv.className = 'playlist-status status-importing';
+
+            try {
+                const response = await fetch('/api/plex/delete_playlist', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ playlist_path: playlistPath })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    statusDiv.textContent = 'Playlist deleted successfully';
+                    statusDiv.className = 'playlist-status status-success';
+
+                    // Fade out and remove the card
+                    card.style.transition = 'opacity 0.5s, transform 0.5s';
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.9)';
+
+                    setTimeout(() => {
+                        card.remove();
+
+                        // Check if there are any playlists left
+                        const remainingCards = document.querySelectorAll('.playlist-card');
+                        if (remainingCards.length === 0) {
+                            // Reload the page to show the empty state
+                            window.location.reload();
+                        }
+                    }, 500);
+                } else {
+                    button.textContent = 'Delete Failed';
+                    button.disabled = false;
+                    statusDiv.textContent = 'Error: ' + (data.error || 'Unknown error');
+                    statusDiv.className = 'playlist-status status-error';
+                }
+            } catch (e) {
+                console.error(e);
+                button.textContent = 'Delete Failed';
+                button.disabled = false;
+                statusDiv.textContent = 'Error: ' + e.message;
+                statusDiv.className = 'playlist-status status-error';
+            }
         }
     </script>
 </body>

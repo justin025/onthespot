@@ -431,6 +431,33 @@ def plex_import_playlist():
     return jsonify(**result)
 
 
+@app.route('/api/plex/delete_playlist', methods=['DELETE'])
+@login_required
+def plex_delete_playlist():
+    """Delete a playlist file"""
+    logger.debug("=== Plex delete playlist API called ===")
+    data = request.json
+    playlist_path = data.get('playlist_path')
+
+    logger.debug(f"Received playlist path to delete: {playlist_path}")
+
+    if not playlist_path:
+        logger.error("No playlist path provided")
+        return jsonify(success=False, error='No playlist path provided')
+
+    if not os.path.exists(playlist_path):
+        logger.error(f"Playlist file not found: {playlist_path}")
+        return jsonify(success=False, error='Playlist file not found')
+
+    try:
+        os.remove(playlist_path)
+        logger.info(f"Successfully deleted playlist: {playlist_path}")
+        return jsonify(success=True)
+    except Exception as e:
+        logger.error(f"Failed to delete playlist {playlist_path}: {str(e)}")
+        return jsonify(success=False, error=str(e))
+
+
 def main():
     config.migration()
     print(f'OnTheSpot Version: {config.get("version")}')

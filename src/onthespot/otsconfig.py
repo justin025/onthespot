@@ -363,6 +363,11 @@ class Config:
             self.set('version', self.__template_data.get('version'))
             self.save()
 
+        # Fix m3u_format if it's set to m3u8 (should be m3u)
+        if self.get('m3u_format') == 'm3u8':
+            self.set('m3u_format', 'm3u')
+            self.save()
+
         # Language
         if self.get("language_index") == 0:
             self.set("language", "en_US")
