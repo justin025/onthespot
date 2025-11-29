@@ -1189,6 +1189,43 @@
                 </div>
             </div>
         </div>
+
+        <!-- Plex Settings Section -->
+        <div class="settings-section">
+            <div class="section-header collapsed" onclick="toggleSection(this)">
+                <h3>📺 Plex Integration</h3>
+                <div class="section-toggle">▼</div>
+            </div>
+            <div class="section-content collapsed">
+                <div class="setting-row">
+                    <button onclick="signInWithPlex()" style="width: 100%; padding: 15px; font-size: 16px; background: #e5a00d; color: white; font-weight: bold;">
+                        🔗 Sign in with Plex
+                    </button>
+                </div>
+                <div id="plex_pin_status" style="display: none; padding: 15px; margin: 10px 0; background: rgba(33, 150, 243, 0.2); border: 1px solid rgba(33, 150, 243, 0.5); border-radius: 8px; text-align: center;">
+                    <div id="plex_pin_message"></div>
+                </div>
+                <div class="setting-row" style="text-align: center; color: #888; margin: 15px 0;">
+                    — OR enter manually —
+                </div>
+                <div class="setting-row">
+                    <label for="plex_server_url">Plex Server URL</label>
+                    <input type="text" id="plex_server_url" value="{{ config.plex_server_url }}" placeholder="http://127.0.0.1:32400">
+                </div>
+                <div class="setting-row">
+                    <label for="plex_token">Plex Token</label>
+                    <input type="password" id="plex_token" value="{{ config.plex_token }}" placeholder="Your X-Plex-Token">
+                </div>
+                <div class="setting-row">
+                    <label for="plex_library_section_id">Library Section ID</label>
+                    <input type="text" id="plex_library_section_id" value="{{ config.plex_library_section_id }}" placeholder="e.g., 5">
+                </div>
+                <div class="setting-row">
+                    <button onclick="testPlexConnection()" style="width: auto; padding: 10px 20px;">Test Connection</button>
+                    <span id="plex_test_result" style="margin-left: 10px;"></span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="mobile-save-bar">
@@ -1305,7 +1342,171 @@
                 preferred_subtitle_language: document.getElementById('preferred_subtitle_language').value,
                 download_all_available_audio: document.getElementById('download_all_available_audio').checked,
                 download_all_available_subtitles: document.getElementById('download_all_available_subtitles').checked,
+                plex_server_url: document.getElementById('plex_server_url').value,
+                plex_token: document.getElementById('plex_token').value,
+                plex_library_section_id: document.getElementById('plex_library_section_id').value,
             };
+        }
+
+        let plexPinInterval = null;
+
+        function signInWithPlex() {
+            const statusDiv = document.getElementById('plex_pin_status');
+            const messageDiv = document.getElementById('plex_pin_message');
+
+            // Show status div
+            statusDiv.style.display = 'block';
+            messageDiv.innerHTML = '🔄 Requesting PIN from Plex...';
+
+            // Request PIN
+            fetch('/api/plex/request_pin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Open browser to Plex link page
+                    window.open(data.url, '_blank');
+
+                    // Show PIN
+                    messageDiv.innerHTML = `
+                        <div style="font-size: 24px; font-weight: bold; margin: 10px 0;">${data.pin_code}</div>
+                        <div>Enter this PIN at <a href="${data.url}" target="_blank" style="color: #e5a00d;">${data.url}</a></div>
+                        <div style="margin-top: 10px;">⏳ Waiting for authorization...</div>
+                    `;
+
+                    // Start polling for authorization
+                    startPlexPinPolling(data.pin_id);
+                } else {
+                    messageDiv.innerHTML = '✗ Failed to request PIN: ' + (data.message || 'Unknown error');
+                    statusDiv.style.background = 'rgba(244, 67, 54, 0.2)';
+                    statusDiv.style.borderColor = 'rgba(244, 67, 54, 0.5)';
+                }
+            })
+            .catch(error => {
+                messageDiv.innerHTML = '✗ Error: ' + error.message;
+                statusDiv.style.background = 'rgba(244, 67, 54, 0.2)';
+                statusDiv.style.borderColor = 'rgba(244, 67, 54, 0.5)';
+            });
+        }
+
+        function startPlexPinPolling(pinId) {
+            let attempts = 0;
+            const maxAttempts = 60; // 5 minutes
+
+            plexPinInterval = setInterval(() => {
+                attempts++;
+
+                if (attempts > maxAttempts) {
+                    stopPlexPinPolling();
+                    const messageDiv = document.getElementById('plex_pin_message');
+                    const statusDiv = document.getElementById('plex_pin_status');
+                    messageDiv.innerHTML = '✗ Authentication timeout - PIN expired';
+                    statusDiv.style.background = 'rgba(244, 67, 54, 0.2)';
+                    statusDiv.style.borderColor = 'rgba(244, 67, 54, 0.5)';
+                    return;
+                }
+
+                fetch(`/api/plex/check_pin/${pinId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.authorized) {
+                            stopPlexPinPolling();
+
+                            // Update form fields
+                            document.getElementById('plex_token').value = data.token;
+                            if (data.servers && data.servers.length > 0) {
+                                document.getElementById('plex_server_url').value = data.servers[0].url;
+                                if (data.servers[0].sections && data.servers[0].sections.length > 0) {
+                                    document.getElementById('plex_library_section_id').value = data.servers[0].sections[0].id;
+                                }
+                            }
+
+                            // Show success message
+                            const messageDiv = document.getElementById('plex_pin_message');
+                            const statusDiv = document.getElementById('plex_pin_status');
+                            const username = data.user ? data.user.username : 'User';
+                            const serverNames = data.servers ? data.servers.map(s => s.name).join(', ') : 'None';
+
+                            messageDiv.innerHTML = `
+                                <div style="font-size: 18px; margin-bottom: 10px;">✓ Successfully signed in!</div>
+                                <div>User: <strong>${username}</strong></div>
+                                <div>Servers: <strong>${serverNames}</strong></div>
+                                <div style="margin-top: 10px; font-size: 14px;">Settings have been saved automatically.</div>
+                            `;
+                            statusDiv.style.background = 'rgba(76, 175, 80, 0.2)';
+                            statusDiv.style.borderColor = 'rgba(76, 175, 80, 0.5)';
+
+                            // Hide after 5 seconds
+                            setTimeout(() => {
+                                statusDiv.style.display = 'none';
+                            }, 5000);
+
+                            // Reload config to show updated values
+                            setTimeout(() => {
+                                location.reload();
+                            }, 2000);
+                        } else if (!data.success) {
+                            stopPlexPinPolling();
+                            const messageDiv = document.getElementById('plex_pin_message');
+                            const statusDiv = document.getElementById('plex_pin_status');
+                            messageDiv.innerHTML = '✗ Error checking PIN: ' + (data.message || 'Unknown error');
+                            statusDiv.style.background = 'rgba(244, 67, 54, 0.2)';
+                            statusDiv.style.borderColor = 'rgba(244, 67, 54, 0.5)';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error checking PIN:', error);
+                    });
+            }, 5000); // Poll every 5 seconds
+        }
+
+        function stopPlexPinPolling() {
+            if (plexPinInterval) {
+                clearInterval(plexPinInterval);
+                plexPinInterval = null;
+            }
+        }
+
+        function testPlexConnection() {
+            const resultSpan = document.getElementById('plex_test_result');
+            resultSpan.textContent = 'Testing...';
+            resultSpan.style.color = '#888';
+
+            const serverUrl = document.getElementById('plex_server_url').value;
+            const token = document.getElementById('plex_token').value;
+
+            if (!serverUrl || !token) {
+                resultSpan.textContent = '✗ Please enter both Server URL and Token';
+                resultSpan.style.color = '#e74c3c';
+                return;
+            }
+
+            fetch('/api/plex/test_connection', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ server_url: serverUrl, token: token })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    let message = '✓ Connected!';
+                    if (data.sections && data.sections.length > 0) {
+                        const sectionList = data.sections.map(s => `${s.title} (ID: ${s.id})`).join(', ');
+                        message += ` Libraries: ${sectionList}`;
+                    }
+                    resultSpan.textContent = message;
+                    resultSpan.style.color = '#27ae60';
+                } else {
+                    resultSpan.textContent = '✗ Connection failed';
+                    resultSpan.style.color = '#e74c3c';
+                }
+            })
+            .catch(error => {
+                resultSpan.textContent = '✗ Error: ' + error.message;
+                resultSpan.style.color = '#e74c3c';
+            });
         }
 
         function handleServiceChange() {

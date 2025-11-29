@@ -209,6 +209,11 @@ class Config:
             "preferred_subtitle_language": "en-US",
             "download_all_available_audio": False,
             "download_all_available_subtitles": False,
+
+            # Plex Settings
+            "plex_server_url": "", # Plex server URL (e.g., http://127.0.0.1:32400)
+            "plex_token": "", # Plex authentication token
+            "plex_library_section_id": "", # Default Plex library section ID for M3U imports
         }
         # Load Config
         if os.path.isfile(self.__cfg_path):

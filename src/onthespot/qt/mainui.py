@@ -25,6 +25,7 @@ from ..runtimedata import account_pool, download_queue, download_queue_lock, get
 from .dl_progressbtn import DownloadActionsButtons
 from .settings import load_config, save_config
 from .thumb_listitem import LabelWithThumb
+from .plex_m3u_ui import add_plex_settings_to_settings_tab, create_m3u_import_tab
 from ..utils import is_latest_release, open_item, format_bytes
 from ..search import get_search_results
 
@@ -128,6 +129,14 @@ class MainWindow(QMainWindow):
 
         # Set the table header properties
         self.set_table_props()
+
+        # Add Plex/M3U UI components
+        try:
+            add_plex_settings_to_settings_tab(self)
+            create_m3u_import_tab(self)
+        except Exception as e:
+            logger.error(f"Error adding Plex/M3U UI components: {str(e)}")
+
         logger.info("Main window init completed !")
 
 
