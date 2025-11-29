@@ -224,6 +224,14 @@ def load_config(self):
     self.download_all_available_audio.setChecked(config.get("download_all_available_audio"))
     self.download_all_available_subtitles.setChecked(config.get("download_all_available_subtitles"))
 
+    # Plex Settings (if widgets exist)
+    if hasattr(self, 'plex_server_url'):
+        self.plex_server_url.setText(config.get("plex_server_url"))
+    if hasattr(self, 'plex_token'):
+        self.plex_token.setText(config.get("plex_token"))
+    if hasattr(self, 'plex_library_section_id'):
+        self.plex_library_section_id.setText(config.get("plex_library_section_id"))
+
 
 def save_config(self):
     # General Settings
@@ -343,5 +351,13 @@ def save_config(self):
     config.set('preferred_subtitle_language', self.preferred_subtitle_language.text())
     config.set('download_all_available_audio', self.download_all_available_audio.isChecked())
     config.set('download_all_available_subtitles', self.download_all_available_subtitles.isChecked())
+
+    # Plex Settings (if widgets exist)
+    if hasattr(self, 'plex_server_url'):
+        config.set('plex_server_url', self.plex_server_url.text())
+    if hasattr(self, 'plex_token'):
+        config.set('plex_token', self.plex_token.text())
+    if hasattr(self, 'plex_library_section_id'):
+        config.set('plex_library_section_id', self.plex_library_section_id.text())
 
     config.save()

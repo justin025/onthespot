@@ -22,6 +22,8 @@ from .api.tidal import tidal_get_track_metadata
 from .api.youtube_music import youtube_music_get_track_metadata, youtube_music_add_account
 from .api.crunchyroll import crunchyroll_get_episode_metadata, crunchyroll_add_account
 from .api.generic import generic_add_account
+from .api.plex import (plex_test_connection, plex_get_library_sections,
+                       plex_import_m3u, plex_get_m3u_files)
 from .downloader import DownloadWorker, RetryWorker
 from .otsconfig import cache_dir, config_dir, config
 from .parse_item import parsingworker, parse_url
@@ -161,6 +163,91 @@ def settings():
 @login_required
 def about():
     return render_template('about.html', version=config.get("version"), statistics=f"{config.get('total_downloaded_items')} / {format_bytes(config.get('total_downloaded_data'))}")
+
+
+@app.route('/m3u_import')
+@login_required
+def m3u_import():
+    config_path = os.path.join(config_dir(), 'otsconfig.json')
+    with open(config_path, 'r') as config_file:
+        config_data = json.load(config_file)
+    return render_template('m3u_import.html', config=config_data)
+
+
+@app.route('/api/plex/test_connection', methods=['POST'])
+@login_required
+def api_plex_test_connection():
+    data = request.json
+    server_url = data.get('server_url')
+    token = data.get('token')
+
+    success = plex_test_connection(server_url, token)
+    sections = None
+    if success:
+        sections = plex_get_library_sections(server_url, token)
+
+    return jsonify({'success': success, 'sections': sections})
+
+
+@app.route('/api/plex/m3u_files')
+@login_required
+def api_plex_m3u_files():
+    m3u_files = plex_get_m3u_files()
+    file_list = []
+    for path in m3u_files:
+        file_list.append({
+            'path': path,
+            'name': os.path.splitext(os.path.basename(path))[0]
+        })
+    return jsonify({'success': True, 'files': file_list})
+
+
+@app.route('/api/plex/import_m3u', methods=['POST'])
+@login_required
+def api_plex_import_m3u():
+    data = request.json
+    m3u_path = data.get('m3u_path')
+    library_section_id = data.get('library_section_id')
+
+    server_url = config.get('plex_server_url')
+    token = config.get('plex_token')
+
+    if not server_url or not token:
+        return jsonify({'success': False, 'message': 'Plex not configured. Please configure in Settings.'})
+
+    if not library_section_id:
+        return jsonify({'success': False, 'message': 'Library Section ID is required'})
+
+    success = plex_import_m3u(server_url, token, library_section_id, m3u_path)
+    return jsonify({'success': success, 'message': 'Import successful' if success else 'Import failed'})
+
+
+@app.route('/api/plex/import_all', methods=['POST'])
+@login_required
+def api_plex_import_all():
+    data = request.json
+    library_section_id = data.get('library_section_id')
+
+    server_url = config.get('plex_server_url')
+    token = config.get('plex_token')
+
+    if not server_url or not token:
+        return jsonify({'success': False, 'message': 'Plex not configured. Please configure in Settings.'})
+
+    if not library_section_id:
+        return jsonify({'success': False, 'message': 'Library Section ID is required'})
+
+    m3u_files = plex_get_m3u_files()
+    success_count = 0
+    fail_count = 0
+
+    for m3u_path in m3u_files:
+        if plex_import_m3u(server_url, token, library_section_id, m3u_path):
+            success_count += 1
+        else:
+            fail_count += 1
+
+    return jsonify({'success': True, 'success_count': success_count, 'fail_count': fail_count})
 
 
 @app.route('/api/search_results')

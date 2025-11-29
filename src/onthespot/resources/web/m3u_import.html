@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OnTheSpot - M3U Import to Plex</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <script src="{{ url_for('static', filename='utils.js') }}" defer></script>
+    <style>
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        .import-controls {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-row label {
+            min-width: 150px;
+            font-weight: 500;
+        }
+
+        .control-row input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .import-status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .import-status.success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+            color: #4caf50;
+        }
+
+        .import-status.error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+            color: #f44336;
+        }
+
+        .import-status.info {
+            background: rgba(33, 150, 243, 0.2);
+            border: 1px solid rgba(33, 150, 243, 0.5);
+            color: #2196f3;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .data-table th {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .data-table td {
+            padding: 14px 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .data-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-import {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            background: var(--accent);
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn-import:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-import:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-content">
+            <a href="/search" class="logo">OnTheSpot</a>
+            <div class="nav-links">
+                <a href="/search">Search</a>
+                <a href="/download_queue">Downloads</a>
+                <a href="/m3u_import" class="active">M3U Import</a>
+                <a href="/settings">Settings</a>
+                <a href="/about">About</a>
+                <a href="/api/logout">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>📺 Import M3U Playlists to Plex</h1>
+
+        <div class="import-controls">
+            <div class="control-row">
+                <label for="library_section_id">Library Section ID:</label>
+                <input type="text" id="library_section_id" value="{{ config.plex_library_section_id }}" placeholder="Enter your Plex library section ID (e.g., 5)">
+            </div>
+            <div class="button-group">
+                <button class="btn-primary" onclick="refreshM3UList()">🔄 Refresh List</button>
+                <button class="btn-primary" onclick="importAllM3U()">📥 Import All to Plex</button>
+            </div>
+            <div id="import-status" class="import-status"></div>
+        </div>
+
+        <div id="m3u-table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Playlist Name</th>
+                        <th>File Path</th>
+                        <th style="width: 120px; text-align: center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="m3u-table-body">
+                    <tr>
+                        <td colspan="3" style="text-align: center; padding: 40px;">
+                            <div class="loading-spinner"></div>
+                            <p>Loading M3U files...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let m3uFiles = [];
+
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('import-status');
+            statusDiv.textContent = message;
+            statusDiv.className = 'import-status ' + type;
+            statusDiv.style.display = 'block';
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        async function refreshM3UList() {
+            const tbody = document.getElementById('m3u-table-body');
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 40px;"><div class="loading-spinner"></div><p>Loading M3U files...</p></td></tr>';
+
+            try {
+                const response = await fetch('/api/plex/m3u_files');
+                const data = await response.json();
+
+                if (data.success && data.files) {
+                    m3uFiles = data.files;
+                    renderM3UTable();
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state"><div class="empty-state-icon">📭</div><h3>No M3U files found</h3><p>Create some playlists and enable M3U creation in settings.</p></div></td></tr>';
+                }
+            } catch (error) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 40px; color: #f44336;">Error loading M3U files: ' + error.message + '</td></tr>';
+            }
+        }
+
+        function renderM3UTable() {
+            const tbody = document.getElementById('m3u-table-body');
+
+            if (m3uFiles.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state"><div class="empty-state-icon">📭</div><h3>No M3U files found</h3><p>Create some playlists and enable M3U creation in settings.</p></div></td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = m3uFiles.map(file => `
+                <tr>
+                    <td>${file.name}</td>
+                    <td style="font-size: 12px; color: rgba(255,255,255,0.6);">${file.path}</td>
+                    <td style="text-align: center;">
+                        <button class="btn-import" onclick="importSingleM3U('${file.path.replace(/'/g, "\\'")}', '${file.name.replace(/'/g, "\\'")}')">Import</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function importSingleM3U(path, name) {
+            const sectionId = document.getElementById('library_section_id').value;
+
+            if (!sectionId) {
+                showStatus('Please enter a Library Section ID', 'error');
+                return;
+            }
+
+            showStatus(`Importing "${name}"...`, 'info');
+
+            try {
+                const response = await fetch('/api/plex/import_m3u', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        m3u_path: path,
+                        library_section_id: sectionId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus(`✓ Successfully imported "${name}"`, 'success');
+                } else {
+                    showStatus(`✗ Failed to import "${name}": ${data.message || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`✗ Error importing "${name}": ${error.message}`, 'error');
+            }
+        }
+
+        async function importAllM3U() {
+            const sectionId = document.getElementById('library_section_id').value;
+
+            if (!sectionId) {
+                showStatus('Please enter a Library Section ID', 'error');
+                return;
+            }
+
+            if (m3uFiles.length === 0) {
+                showStatus('No M3U files to import', 'error');
+                return;
+            }
+
+            showStatus(`Importing ${m3uFiles.length} playlists...`, 'info');
+
+            try {
+                const response = await fetch('/api/plex/import_all', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ library_section_id: sectionId })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus(`✓ Import complete! Success: ${data.success_count}, Failed: ${data.fail_count}`, 'success');
+                } else {
+                    showStatus(`✗ Import failed: ${data.message || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Load M3U files on page load
+        document.addEventListener('DOMContentLoaded', refreshM3UList);
+    </script>
+</body>
+</html>
