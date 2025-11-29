@@ -569,6 +569,56 @@
             </div>
         </div>
 
+        <!-- Plex Integration Section -->
+        <div class="settings-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h3>📺 Plex Integration</h3>
+                <div class="section-toggle">▼</div>
+            </div>
+            <div class="section-content">
+                <div class="setting-row">
+                    <label for="plex_server_url">Plex Server URL</label>
+                    <input type="text" id="plex_server_url" value="{{ config.plex_server_url or 'http://127.0.0.1:32400' }}" placeholder="http://127.0.0.1:32400">
+                </div>
+                <div class="setting-row">
+                    <label>Authentication Status</label>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <span id="plex_auth_status">{% if config.plex_auth_token %}Connected{% else %}Not Connected{% endif %}</span>
+                        {% if config.plex_auth_token %}
+                        <button class="delete-btn" onclick="disconnectPlex()" title="Disconnect">
+                            <img src="/icons/trash.png" alt="Disconnect">
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if not config.plex_auth_token %}
+                <div class="setting-row" id="plex_auth_row">
+                    <label></label>
+                    <button onclick="authenticatePlex()" style="padding: 10px 20px; background: linear-gradient(135deg, #1db954, #1ed760); border: none; border-radius: 6px; color: white; font-size: 14px; font-weight: 500; cursor: pointer;">
+                        Connect to Plex
+                    </button>
+                </div>
+                {% endif %}
+                {% if config.plex_auth_token %}
+                <div class="setting-row">
+                    <label for="plex_library">Music Library</label>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <span id="plex_library_name">{% if config.plex_library_section_id %}Library {{ config.plex_library_section_id }}{% else %}Not Selected{% endif %}</span>
+                        <button onclick="selectPlexLibrary()" style="padding: 6px 12px; background: #333; border: none; border-radius: 6px; color: white; font-size: 13px; cursor: pointer;">
+                            Select Library
+                        </button>
+                    </div>
+                </div>
+                <div class="setting-row">
+                    <label></label>
+                    <button onclick="window.location.href='/plex_playlists'" style="padding: 10px 20px; background: linear-gradient(135deg, #e5a00d, #f1c40f); border: none; border-radius: 6px; color: white; font-size: 14px; font-weight: 500; cursor: pointer;">
+                        Import Playlists to Plex
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
         <!-- General Section -->
         <div class="settings-section">
             <div class="section-header" onclick="toggleSection(this)">
@@ -1212,6 +1262,7 @@
                 use_webui_login: document.getElementById('use_webui_login').checked,
                 webui_username: document.getElementById('webui_username').value,
                 webui_password: document.getElementById('webui_password').value,
+                plex_server_url: document.getElementById('plex_server_url').value,
                 explicit_label: document.getElementById('explicit_label').value,
                 download_copy_btn: document.getElementById('download_copy_btn').checked,
                 download_open_btn: document.getElementById('download_open_btn').checked,
@@ -1382,6 +1433,118 @@
             if (!confirm('Remove this account?')) return;
             fetch('/api/remove_account/' + uuid, { method: 'DELETE' })
             .then(r => { if (r.ok) { alert('Account removed! Please restart.'); location.reload(); } });
+        }
+
+        // Plex authentication functions
+        async function authenticatePlex() {
+            try {
+                // Save server URL first
+                const serverUrl = document.getElementById('plex_server_url').value;
+                await fetch('/api/plex/set_server_url', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ server_url: serverUrl })
+                });
+
+                // Request PIN
+                const pinResponse = await fetch('/api/plex/request_pin');
+                const pinData = await pinResponse.json();
+
+                if (!pinData.success) {
+                    alert('Failed to request PIN: ' + (pinData.error || 'Unknown error'));
+                    return;
+                }
+
+                // Show PIN and open auth URL
+                const continueAuth = confirm(
+                    `Your Plex PIN code is: ${pinData.pin_code}\n\n` +
+                    `Click OK to open Plex in a new window to authorize this app.\n` +
+                    `After authorizing, this page will automatically detect the connection.`
+                );
+
+                if (!continueAuth) return;
+
+                // Open auth URL in new window
+                window.open(pinData.auth_url, '_blank');
+
+                // Poll for authentication
+                let attempts = 0;
+                const maxAttempts = 60; // 2 minutes
+                const checkInterval = setInterval(async () => {
+                    attempts++;
+                    const checkResponse = await fetch(`/api/plex/check_pin/${pinData.pin_id}`);
+                    const checkData = await checkResponse.json();
+
+                    if (checkData.success && checkData.authenticated) {
+                        clearInterval(checkInterval);
+                        alert('Successfully connected to Plex!');
+                        location.reload();
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(checkInterval);
+                        alert('Authentication timeout. Please try again.');
+                    }
+                }, 2000);
+            } catch (e) {
+                console.error(e);
+                alert('Error during authentication: ' + e.message);
+            }
+        }
+
+        async function disconnectPlex() {
+            if (!confirm('Disconnect from Plex?')) return;
+            try {
+                const response = await fetch('/api/plex/disconnect', { method: 'POST' });
+                if (response.ok) {
+                    alert('Disconnected from Plex');
+                    location.reload();
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Error disconnecting: ' + e.message);
+            }
+        }
+
+        async function selectPlexLibrary() {
+            try {
+                const response = await fetch('/api/plex/libraries');
+                const data = await response.json();
+
+                if (!data.success || !data.libraries || data.libraries.length === 0) {
+                    alert('No music libraries found. Please make sure you have a music library in Plex.');
+                    return;
+                }
+
+                // Create library selection popup
+                let libraryOptions = data.libraries.map((lib, idx) =>
+                    `${idx + 1}. ${lib.title} (ID: ${lib.id})`
+                ).join('\n');
+
+                const selection = prompt(
+                    `Select a music library:\n\n${libraryOptions}\n\nEnter the number:`
+                );
+
+                if (selection) {
+                    const index = parseInt(selection) - 1;
+                    if (index >= 0 && index < data.libraries.length) {
+                        const selectedLibrary = data.libraries[index];
+                        const setResponse = await fetch('/api/plex/set_library', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ library_id: selectedLibrary.id })
+                        });
+
+                        if (setResponse.ok) {
+                            alert(`Selected library: ${selectedLibrary.title}`);
+                            location.reload();
+                        }
+                    } else {
+                        alert('Invalid selection');
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Error selecting library: ' + e.message);
+            }
         }
 
         handleServiceChange();

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OnTheSpot - Import Playlists to Plex</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <script src="{{ url_for('static', filename='utils.js') }}" defer></script>
+    <style>
+        .playlists-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 15px;
+            padding-bottom: 80px;
+        }
+
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .page-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .status-bar {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .status-bar p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #ddd;
+        }
+
+        .status-bar strong {
+            color: #1db954;
+        }
+
+        .playlists-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .playlist-card {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+
+        .playlist-card:hover {
+            background: #222;
+        }
+
+        .playlist-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            word-break: break-word;
+        }
+
+        .playlist-path {
+            font-size: 12px;
+            color: #888;
+            font-family: monospace;
+            word-break: break-all;
+        }
+
+        .playlist-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: auto;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            flex: 1;
+        }
+
+        .btn-import {
+            background: linear-gradient(135deg, #1db954, #1ed760);
+            color: white;
+        }
+
+        .btn-import:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(29, 185, 84, 0.4);
+        }
+
+        .btn-import:disabled {
+            background: #333;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-back {
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+        }
+
+        .btn-back:hover {
+            background: #444;
+        }
+
+        .btn-import-all {
+            background: linear-gradient(135deg, #e5a00d, #f1c40f);
+            color: white;
+            padding: 12px 24px;
+        }
+
+        .btn-import-all:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(241, 196, 15, 0.4);
+        }
+
+        .empty-state {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            color: #888;
+        }
+
+        .empty-state h3 {
+            margin: 0 0 10px 0;
+            color: #fff;
+        }
+
+        .status-success {
+            color: #1db954;
+        }
+
+        .status-error {
+            color: #ff4444;
+        }
+
+        .status-importing {
+            color: #f1c40f;
+        }
+
+        @media (max-width: 768px) {
+            .playlists-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <ul>
+            <li><a href="/search">Search</a></li>
+            <li><a href="/download_queue">Downloads</a></li>
+            <li><a href="/settings">Settings</a></li>
+            <li><a href="/about">About</a></li>
+        </ul>
+    </div>
+
+    <div class="playlists-container">
+        <div class="page-header">
+            <h2>📺 Import Playlists to Plex</h2>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn-back" onclick="window.location.href='/settings'">
+                    ← Back to Settings
+                </button>
+                {% if playlists|length > 0 %}
+                <button class="btn-import-all" onclick="importAllPlaylists()">
+                    Import All Playlists
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <p><strong>Plex Server:</strong> {{ config.plex_server_url or 'Not configured' }}</p>
+            <p><strong>Library:</strong> {% if config.plex_library_section_id %}Library {{ config.plex_library_section_id }}{% else %}Not selected{% endif %}</p>
+            <p><strong>M3U Directory:</strong> {{ m3u_directory }}</p>
+            <p><strong>Playlists Found:</strong> {{ playlists|length }}</p>
+        </div>
+
+        {% if playlists|length > 0 %}
+        <div class="playlists-grid" id="playlists-grid">
+            {% for playlist in playlists %}
+            <div class="playlist-card" id="playlist-{{ loop.index0 }}">
+                <div class="playlist-name">{{ playlist.name }}</div>
+                <div class="playlist-path">{{ playlist.path }}</div>
+                <div class="playlist-actions">
+                    <button class="btn btn-import" onclick="importPlaylist('{{ playlist.path }}', {{ loop.index0 }})">
+                        Import to Plex
+                    </button>
+                </div>
+                <div class="playlist-status" id="status-{{ loop.index0 }}"></div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <h3>No Playlists Found</h3>
+            <p>No M3U files found in the directory: {{ m3u_directory }}</p>
+            <p>Download some playlists first, then come back here to import them to Plex.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        async function importPlaylist(playlistPath, index) {
+            const button = document.querySelector(`#playlist-${index} .btn-import`);
+            const statusDiv = document.getElementById(`status-${index}`);
+
+            button.disabled = true;
+            button.textContent = 'Importing...';
+            statusDiv.textContent = 'Importing to Plex...';
+            statusDiv.className = 'playlist-status status-importing';
+
+            try {
+                const response = await fetch('/api/plex/import_playlist', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ playlist_path: playlistPath })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    button.textContent = '✓ Imported';
+                    statusDiv.textContent = 'Successfully imported to Plex';
+                    statusDiv.className = 'playlist-status status-success';
+                } else {
+                    button.textContent = 'Import Failed';
+                    button.disabled = false;
+                    statusDiv.textContent = 'Error: ' + (data.error || 'Unknown error');
+                    statusDiv.className = 'playlist-status status-error';
+                }
+            } catch (e) {
+                console.error(e);
+                button.textContent = 'Import Failed';
+                button.disabled = false;
+                statusDiv.textContent = 'Error: ' + e.message;
+                statusDiv.className = 'playlist-status status-error';
+            }
+        }
+
+        async function importAllPlaylists() {
+            if (!confirm('Import all playlists to Plex? This may take a while.')) return;
+
+            const cards = document.querySelectorAll('.playlist-card');
+            for (let i = 0; i < cards.length; i++) {
+                const card = cards[i];
+                const button = card.querySelector('.btn-import');
+
+                // Skip already imported playlists
+                if (button.disabled && button.textContent.includes('✓')) {
+                    continue;
+                }
+
+                const playlistPath = button.getAttribute('onclick').match(/'([^']+)'/)[1];
+                await importPlaylist(playlistPath, i);
+
+                // Small delay between imports to avoid overwhelming the server
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            alert('Finished importing all playlists!');
+        }
+    </script>
+</body>
+</html>
