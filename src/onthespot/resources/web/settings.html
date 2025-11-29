@@ -569,34 +569,6 @@
             </div>
         </div>
 
-        <!-- Plex Integration Section -->
-        <div class="settings-section">
-            <div class="section-header" onclick="toggleSection(this)">
-                <h3>📺 Plex Integration</h3>
-                <div class="section-toggle">▼</div>
-            </div>
-            <div class="section-content">
-                <div class="setting-row">
-                    <label for="plex_server_url">Plex Server URL</label>
-                    <input type="text" id="plex_server_url" value="{{ config.plex_server_url or 'http://127.0.0.1:32400' }}" placeholder="http://127.0.0.1:32400">
-                </div>
-                <div class="setting-row">
-                    <label for="plex_auth_token">X-Plex-Token</label>
-                    <input type="text" id="plex_auth_token" value="{{ config.plex_auth_token or '' }}" placeholder="Enter your X-Plex-Token">
-                </div>
-                <div class="setting-row">
-                    <label for="plex_library_section_id">Library Section ID</label>
-                    <input type="text" id="plex_library_section_id" value="{{ config.plex_library_section_id or '' }}" placeholder="Enter library section ID">
-                </div>
-                <div class="setting-row">
-                    <label></label>
-                    <button onclick="window.location.href='/plex_playlists'" style="padding: 10px 20px; background: linear-gradient(135deg, #e5a00d, #f1c40f); border: none; border-radius: 6px; color: white; font-size: 14px; font-weight: 500; cursor: pointer;">
-                        Import Playlists to Plex
-                    </button>
-                </div>
-            </div>
-        </div>
-
         <!-- General Section -->
         <div class="settings-section">
             <div class="section-header" onclick="toggleSection(this)">
@@ -1240,9 +1212,6 @@
                 use_webui_login: document.getElementById('use_webui_login').checked,
                 webui_username: document.getElementById('webui_username').value,
                 webui_password: document.getElementById('webui_password').value,
-                plex_server_url: document.getElementById('plex_server_url').value,
-                plex_auth_token: document.getElementById('plex_auth_token').value,
-                plex_library_section_id: document.getElementById('plex_library_section_id').value,
                 explicit_label: document.getElementById('explicit_label').value,
                 download_copy_btn: document.getElementById('download_copy_btn').checked,
                 download_open_btn: document.getElementById('download_open_btn').checked,
