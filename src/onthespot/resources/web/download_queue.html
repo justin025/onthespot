@@ -66,7 +66,6 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            flex-shrink: 0;
         }
 
         .status-dot {
@@ -93,9 +92,6 @@
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
-            flex-shrink: 1;
-            min-width: 0;
-            justify-content: flex-end;
         }
 
         .action-buttons button {
@@ -103,7 +99,6 @@
             font-size: 12px;
             margin: 0;
             white-space: nowrap;
-            flex-shrink: 0;
         }
 
         /* Filters panel */
@@ -199,11 +194,11 @@
 
         /* Fixed column widths */
         .col-track { width: 50px; text-align: center; }
-        .col-name { width: 18%; min-width: 120px; }
+        .col-name { width: 20%; min-width: 120px; }
         .col-album { width: 15%; min-width: 100px; }
         .col-by { width: 12%; min-width: 80px; }
         .col-service { width: 10%; min-width: 90px; }
-        .col-status { width: 130px; min-width: 130px; }
+        .col-status { width: 12%; min-width: 100px; }
         .col-progress { width: 15%; min-width: 120px; }
         .col-action { width: 8%; min-width: 60px; text-align: right; }
 
@@ -216,7 +211,6 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.3px;
-            white-space: nowrap;
         }
 
         .status-downloading {
@@ -372,16 +366,7 @@
         }
 
         /* ============= RESPONSIVE BREAKPOINTS ============= */
-
-        /* Medium desktop screens - compact buttons before mobile layout */
-        @media screen and (max-width: 1200px) {
-            .action-buttons button {
-                padding: 6px 10px;
-                font-size: 11px;
-                gap: 6px;
-            }
-        }
-
+        
         /* Tablet */
         @media screen and (max-width: 900px) {
             .hide-on-tablet {
