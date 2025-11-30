@@ -191,8 +191,27 @@ def convert_audio_format(filename, bitrate, default_format):
 
         temp_name = os.path.join(os.path.dirname(target_path), "~" + file_stem + filetype)
 
+        # Robust cleanup of existing temp file (may be corrupted from previous failed attempt)
         if os.path.isfile(temp_name):
-            os.remove(temp_name)
+            try:
+                os.remove(temp_name)
+                logger.debug(f"Removed existing temp file before conversion: {temp_name}")
+                time.sleep(0.05)  # Give filesystem time to sync
+            except (OSError, PermissionError) as e:
+                logger.error(f"Failed to remove corrupted temp file {temp_name}: {e}")
+                # Try to force remove with different strategy
+                try:
+                    if os.path.exists(temp_name):
+                        os.chmod(temp_name, 0o666)  # Ensure writable
+                        os.remove(temp_name)
+                        logger.info(f"Successfully removed temp file after chmod: {temp_name}")
+                except Exception as e2:
+                    logger.error(f"Could not remove temp file even after chmod: {e2}")
+                    raise RuntimeError(f"Cannot proceed: corrupted temp file exists and cannot be removed: {temp_name}")
+
+        # Validate source file before attempting conversion
+        if os.path.getsize(filename) == 0:
+            raise RuntimeError(f"Cannot convert: source file is empty: {filename}")
 
         os.rename(filename, temp_name)
 
@@ -260,17 +279,39 @@ def convert_audio_format(filename, bitrate, default_format):
                 break  # Success, exit retry loop
             except subprocess.CalledProcessError as e:
                 last_error = e
+                # Log detailed error information
+                logger.error(f"FFmpeg failed with exit code {e.returncode}: {e}")
+
+                # Exit code 183 typically means file corruption or access issues
+                if e.returncode == 183:
+                    logger.error(f"FFmpeg exit 183 detected - likely file corruption or access issue with {temp_name}")
+
                 if attempt < max_retries - 1:
                     # Wait before retrying (exponential backoff)
                     wait_time = 0.5 * (2 ** attempt)
                     logger.warning(f"FFmpeg conversion failed (attempt {attempt + 1}/{max_retries}), retrying in {wait_time}s: {e}")
+
+                    # Clean up partial output before retry
+                    if os.path.isfile(filename):
+                        try:
+                            os.remove(filename)
+                            logger.debug(f"Removed partial output file before retry: {filename}")
+                        except Exception as cleanup_err:
+                            logger.warning(f"Could not remove partial output file: {cleanup_err}")
+
                     time.sleep(wait_time)
                 else:
-                    # Final attempt failed, clean up and raise
-                    if os.path.isfile(temp_name):
-                        os.remove(temp_name)
-                    if os.path.isfile(filename):
-                        os.remove(filename)
+                    # Final attempt failed, thorough cleanup and raise
+                    logger.error(f"All {max_retries} FFmpeg conversion attempts failed for {temp_name}")
+
+                    for cleanup_file in [temp_name, filename]:
+                        if os.path.isfile(cleanup_file):
+                            try:
+                                os.remove(cleanup_file)
+                                logger.debug(f"Cleaned up file after final failure: {cleanup_file}")
+                            except Exception as cleanup_err:
+                                logger.error(f"Could not clean up {cleanup_file}: {cleanup_err}")
+
                     raise RuntimeError(f"Failed to convert audio file after {max_retries} attempts (corrupted or invalid data): {e}")
 
 

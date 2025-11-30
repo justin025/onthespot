@@ -1,3 +1,4 @@
+import glob
 import re
 import requests
 import subprocess
@@ -1047,12 +1048,37 @@ class DownloadWorker(QObject):
                 time.sleep(config.get("download_delay"))
                 self.readd_item_to_download_queue(item)
 
-                if os.path.exists(temp_file_path):
-                    os.remove(temp_file_path)
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-                if isinstance(item['file_path'], str) and os.path.exists(item['file_path']):
-                    os.remove(item['file_path'])
+                # Robust cleanup: remove all related files including temp files with ~ prefix
+                cleanup_paths = []
+
+                # Add known file paths
+                if temp_file_path:
+                    cleanup_paths.append(temp_file_path)
+                if file_path:
+                    cleanup_paths.append(file_path)
+                if isinstance(item.get('file_path'), str):
+                    cleanup_paths.append(item['file_path'])
+
+                # Also find any temp files with ~ prefix in the directory
+                if file_path:
+                    directory = os.path.dirname(file_path)
+                    basename = os.path.basename(file_path)
+                    # Look for temp files like ~basename*
+                    temp_pattern = os.path.join(directory, "~" + basename.split('.')[0] + "*")
+                    temp_files = glob.glob(temp_pattern)
+                    cleanup_paths.extend(temp_files)
+                    if temp_files:
+                        logger.info(f"Found {len(temp_files)} temp files to clean up: {temp_files}")
+
+                # Remove all identified files
+                for cleanup_path in set(cleanup_paths):  # Use set to avoid duplicates
+                    if cleanup_path and os.path.exists(cleanup_path):
+                        try:
+                            os.remove(cleanup_path)
+                            logger.debug(f"Cleaned up file after error: {cleanup_path}")
+                        except Exception as cleanup_err:
+                            logger.warning(f"Could not remove file {cleanup_path}: {cleanup_err}")
+
                 continue
 
 
