@@ -66,7 +66,6 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            flex-shrink: 0;
         }
 
         .status-dot {
@@ -93,9 +92,6 @@
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
-            flex-shrink: 1;
-            min-width: 0;
-            justify-content: flex-end;
         }
 
         .action-buttons button {
@@ -103,7 +99,6 @@
             font-size: 12px;
             margin: 0;
             white-space: nowrap;
-            flex-shrink: 0;
         }
 
         /* Filters panel */
@@ -199,32 +194,23 @@
 
         /* Fixed column widths */
         .col-track { width: 50px; text-align: center; }
-        .col-name { width: 18%; min-width: 120px; }
+        .col-name { width: 20%; min-width: 120px; }
         .col-album { width: 15%; min-width: 100px; }
         .col-by { width: 12%; min-width: 80px; }
         .col-service { width: 10%; min-width: 90px; }
-        .col-status {
-            width: 140px;
-            min-width: 140px;
-            max-width: 140px;
-            overflow: hidden;
-        }
+        .col-status { width: 12%; min-width: 100px; }
         .col-progress { width: 15%; min-width: 120px; }
         .col-action { width: 8%; min-width: 60px; text-align: right; }
 
         /* Status badges */
         .status-badge {
             display: inline-block;
-            padding: 4px 8px;
+            padding: 4px 10px;
             border-radius: 20px;
             font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.3px;
-            white-space: nowrap;
-            max-width: 100%;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
 
         .status-downloading {
@@ -380,16 +366,7 @@
         }
 
         /* ============= RESPONSIVE BREAKPOINTS ============= */
-
-        /* Medium desktop screens - compact buttons before mobile layout */
-        @media screen and (max-width: 1200px) {
-            .action-buttons button {
-                padding: 6px 10px;
-                font-size: 11px;
-                gap: 6px;
-            }
-        }
-
+        
         /* Tablet */
         @media screen and (max-width: 900px) {
             .hide-on-tablet {
@@ -439,7 +416,7 @@
             /* Mobile column widths - redistribute space without hidden columns */
             .col-track { width: 50px; }
             .col-name { width: auto; }
-            .col-status { width: 100px; }
+            .col-status { width: 80px; }
             .col-action { width: 60px; text-align: right; }
 
             /* Make name column take available space */
@@ -580,7 +557,7 @@
                         <col class="hide-on-mobile" style="width: 15%;"> <!-- Album -->
                         <col class="hide-on-tablet hide-on-mobile" style="width: 12%;"> <!-- By -->
                         <col class="hide-on-mobile" style="width: 10%;"> <!-- Service -->
-                        <col style="width: 140px;"> <!-- Status -->
+                        <col style="width: 80px;"> <!-- Status -->
                         <col class="hide-on-tablet hide-on-mobile" style="width: 15%;"> <!-- Progress -->
                         <col style="width: 60px;"> <!-- Action -->
                     </colgroup>
