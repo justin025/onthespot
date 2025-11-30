@@ -192,7 +192,40 @@ def search_results():
         content_types.append('audiobook')
 
     results = get_search_results(query, content_types=content_types)
-    return jsonify(results)
+
+    # Handle special return values
+    if results is True:
+        # URL was parsed and added to queue
+        return jsonify({
+            'success': True,
+            'message': 'Item is being parsed and will be added to the download queue shortly.',
+            'results': []
+        })
+    elif results is False:
+        return jsonify({
+            'success': False,
+            'message': 'Invalid item, please check your query or account settings.',
+            'results': []
+        })
+    elif results is None:
+        return jsonify({
+            'success': False,
+            'message': 'You need to login to at least one account to use this feature.',
+            'results': []
+        })
+    elif isinstance(results, list):
+        # Return search results array (including Spotify ID lookups)
+        return jsonify({
+            'success': True,
+            'results': results
+        })
+    else:
+        # Unexpected return type
+        return jsonify({
+            'success': False,
+            'message': 'Unexpected error occurred.',
+            'results': []
+        })
 
 
 @app.route('/api/clear_items', methods=['POST'])

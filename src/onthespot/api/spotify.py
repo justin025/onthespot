@@ -726,6 +726,116 @@ def spotify_get_search_results(token, search_term, content_types, _retry=False):
     return search_results
 
 
+def spotify_get_item_by_id(token, item_id, item_type, _retry=False):
+    """
+    Fetch a single Spotify item by ID and return it as a search result.
+
+    Args:
+        token: Spotify session token
+        item_id: The 22-character Spotify ID
+        item_type: Type of item (track, album, playlist, artist, episode, show)
+
+    Returns:
+        List containing a single search result dict, or empty list on error
+    """
+    logger.info(f"Get item by ID: {item_type}/{item_id}")
+
+    headers = {}
+    try:
+        headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+    except (RuntimeError, OSError, ConnectionError, Exception) as e:
+        if _retry:
+            logger.error(f"Failed to get token after retry: {e}")
+            return []
+        logger.warning(f"Token retrieval failed, attempting session reconnect: {e}")
+        try:
+            parsing_index = config.get('active_account_number')
+            spotify_re_init_session(account_pool[parsing_index])
+            new_token = account_pool[parsing_index]['login']['session']
+            return spotify_get_item_by_id(new_token, item_id, item_type, _retry=True)
+        except Exception as retry_error:
+            logger.error(f"Failed to reconnect session: {retry_error}")
+            return []
+
+    # Map internal types to API endpoints
+    endpoint_type = item_type
+    if item_type == 'podcast':
+        endpoint_type = 'show'
+    elif item_type == 'podcast_episode':
+        endpoint_type = 'episode'
+
+    try:
+        # Fetch item data from Spotify API
+        response = requests.get(
+            f"{BASE_URL}/{endpoint_type}s/{item_id}",
+            headers=headers,
+            timeout=10
+        )
+        if response.status_code != 200:
+            logger.error(f"Failed to fetch {item_type} {item_id}: {response.status_code} - {response.text}")
+            return []
+
+        item = response.json()
+
+        # Format the result based on item type (same as search results)
+        if item_type == "track":
+            item_name = f"{config.get('explicit_label') if item.get('explicit') else ''} {item['name']}"
+            item_by = f"{config.get('metadata_separator').join([artist['name'] for artist in item['artists']])}"
+            item_thumbnail_url = item['album']['images'][-1]["url"] if len(item['album']['images']) > 0 else ""
+        elif item_type == "album":
+            rel_year = re.search(r'(\d{4})', item['release_date']).group(1) if item.get('release_date') else '????'
+            item_name = f"[Y:{rel_year}] [T:{item['total_tracks']}] {item['name']}"
+            item_by = f"{config.get('metadata_separator').join([artist['name'] for artist in item['artists']])}"
+            item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
+        elif item_type == "playlist":
+            item_name = f"{item['name']}"
+            item_by = f"{item['owner']['display_name']}"
+            item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
+        elif item_type == "artist":
+            item_name = item['name']
+            if f"{'/'.join(item.get('genres', []))}" != "":
+                item_name = item['name'] + f"  |  GENERES: {'/'.join(item['genres'])}"
+            item_by = f"{item['name']}"
+            item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
+        elif item_type in ["show", "podcast"]:
+            item_name = f"{config.get('explicit_label') if item.get('explicit') else ''} {item['name']}"
+            item_by = f"{item['publisher']}"
+            item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
+            item_type = "podcast"
+        elif item_type in ["episode", "podcast_episode"]:
+            item_name = f"{config.get('explicit_label') if item.get('explicit') else ''} {item['name']}"
+            item_by = ""
+            item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
+            item_type = "podcast_episode"
+        elif item_type == "audiobook":
+            item_name = f"{config.get('explicit_label') if item.get('explicit') else ''} {item['name']}"
+            item_by = f"{item['publisher']}"
+            item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
+        else:
+            logger.error(f"Unknown item type: {item_type}")
+            return []
+
+        return [{
+            'item_id': item['id'],
+            'item_name': item_name,
+            'item_by': item_by,
+            'item_type': item_type,
+            'item_service': "spotify",
+            'item_url': item['external_urls']['spotify'],
+            'item_thumbnail_url': item_thumbnail_url
+        }]
+
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Network error fetching item {item_type}/{item_id}: {e}")
+        return []
+    except (KeyError, ValueError, AttributeError) as e:
+        logger.error(f"Data parsing error for item {item_type}/{item_id}: {e}")
+        return []
+    except Exception as e:
+        logger.error(f"Unexpected error fetching item {item_type}/{item_id}: {e}")
+        return []
+
+
 def spotify_get_track_metadata(token, item_id, _retry=False):
     headers = {}
     try:

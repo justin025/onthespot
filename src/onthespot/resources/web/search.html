@@ -671,7 +671,23 @@
                 .then(response => response.json())
                 .then(data => {
                     isSearching = false;
-                    renderResults(data);
+
+                    // Handle new response format with success field
+                    if (data.success === false) {
+                        showEmpty();
+                        showToast(data.message || 'Search failed', 'error');
+                        return;
+                    }
+
+                    // Handle URL parsing success message
+                    if (data.success === true && data.message && data.results.length === 0) {
+                        showEmpty();
+                        showToast(data.message, 'success');
+                        return;
+                    }
+
+                    // Render search results
+                    renderResults(data.results || data);
                 })
                 .catch(error => {
                     isSearching = false;
@@ -684,7 +700,7 @@
         function renderResults(data) {
             const tableBody = document.getElementById('results-body');
             tableBody.innerHTML = '';
-            
+
             if (!data || data.length === 0) {
                 showEmpty();
                 return;

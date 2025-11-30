@@ -1,11 +1,12 @@
 import os
+import re
 from .accounts import get_account_token
 from .api.apple_music import apple_music_get_search_results
 from .api.bandcamp import bandcamp_get_search_results
 from .api.deezer import deezer_get_search_results
 from .api.qobuz import qobuz_get_search_results
 from .api.soundcloud import soundcloud_get_search_results
-from .api.spotify import spotify_get_search_results
+from .api.spotify import spotify_get_search_results, spotify_get_item_by_id
 from .api.tidal import tidal_get_search_results
 from .api.youtube_music import youtube_music_get_search_results
 from .api.crunchyroll import crunchyroll_get_search_results
@@ -15,6 +16,10 @@ from .runtimedata import account_pool, get_logger
 
 logger = get_logger("search")
 
+# Regex patterns for Spotify ID detection
+SPOTIFY_ID_REGEX = re.compile(r'^[0-9a-zA-Z]{22}$')
+SPOTIFY_URI_REGEX = re.compile(r'^spotify:(?P<type>track|album|artist|playlist|episode|show):(?P<id>[0-9a-zA-Z]{22})$')
+
 
 def get_search_results(search_term, content_types=None):
     if len(account_pool) <= 0:
@@ -23,6 +28,40 @@ def get_search_results(search_term, content_types=None):
     if search_term == '':
         logger.warning(f"Returning empty data as query is empty !")
         return False
+
+    # Check for Spotify URI format (spotify:type:id)
+    uri_match = re.match(SPOTIFY_URI_REGEX, search_term)
+    if uri_match:
+        spotify_type = uri_match.group('type')
+        spotify_id = uri_match.group('id')
+        # Convert episode/show to podcast_episode/podcast for internal use
+        if spotify_type == 'episode':
+            spotify_type = 'podcast_episode'
+        elif spotify_type == 'show':
+            spotify_type = 'podcast'
+        logger.info(f"Detected Spotify URI format: {spotify_type}:{spotify_id}")
+
+        # Get token and fetch item details to show in search results
+        service = account_pool[config.get('active_account_number')]['service']
+        if service == 'spotify':
+            token = get_account_token(service)
+            return spotify_get_item_by_id(token, spotify_id, spotify_type)
+        else:
+            logger.warning(f"Spotify ID detected but active account is {service}")
+            return False
+
+    # Check for bare Spotify ID (22 alphanumeric characters) - default to playlist
+    if re.match(SPOTIFY_ID_REGEX, search_term):
+        logger.info(f"Detected bare Spotify ID, assuming playlist: {search_term}")
+
+        # Get token and fetch playlist details to show in search results
+        service = account_pool[config.get('active_account_number')]['service']
+        if service == 'spotify':
+            token = get_account_token(service)
+            return spotify_get_item_by_id(token, search_term, 'playlist')
+        else:
+            logger.warning(f"Spotify ID detected but active account is {service}")
+            return False
 
     if search_term.startswith('https://') or search_term.startswith('http://'):
         logger.info(f"Search clicked with value with url {search_term}")
