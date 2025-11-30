@@ -619,6 +619,7 @@
         let sortState = { key: "track_number", dir: "asc" };
         let fetchInterval = 500;
         let filtersVisible = false;
+        let lastRenderedIds = [];
 
         // ============= UI FUNCTIONS =============
         function toggleFilters() {
@@ -748,65 +749,66 @@
 
         // ============= SMART UPDATE LOGIC =============
         function needsFullRebuild(newData) {
-            const tableBody = document.getElementById('download-queue-table');
-            const existingRows = tableBody.querySelectorAll('tr');
-            
             const newItems = Object.values(newData).filter(shouldShowItem);
             sortItems(newItems);
-            
-            if (existingRows.length !== newItems.length) {
+            const newIds = newItems.map(item => item.local_id);
+
+            // If length changed, rebuild
+            if (newIds.length !== lastRenderedIds.length) {
                 return true;
             }
-            
-            for (let i = 0; i < newItems.length; i++) {
-                const row = existingRows[i];
-                const newItem = newItems[i];
-                const firstCell = row.querySelector('td:first-child');
-                if (!firstCell) return true;
-                const existingId = firstCell.dataset.localId;
-                
-                if (existingId !== newItem.local_id) {
+
+            // If order changed, rebuild
+            for (let i = 0; i < newIds.length; i++) {
+                if (newIds[i] !== lastRenderedIds[i]) {
                     return true;
                 }
             }
-            
+
             return false;
         }
 
         function updateExistingRows(newData) {
             const tableBody = document.getElementById('download-queue-table');
             const rows = tableBody.querySelectorAll('tr');
-            
+
             rows.forEach(row => {
                 const firstCell = row.querySelector('td:first-child');
                 if (!firstCell) return;
                 const localId = firstCell.dataset.localId;
                 const newItem = newData[localId];
-                
+
                 if (!newItem) return;
-                
+
                 const statusCell = row.querySelector('[data-cell="status"]');
                 const progressCell = row.querySelector('[data-cell="progress"]');
                 const actionCell = row.querySelector('[data-cell="action"]');
-                
-                // Update status badge
+
+                // Update status badge only if changed
                 if (statusCell) {
-                    const currentStatus = statusCell.querySelector('.status-badge')?.textContent;
-                    if (currentStatus !== newItem.item_status) {
+                    const statusBadge = statusCell.querySelector('.status-badge');
+                    const currentStatus = statusBadge?.textContent?.trim();
+                    const newStatus = newItem.item_status === 'Already Exists' ? 'Exists' : newItem.item_status;
+
+                    if (currentStatus !== newStatus) {
                         statusCell.innerHTML = createStatusBadge(newItem.item_status);
                         if (actionCell) {
                             actionCell.innerHTML = createActionButtons(newItem);
                         }
                     }
                 }
-                
-                // Update progress bar
+
+                // Update progress bar only if changed
                 if (progressCell) {
                     const newProgress = newItem.progress || 0;
                     const progressBar = progressCell.querySelector('.progress-bar-fill');
                     if (progressBar) {
-                        progressBar.style.width = `${newProgress}%`;
-                        progressBar.textContent = `${newProgress}%`;
+                        const currentWidth = progressBar.style.width;
+                        const newWidth = `${newProgress}%`;
+                        if (currentWidth !== newWidth) {
+                            progressBar.style.width = newWidth;
+                            progressBar.textContent = newWidth;
+                        }
                     }
                 }
             });
@@ -819,13 +821,16 @@
                 updateProgressHeader();
                 return;
             }
-            
+
             const tableBody = document.getElementById('download-queue-table');
             tableBody.innerHTML = '';
 
             const itemsArray = Object.values(currentData);
             const filteredItems = itemsArray.filter(shouldShowItem);
             sortItems(filteredItems);
+
+            // Update last rendered IDs
+            lastRenderedIds = filteredItems.map(item => item.local_id);
 
             if (filteredItems.length === 0) {
                 // Count visible columns dynamically for correct colspan
@@ -856,7 +861,7 @@
                     tableBody.appendChild(row);
                 });
             }
-            
+
             updateProgressHeader();
         }
 
