@@ -127,36 +127,6 @@ class DownloadWorker(QObject):
                 indices.append(idx)
         return indices
 
-    def _validate_spotify_session(self, token, account_idx):
-        """
-        Validate that a Spotify session is still healthy before using it.
-
-        Sessions can go stale after being idle for ~1 hour as Spotify disconnects
-        inactive clients. Using a stale session results in incomplete downloads
-        that create corrupted .ogg files, causing FFmpeg exit 183 errors.
-
-        This proactively checks session health and reinitializes if needed.
-        """
-        from .api.spotify import spotify_re_init_session
-
-        try:
-            # Quick health check - this will fail if session is stale
-            user_type = token.get_user_attribute("type")
-            logger.debug(f"Session validation passed for account {account_idx} (user type: {user_type})")
-            return token
-        except Exception as e:
-            logger.warning(f"Session validation failed for account {account_idx}: {e}")
-            logger.info(f"Reinitializing stale session for account {account_idx}...")
-            try:
-                spotify_re_init_session(account_pool[account_idx])
-                new_token = account_pool[account_idx]['login']['session']
-                logger.info(f"Session successfully reinitialized for account {account_idx}")
-                return new_token
-            except Exception as reinit_err:
-                logger.error(f"Session reinitialization failed for account {account_idx}: {reinit_err}")
-                raise RuntimeError(f"Cannot use account {account_idx}: session is stale and reinitialization failed")
-
-
     def _try_get_spotify_stream(self, item, item_id, item_type, token, quality, tried_accounts=None):
         """
         Try to get a Spotify stream, with fallback to other accounts if one fails.
@@ -443,10 +413,6 @@ class DownloadWorker(QObject):
                         default_format = ".ogg"
                         temp_file_path += default_format
 
-                        # Session recreation is now handled automatically in spotify_get_token()
-                        # The token we received is already from a fresh session
-                        logger.debug(f"Using session token for Spotify download")
-
                         quality = AudioQuality.HIGH
                         bitrate = "160k"
                         if token.get_user_attribute("type") == "premium" and item_type == 'track':
@@ -473,40 +439,17 @@ class DownloadWorker(QObject):
                                         if item['item_status'] == 'Cancelled':
                                            raise Exception("Download cancelled by user.")
 
-                                        # Check for stalled download (no progress for stall_timeout seconds)
-                                        time_since_progress = time.time() - last_progress_time
-                                        if time_since_progress > stall_timeout:
-                                            raise Exception(f"Download stalled (no progress for {time_since_progress:.1f}s), reconnecting...")
+                                        # Check for stalled download before read
+                                        if time.time() - last_progress_time > stall_timeout:
+                                            raise Exception(f"Download stalled (no progress for {stall_timeout}s), reconnecting...")
 
-                                        # Read with timeout to catch hanging reads
-                                        # The read() call can block indefinitely if stream hangs, so we need timeout protection
                                         read_start_time = time.time()
-                                        data = None
-                                        read_error = None
-
-                                        # Use threading to implement read timeout
-                                        def read_with_timeout():
-                                            nonlocal data, read_error
-                                            try:
-                                                data = stream.input_stream.stream().read(config.get("download_chunk_size"))
-                                            except Exception as e:
-                                                read_error = e
-
-                                        read_thread = threading.Thread(target=read_with_timeout, daemon=True)
-                                        read_thread.start()
-                                        read_thread.join(timeout=stall_timeout)
-
-                                        if read_thread.is_alive():
-                                            # Read is still blocking after timeout - stream is stalled
-                                            raise Exception(f"Download stalled (read blocked for >{stall_timeout}s), reconnecting...")
-
-                                        if read_error:
-                                            raise read_error
-
+                                        data = stream.input_stream.stream().read(config.get("download_chunk_size"))
                                         read_duration = time.time() - read_start_time
 
-                                        if data is None:
-                                            raise Exception("Read operation failed to return data")
+                                        # Check if read operation itself took too long (indicating blocking/stalling)
+                                        if read_duration > stall_timeout:
+                                            raise Exception(f"Download stalled (read blocked for {read_duration:.1f}s), reconnecting...")
 
                                         downloaded += len(data)
                                         if len(data) != 0:
@@ -530,23 +473,13 @@ class DownloadWorker(QObject):
                                 elif bytes_missing > 0:
                                     logger.debug(f"Download completed with minor discrepancy: {downloaded}/{total_size} bytes (missing {bytes_missing} bytes, within tolerance)")
 
-                                # Clean up stream - CRITICAL for preventing file descriptor leaks
-                                # Each unclosed stream consumes a file descriptor
-                                # After many downloads, worker exhausts FDs causing FFmpeg to fail
+                                # Clean up stream
                                 try:
-                                    # Close the underlying stream first
-                                    stream_obj = stream.input_stream.stream()
-                                    stream_obj.close()
-                                    logger.debug("Closed Spotify stream successfully")
-                                except Exception as stream_err:
-                                    logger.warning(f"Error closing Spotify stream (may cause FD leak): {stream_err}")
-
-                                # Delete references to allow garbage collection
-                                try:
-                                    del stream.input_stream
-                                    del stream
-                                except Exception as del_err:
-                                    logger.warning(f"Error deleting stream references: {del_err}")
+                                    stream.input_stream.stream().close()
+                                    stream_internal = stream.input_stream.stream()
+                                    del stream_internal, stream.input_stream
+                                except Exception:
+                                    pass  # Stream cleanup errors are non-critical
 
                                 download_successful = True
                                 logger.info(f"Download completed successfully after {download_retry_count + 1} attempt(s)")
@@ -565,17 +498,10 @@ class DownloadWorker(QObject):
                                                 os.remove(temp_file_path)
                                             except Exception:
                                                 pass
-
-                                        # Properly close stream to avoid FD leak even on error
                                         try:
-                                            if 'stream' in locals():
-                                                stream_obj = stream.input_stream.stream()
-                                                stream_obj.close()
-                                                del stream.input_stream
-                                                del stream
-                                                logger.debug("Cleaned up stream after download error")
-                                        except Exception as cleanup_err:
-                                            logger.warning(f"Error cleaning up stream after download failure: {cleanup_err}")
+                                            stream.input_stream.stream().close()
+                                        except Exception:
+                                            pass
                                         # Wait a bit before retrying
                                         time.sleep(2)
                                         continue
@@ -1044,17 +970,6 @@ class DownloadWorker(QObject):
                         os.rename(temp_file_path, file_path)
                         item['file_path'] = file_path
 
-                        # Small delay for filesystem sync (helps in edge cases)
-                        time.sleep(0.1)
-
-                        # Validate file after download
-                        if not os.path.exists(file_path):
-                            raise RuntimeError(f"File disappeared after rename: {file_path}")
-                        file_size = os.path.getsize(file_path)
-                        if file_size == 0:
-                            raise RuntimeError(f"File is empty after download: {file_path}")
-                        logger.debug(f"File validated after download: {file_path} ({file_size} bytes)")
-
                         # Convert file format and embed metadata
                         if not config.get('raw_media_download'):
                             item['item_status'] = 'Converting'
@@ -1096,10 +1011,6 @@ class DownloadWorker(QObject):
                             final_path = file['path'].replace('~', '')
                             os.rename(file['path'], final_path)
                             file['path'] = final_path
-
-                        # Small delay for filesystem sync
-                        time.sleep(0.1)
-                        logger.debug(f"Video files validated after download")
 
                         if not config.get("raw_media_download"):
                             item['item_status'] = 'Converting'

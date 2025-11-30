@@ -222,118 +222,32 @@ def spotify_login_user(account):
 
 
 def spotify_re_init_session(account):
-    """
-    NUCLEAR OPTION: Completely destroy and recreate a Spotify session from scratch.
-
-    This aggressively cleans up ALL session state and forces a completely fresh session.
-    Librespot sessions go stale and this ensures we start with a clean slate.
-    """
-    import gc
-    import time
-
     session_json_path = os.path.join(cache_dir(), "sessions", f"ots_login_{account['uuid']}.json")
-    username = account.get('username', 'unknown')
-
-    logger.info(f"NUCLEAR SESSION RESET for account {username} (UUID: {account['uuid']})")
-
-    # STEP 1: Aggressively destroy old session
-    old_session = account.get('login', {}).get('session')
-    if old_session:
-        try:
-            # Try to close it
-            old_session.close()
-            logger.debug(f"Closed old session for {username}")
-        except Exception as e:
-            logger.warning(f"Error closing old session (will force cleanup anyway): {e}")
-
-        # Delete ALL references to force cleanup
-        try:
-            if 'session' in account.get('login', {}):
-                del account['login']['session']
-            del old_session
-            logger.debug(f"Deleted old session references for {username}")
-        except Exception as e:
-            logger.warning(f"Error deleting session references: {e}")
-
-    # STEP 2: Force garbage collection to clean up librespot internals
-    gc.collect()
-    logger.debug("Forced garbage collection")
-
-    # STEP 3: Small delay to ensure everything is cleaned up
-    time.sleep(0.5)
-
-    # STEP 4: Create completely fresh session from stored credentials
     try:
-        logger.info(f"Creating fresh session for {username}...")
-
-        # Build completely new config
         config = Session.Configuration.Builder().set_stored_credential_file(session_json_path).build()
-
-        # Create completely new session - this establishes a new TCP connection
+        logger.debug("Session config created")
         session = Session.Builder(conf=config).stored_file(session_json_path).create()
-
-        # Verify session is actually working
-        try:
-            account_type = session.get_user_attribute("type")
-            logger.info(f"✓ NEW SESSION ACTIVE for {username} (type: {account_type})")
-        except Exception as verify_err:
-            logger.error(f"New session created but verification failed: {verify_err}")
-            raise RuntimeError(f"Session verification failed: {verify_err}")
-
-        # Update account with fresh session
+        logger.debug("Session re init done")
         account['login']['session_path'] = session_json_path
         account['login']['session'] = session
         account['status'] = 'active'
-        account['account_type'] = account_type
-        account['bitrate'] = "320k" if account_type == "premium" else "160k"
-
-        logger.info(f"✓ NUCLEAR SESSION RESET SUCCESSFUL for {username} (bitrate: {account['bitrate']})")
-        return session
-
-    except Exception as e:
-        logger.error(f'✗ NUCLEAR SESSION RESET FAILED for {username}: {e}')
-        account['status'] = 'error'
-        raise RuntimeError(f"Failed to recreate session for {username}: {e}")
+        account['account_type'] = session.get_user_attribute("type")
+        bitrate = "160k"
+        account_type = session.get_user_attribute("type")
+        if account_type == "premium":
+            bitrate = "320k"
+        account['bitrate'] = bitrate
+    except:
+        logger.error('Failed to re init session !')
 
 
 def spotify_get_token(parsing_index):
-    """
-    Get Spotify token with smart session recreation.
-
-    Only recreates session if it's been >5 minutes since last recreation
-    or if session is missing/invalid. This avoids excessive recreation
-    while still ensuring fresh sessions.
-    """
-    import time
-    username = account_pool[parsing_index].get('username', 'unknown')
-
-    # Track last session creation time
-    last_session_time = account_pool[parsing_index].get('last_session_time', 0)
-    current_time = time.time()
-    time_since_reset = current_time - last_session_time
-
-    # Cooldown period: only recreate if >5 minutes old or if session missing
-    COOLDOWN_SECONDS = 300  # 5 minutes
-
     try:
         token = account_pool[parsing_index]['login']['session']
-
-        # Check if session needs recreation
-        if time_since_reset > COOLDOWN_SECONDS:
-            logger.info(f"Session for {username} is {time_since_reset:.0f}s old, recreating...")
-            spotify_re_init_session(account_pool[parsing_index])
-            account_pool[parsing_index]['last_session_time'] = current_time
-            token = account_pool[parsing_index]['login']['session']
-        else:
-            logger.debug(f"Using existing session for {username} ({time_since_reset:.0f}s old)")
-
-    except (OSError, AttributeError, KeyError) as e:
-        # Session missing or invalid - recreate immediately
-        logger.info(f'Session invalid for {username} ({e}), recreating...')
+    except (OSError, AttributeError):
+        logger.info(f'Failed to retreive token for {account_pool[parsing_index]["username"]}, attempting to reinit session.')
         spotify_re_init_session(account_pool[parsing_index])
-        account_pool[parsing_index]['last_session_time'] = current_time
         token = account_pool[parsing_index]['login']['session']
-
     return token
 
 

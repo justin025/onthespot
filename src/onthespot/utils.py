@@ -218,18 +218,6 @@ def convert_audio_format(filename, bitrate, default_format):
         # Add small delay to ensure file is fully accessible after rename
         time.sleep(0.1)
 
-        # Validate file is actually readable before FFmpeg processing
-        # This catches Docker volume sync issues early
-        try:
-            with open(temp_name, 'rb') as test_file:
-                # Try to read first few bytes to ensure file is accessible
-                header = test_file.read(1024)
-                if len(header) == 0:
-                    raise RuntimeError(f"File is empty or unreadable: {temp_name}")
-            logger.debug(f"File readability validated before FFmpeg: {temp_name}")
-        except (OSError, IOError) as e:
-            raise RuntimeError(f"File not readable before FFmpeg conversion (Docker volume sync issue?): {temp_name}: {e}")
-
         max_retries = 3
         last_error = None
 
@@ -299,9 +287,8 @@ def convert_audio_format(filename, bitrate, default_format):
                     logger.error(f"FFmpeg exit 183 detected - likely file corruption or access issue with {temp_name}")
 
                 if attempt < max_retries - 1:
-                    # Wait before retrying (longer delays for Docker volume sync issues)
-                    # Start at 1s instead of 0.5s to give Docker volumes more time to sync
-                    wait_time = 1.0 * (2 ** attempt)  # 1s, 2s, 4s progression
+                    # Wait before retrying (exponential backoff)
+                    wait_time = 0.5 * (2 ** attempt)
                     logger.warning(f"FFmpeg conversion failed (attempt {attempt + 1}/{max_retries}), retrying in {wait_time}s: {e}")
 
                     # Clean up partial output before retry
