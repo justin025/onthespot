@@ -353,47 +353,7 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Toast notification */
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: rgba(30, 30, 30, 0.95);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 14px 24px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            z-index: 1000;
-            opacity: 0;
-            transition: all 0.3s ease;
-        }
-
-        .toast.visible {
-            transform: translateX(-50%) translateY(0);
-            opacity: 1;
-        }
-
-        .toast.success {
-            border-color: rgba(34, 197, 94, 0.5);
-        }
-
-        .toast.error {
-            border-color: rgba(239, 68, 68, 0.5);
-        }
-
-        .toast-icon {
-            font-size: 18px;
-        }
-
-        .toast-message {
-            font-size: 14px;
-            color: #e4e4e7;
-        }
+        /* Toast notification styles now in global style.css */
 
         /* ============= RESPONSIVE BREAKPOINTS ============= */
         @media screen and (max-width: 768px) {
@@ -636,21 +596,7 @@
             toggleFilters();
         }
 
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            const icon = toast.querySelector('.toast-icon');
-            const msg = toast.querySelector('.toast-message');
-            
-            icon.textContent = type === 'success' ? '✓' : '✕';
-            msg.textContent = message;
-            
-            toast.className = `toast ${type}`;
-            toast.classList.add('visible');
-            
-            setTimeout(() => {
-                toast.classList.remove('visible');
-            }, 3000);
-        }
+        // showToast function now in global utils.js
 
         function showLoading() {
             const tableBody = document.getElementById('results-body');

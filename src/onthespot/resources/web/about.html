@@ -6,6 +6,7 @@
         <title>OnTheSpot - About</title>
         <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
         <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+        <script src="{{ url_for('static', filename='utils.js') }}"></script>
     </head>
     <body>
         <div class="header">
@@ -26,11 +27,11 @@
             </div>
 
             <div style="display: flex; align-items: center;">
-                <button onclick="clearCache()" class="download-action-button" class="hide-on-mobile" style="margin-right: 5px;">
+                <button onclick="clearCache(event)" class="download-action-button" class="hide-on-mobile" style="margin-right: 5px;">
                     <img id="collapse_button_icon" src="/icons/trash.png" loading="lazy" style="width: 15px; height: 15px;">
                     Clear Cache
                 </button>
-                <button onclick="window.location.href='/api/download/logs';" class="download-action-button" class="hide-on-mobile" style="margin-right: 5px;">
+                <button onclick="exportLogs(event)" class="download-action-button" class="hide-on-mobile" style="margin-right: 5px;">
                     <img id="collapse_button_icon" src="/icons/export_file.png" loading="lazy" style="width: 15px; height: 15px;">
                     Export Logs
                 </button>
@@ -61,17 +62,71 @@
             </a>
         </p>
         <script>
-            function clearCache() {
+            function clearCache(event) {
+                const button = event.target.closest('button');
+                const originalHTML = button.innerHTML;
+
+                // Add visual feedback
+                button.disabled = true;
+                button.classList.add('button-loading');
+                button.innerHTML = '<img src="/icons/trash.png" loading="lazy" style="width: 15px; height: 15px;"> Clearing...';
+
                 fetch('/api/clear_cache', {
                     method: 'DELETE'
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        alert('Cache cleared successfully!');
-                        }
+                        showToast('Cache cleared successfully!', 'success');
+                        button.classList.remove('button-loading');
+                        button.classList.add('button-clicked');
+                        button.innerHTML = '<img src="/icons/trash.png" loading="lazy" style="width: 15px; height: 15px;"> Cleared!';
+
+                        setTimeout(() => {
+                            button.disabled = false;
+                            button.classList.remove('button-clicked');
+                            button.innerHTML = originalHTML;
+                        }, 1500);
+                    } else {
+                        showToast('Failed to clear cache', 'error');
+                        button.disabled = false;
+                        button.classList.remove('button-loading');
+                        button.innerHTML = originalHTML;
+                    }
+                })
+                .catch(error => {
+                    showToast('Error clearing cache', 'error');
+                    button.disabled = false;
+                    button.classList.remove('button-loading');
+                    button.innerHTML = originalHTML;
                 });
             }
+
+            function exportLogs(event) {
+                const button = event.target.closest('button');
+                const originalHTML = button.innerHTML;
+
+                // Add visual feedback
+                button.classList.add('button-clicked');
+                button.innerHTML = '<img src="/icons/export_file.png" loading="lazy" style="width: 15px; height: 15px;"> Exporting...';
+
+                showToast('Exporting logs...', 'success');
+
+                // Trigger download
+                window.location.href = '/api/download/logs';
+
+                // Reset button after short delay
+                setTimeout(() => {
+                    button.classList.remove('button-clicked');
+                    button.innerHTML = originalHTML;
+                }, 1500);
+            }
         </script>
+
+        <!-- Toast Notification -->
+        <div id="toast" class="toast">
+            <span class="toast-icon"></span>
+            <span class="toast-message"></span>
+        </div>
     </body>
 </html>

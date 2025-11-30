@@ -263,13 +263,16 @@
 
                 if (data.success) {
                     button.textContent = '✓ Imported';
+                    button.classList.add('button-clicked');
                     statusDiv.textContent = 'Successfully imported to Plex';
                     statusDiv.className = 'playlist-status status-success';
+                    showToast('Playlist imported successfully!', 'success');
                 } else {
                     button.textContent = 'Import Failed';
                     button.disabled = false;
                     statusDiv.textContent = 'Error: ' + (data.error || 'Unknown error');
                     statusDiv.className = 'playlist-status status-error';
+                    showToast('Failed to import playlist: ' + (data.error || 'Unknown error'), 'error');
                 }
             } catch (e) {
                 console.error(e);
@@ -277,6 +280,7 @@
                 button.disabled = false;
                 statusDiv.textContent = 'Error: ' + e.message;
                 statusDiv.className = 'playlist-status status-error';
+                showToast('Error importing playlist: ' + e.message, 'error');
             }
         }
 
@@ -300,7 +304,7 @@
                 await new Promise(resolve => setTimeout(resolve, 500));
             }
 
-            alert('Finished importing all playlists!');
+            showToast('Finished importing all playlists!', 'success');
         }
 
         async function deletePlaylist(playlistPath, index) {
@@ -329,6 +333,7 @@
                 if (data.success) {
                     statusDiv.textContent = 'Playlist deleted successfully';
                     statusDiv.className = 'playlist-status status-success';
+                    showToast('Playlist deleted successfully!', 'success');
 
                     // Fade out and remove the card
                     card.style.transition = 'opacity 0.5s, transform 0.5s';
@@ -350,6 +355,7 @@
                     button.disabled = false;
                     statusDiv.textContent = 'Error: ' + (data.error || 'Unknown error');
                     statusDiv.className = 'playlist-status status-error';
+                    showToast('Failed to delete playlist: ' + (data.error || 'Unknown error'), 'error');
                 }
             } catch (e) {
                 console.error(e);
@@ -357,8 +363,15 @@
                 button.disabled = false;
                 statusDiv.textContent = 'Error: ' + e.message;
                 statusDiv.className = 'playlist-status status-error';
+                showToast('Error deleting playlist: ' + e.message, 'error');
             }
         }
     </script>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <span class="toast-icon"></span>
+        <span class="toast-message"></span>
+    </div>
 </body>
 </html>

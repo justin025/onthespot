@@ -420,6 +420,78 @@ input:not(:checked):hover {
     50% { opacity: 0.5; }
 }
 
+@keyframes buttonPress {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+}
+
+/* ============= TOAST NOTIFICATIONS ============= */
+.toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: rgba(30, 30, 30, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-lg);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 1000;
+    opacity: 0;
+    transition: all var(--transition-slow);
+    box-shadow: var(--shadow-lg);
+}
+
+.toast.visible {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.toast.success {
+    border-color: rgba(34, 197, 94, 0.5);
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
+}
+
+.toast.error {
+    border-color: rgba(239, 68, 68, 0.5);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+}
+
+.toast-icon {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.toast.success .toast-icon {
+    color: var(--success);
+}
+
+.toast.error .toast-icon {
+    color: var(--danger);
+}
+
+.toast-message {
+    font-size: 14px;
+    color: #e4e4e7;
+    font-weight: 500;
+}
+
+/* Button loading state */
+button.button-loading {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    cursor: wait;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+button.button-clicked {
+    animation: buttonPress 0.3s ease;
+}
+
 /* ============= SAFE AREA SUPPORT (iOS) ============= */
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
     body {

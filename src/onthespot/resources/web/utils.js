@@ -77,3 +77,42 @@ function toggleVisibility() {
         img.src = '/icons/collapse_down.png'
     }
 }
+
+// Global toast notification system
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    if (!toast) {
+        console.warn('Toast element not found');
+        return;
+    }
+
+    const icon = toast.querySelector('.toast-icon');
+    const msg = toast.querySelector('.toast-message');
+
+    if (icon && msg) {
+        icon.textContent = type === 'success' ? '✓' : '✕';
+        msg.textContent = message;
+    }
+
+    toast.className = `toast ${type}`;
+    toast.classList.add('visible');
+
+    setTimeout(() => {
+        toast.classList.remove('visible');
+    }, 3000);
+}
+
+// Add visual feedback to button clicks
+function addButtonFeedback(button, originalText, loadingText = 'Processing...') {
+    button.disabled = true;
+    button.classList.add('button-loading');
+    const originalBg = button.style.background;
+    button.textContent = loadingText;
+
+    return () => {
+        button.disabled = false;
+        button.classList.remove('button-loading');
+        button.textContent = originalText;
+        if (originalBg) button.style.background = originalBg;
+    };
+}

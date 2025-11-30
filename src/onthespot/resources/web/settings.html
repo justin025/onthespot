@@ -1230,7 +1230,50 @@
         }
 
         function saveAllSettings() {
+            // Get the save button (either desktop or mobile)
+            const saveButton = event ? event.target : document.querySelector('.btn-save');
+            if (!saveButton) return;
+
+            // Add visual feedback
+            const originalText = saveButton.textContent.trim();
+            saveButton.disabled = true;
+            saveButton.classList.add('button-loading');
+
+            // Find the span inside the button (desktop) or use button directly (mobile)
+            const buttonSpan = saveButton.querySelector('span');
+            if (buttonSpan) {
+                buttonSpan.textContent = 'Saving...';
+            } else {
+                saveButton.textContent = 'Saving...';
+            }
+
+            // Save settings
             updateSettings(returnSettingsData());
+
+            // Show success feedback after a short delay
+            setTimeout(() => {
+                saveButton.disabled = false;
+                saveButton.classList.remove('button-loading');
+                saveButton.classList.add('button-clicked');
+
+                if (buttonSpan) {
+                    buttonSpan.textContent = 'Saved!';
+                } else {
+                    saveButton.textContent = 'Saved!';
+                }
+
+                showToast('Settings saved successfully!', 'success');
+
+                // Reset button after animation
+                setTimeout(() => {
+                    saveButton.classList.remove('button-clicked');
+                    if (buttonSpan) {
+                        buttonSpan.textContent = 'Save Settings';
+                    } else {
+                        saveButton.textContent = 'Save Settings';
+                    }
+                }, 1000);
+            }, 500);
         }
 
         function returnSettingsData() {
@@ -1417,5 +1460,11 @@
 
         handleServiceChange();
     </script>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <span class="toast-icon"></span>
+        <span class="toast-message"></span>
+    </div>
 </body>
 </html>
