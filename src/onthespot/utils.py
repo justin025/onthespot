@@ -736,7 +736,7 @@ def add_to_m3u_file(item, item_metadata):
         playlist_number=item.get('playlist_number'),
     ).replace(config.get('metadata_separator'), config.get('extinf_separator'))
 
-    # Check if the item_path is already in the M3U file
+    # Check if the item is already in the M3U file
     with open(m3u_path, 'r', encoding='utf-8') as m3u_file:
         try:
             ext_length = round(int(item_metadata['length'])/1000)
@@ -744,11 +744,20 @@ def add_to_m3u_file(item, item_metadata):
             ext_length = '-1'
         m3u_item_header = f"#EXTINF:{ext_length}, {EXTINF}"
         m3u_contents = m3u_file.readlines()
-        if m3u_item_header not in [line.strip() for line in m3u_contents]:
+
+        # Check both header and file path to ensure the entry is complete and correct
+        already_exists = False
+        for i in range(len(m3u_contents) - 1):
+            if m3u_contents[i].strip() == m3u_item_header:
+                # Check if the next line contains the file path
+                if m3u_contents[i + 1].strip() == item['file_path']:
+                    already_exists = True
+                    logger.info(f"{item['file_path']} already exists in the M3U file.")
+                    break
+
+        if not already_exists:
             with open(m3u_path, 'a', encoding='utf-8') as m3u_file:
                 m3u_file.write(f"{m3u_item_header}\n{item['file_path']}\n")
-        else:
-            logger.info(f"{item['file_path']} already exists in the M3U file.")
 
 
 def strip_metadata(item):

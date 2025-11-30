@@ -380,7 +380,11 @@ class DownloadWorker(QObject):
                                     if config.get('create_m3u_file') and item.get('parent_category') == 'playlist':
                                         item['item_status'] = 'Adding To M3U'
                                         self.update_progress(item, self.tr("Adding To M3U") if self.gui else "Adding To M3U", 99)
-                                        add_to_m3u_file(item, item_metadata)
+                                        try:
+                                            add_to_m3u_file(item, item_metadata)
+                                        except Exception as m3u_error:
+                                            logger.error(f"Failed to add item to M3U file: {str(m3u_error)}\nTraceback: {traceback.format_exc()}")
+                                            logger.warning("M3U write failed, but file download was successful and will not be deleted")
 
                                 if item['item_status'] in ('Downloading', 'Setting Thumbnail', 'Adding To M3U', 'Getting Lyrics'):
                                     self.update_progress(item, self.tr("Already Exists") if self.gui else "Already Exists", 100)
@@ -994,7 +998,11 @@ class DownloadWorker(QObject):
                         if config.get('create_m3u_file') and item.get('parent_category') == 'playlist':
                             item['item_status'] = 'Adding To M3U'
                             self.update_progress(item, self.tr("Adding To M3U") if self.gui else "Adding To M3U", 99)
-                            add_to_m3u_file(item, item_metadata)
+                            try:
+                                add_to_m3u_file(item, item_metadata)
+                            except Exception as m3u_error:
+                                logger.error(f"Failed to add item to M3U file: {str(m3u_error)}\nTraceback: {traceback.format_exc()}")
+                                logger.warning("M3U write failed, but file download was successful and will not be deleted")
 
                     # Video Formatting
                     elif item_type in ('movie', 'episode'):
