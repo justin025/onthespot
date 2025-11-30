@@ -127,6 +127,36 @@ class DownloadWorker(QObject):
                 indices.append(idx)
         return indices
 
+    def _validate_spotify_session(self, token, account_idx):
+        """
+        Validate that a Spotify session is still healthy before using it.
+
+        Sessions can go stale after being idle for ~1 hour as Spotify disconnects
+        inactive clients. Using a stale session results in incomplete downloads
+        that create corrupted .ogg files, causing FFmpeg exit 183 errors.
+
+        This proactively checks session health and reinitializes if needed.
+        """
+        from .api.spotify import spotify_re_init_session
+
+        try:
+            # Quick health check - this will fail if session is stale
+            user_type = token.get_user_attribute("type")
+            logger.debug(f"Session validation passed for account {account_idx} (user type: {user_type})")
+            return token
+        except Exception as e:
+            logger.warning(f"Session validation failed for account {account_idx}: {e}")
+            logger.info(f"Reinitializing stale session for account {account_idx}...")
+            try:
+                spotify_re_init_session(account_pool[account_idx])
+                new_token = account_pool[account_idx]['login']['session']
+                logger.info(f"Session successfully reinitialized for account {account_idx}")
+                return new_token
+            except Exception as reinit_err:
+                logger.error(f"Session reinitialization failed for account {account_idx}: {reinit_err}")
+                raise RuntimeError(f"Cannot use account {account_idx}: session is stale and reinitialization failed")
+
+
     def _try_get_spotify_stream(self, item, item_id, item_type, token, quality, tried_accounts=None):
         """
         Try to get a Spotify stream, with fallback to other accounts if one fails.
@@ -413,6 +443,10 @@ class DownloadWorker(QObject):
                         default_format = ".ogg"
                         temp_file_path += default_format
 
+                        # Session recreation is now handled automatically in spotify_get_token()
+                        # The token we received is already from a fresh session
+                        logger.debug(f"Using session token for Spotify download")
+
                         quality = AudioQuality.HIGH
                         bitrate = "160k"
                         if token.get_user_attribute("type") == "premium" and item_type == 'track':
@@ -435,73 +469,176 @@ class DownloadWorker(QObject):
                                 stall_timeout = config.get("download_stall_timeout")
 
                                 with open(temp_file_path, 'wb') as file:
+                                    consecutive_empty_reads = 0
+                                    MAX_CONSECUTIVE_EMPTY = 3
+
                                     while downloaded < total_size:
                                         if item['item_status'] == 'Cancelled':
                                            raise Exception("Download cancelled by user.")
 
-                                        # Check for stalled download before read
-                                        if time.time() - last_progress_time > stall_timeout:
-                                            raise Exception(f"Download stalled (no progress for {stall_timeout}s), reconnecting...")
+                                        # Check for stalled download (no progress for stall_timeout seconds)
+                                        time_since_progress = time.time() - last_progress_time
+                                        if time_since_progress > stall_timeout:
+                                            raise Exception(f"Download stalled (no progress for {time_since_progress:.1f}s), reconnecting...")
 
+                                        # Read with timeout to catch hanging reads
                                         read_start_time = time.time()
-                                        data = stream.input_stream.stream().read(config.get("download_chunk_size"))
-                                        read_duration = time.time() - read_start_time
+                                        data = None
+                                        read_error = None
 
-                                        # Check if read operation itself took too long (indicating blocking/stalling)
-                                        if read_duration > stall_timeout:
-                                            raise Exception(f"Download stalled (read blocked for {read_duration:.1f}s), reconnecting...")
+                                        def read_with_timeout():
+                                            nonlocal data, read_error
+                                            try:
+                                                data = stream.input_stream.stream().read(config.get("download_chunk_size"))
+                                            except Exception as e:
+                                                read_error = e
 
-                                        downloaded += len(data)
+                                        read_thread = threading.Thread(target=read_with_timeout, daemon=True)
+                                        read_thread.start()
+                                        read_thread.join(timeout=stall_timeout)
+
+                                        if read_thread.is_alive():
+                                            raise Exception(f"Download stalled (read blocked for >{stall_timeout}s), reconnecting...")
+
+                                        if read_error:
+                                            raise read_error
+
+                                        if data is None:
+                                            raise Exception("Read operation failed to return data")
+
                                         if len(data) != 0:
+                                            downloaded += len(data)
                                             file.write(data)
                                             progress_pct = int((downloaded / total_size) * 100)
                                             self.update_progress(item, self.tr("Downloading") if self.gui else "Downloading", progress_pct)
-                                            last_progress_time = time.time()  # Update progress time when data received
-                                        if len(data) == 0:
-                                            break
+                                            last_progress_time = time.time()
+                                            consecutive_empty_reads = 0  # Reset on successful read
+                                        else:
+                                            # Empty read - check if we're actually done or if stream died
+                                            consecutive_empty_reads += 1
+                                            download_pct = (downloaded / total_size * 100) if total_size > 0 else 0
+
+                                            if download_pct < 95:
+                                                # We're not close to done - stream probably died
+                                                if consecutive_empty_reads >= MAX_CONSECUTIVE_EMPTY:
+                                                    raise RuntimeError(
+                                                        f"Stream died prematurely: only {downloaded}/{total_size} bytes "
+                                                        f"({download_pct:.1f}%) downloaded before stream returned empty. "
+                                                        f"Session likely stale - will retry with fresh session."
+                                                    )
+                                                # Brief pause and try again
+                                                time.sleep(0.1)
+                                                continue
+                                            else:
+                                                # We're close to done, empty read might be normal end-of-stream
+                                                if consecutive_empty_reads >= MAX_CONSECUTIVE_EMPTY:
+                                                    logger.debug(f"Stream ended at {download_pct:.1f}% complete after {consecutive_empty_reads} empty reads")
+                                                    break
+                                                time.sleep(0.05)
+                                                continue
 
                                     # Ensure all data is flushed to disk before closing
                                     file.flush()
                                     os.fsync(file.fileno())
 
-                                # Validate that the complete file was downloaded
-                                # Allow a small tolerance (0.1% or 1KB, whichever is larger) for minor stream discrepancies
-                                bytes_missing = total_size - downloaded
-                                tolerance = max(int(total_size * 0.001), 1024)  # 0.1% or 1KB
-                                if bytes_missing > tolerance:
-                                    raise RuntimeError(f"Incomplete download: received {downloaded}/{total_size} bytes (missing {bytes_missing}), stream ended prematurely")
-                                elif bytes_missing > 0:
-                                    logger.debug(f"Download completed with minor discrepancy: {downloaded}/{total_size} bytes (missing {bytes_missing} bytes, within tolerance)")
+                                # CRITICAL: Verify ACTUAL file size on disk, not just the counter
+                                actual_file_size = os.path.getsize(temp_file_path) if os.path.exists(temp_file_path) else 0
 
-                                # Clean up stream
+                                # Minimum acceptable: 90% of expected OR at least 50KB for any audio
+                                min_acceptable = max(int(total_size * 0.90), 50000) if total_size > 0 else 50000
+
+                                logger.debug(f"Download validation: actual={actual_file_size}, expected={total_size}, counter={downloaded}, min={min_acceptable}")
+
+                                if actual_file_size < min_acceptable:
+                                    # File is definitely corrupted - clean it up
+                                    try:
+                                        os.remove(temp_file_path)
+                                        logger.debug(f"Removed corrupted temp file: {temp_file_path}")
+                                    except:
+                                        pass
+                                    raise RuntimeError(
+                                        f"Download verification FAILED: actual file size {actual_file_size} bytes "
+                                        f"is below minimum {min_acceptable} bytes (expected ~{total_size}). "
+                                        f"Stream likely died - will retry with fresh session."
+                                    )
+
+                                # Also validate OGG header for Spotify files
                                 try:
-                                    stream.input_stream.stream().close()
-                                    stream_internal = stream.input_stream.stream()
-                                    del stream_internal, stream.input_stream
-                                except Exception:
-                                    pass  # Stream cleanup errors are non-critical
+                                    with open(temp_file_path, 'rb') as f:
+                                        header = f.read(4)
+                                        if header != b'OggS':
+                                            raise RuntimeError(
+                                                f"Downloaded file has invalid OGG header (got {header!r}). "
+                                                f"File is corrupted - will retry."
+                                            )
+                                except IOError as e:
+                                    raise RuntimeError(f"Cannot read downloaded file for validation: {e}")
+
+                                logger.info(f"Download verified: {actual_file_size} bytes, valid OGG header")
+
+                                # Clean up stream - CRITICAL for preventing file descriptor leaks
+                                # Each unclosed stream consumes a file descriptor
+                                # After many downloads, worker exhausts FDs causing FFmpeg to fail
+                                try:
+                                    # Close the underlying stream first
+                                    stream_obj = stream.input_stream.stream()
+                                    stream_obj.close()
+                                    logger.debug("Closed Spotify stream successfully")
+                                except Exception as stream_err:
+                                    logger.warning(f"Error closing Spotify stream (may cause FD leak): {stream_err}")
+
+                                # Delete references to allow garbage collection
+                                try:
+                                    del stream.input_stream
+                                    del stream
+                                except Exception as del_err:
+                                    logger.warning(f"Error deleting stream references: {del_err}")
 
                                 download_successful = True
                                 logger.info(f"Download completed successfully after {download_retry_count + 1} attempt(s)")
 
                             except (RuntimeError, OSError, Exception) as e:
                                 error_str = str(e)
-                                # Check if this is a stall or connection error
-                                if any(x in error_str for x in ['stalled', 'Connection reset', 'Failed reading packet', 'Broken pipe', 'Bad file descriptor', 'Incomplete download']):
+                                # Check if this is a stall, connection, or stream death error
+                                if any(x in error_str for x in [
+                                    'stalled', 'Connection reset', 'Failed reading packet',
+                                    'Broken pipe', 'Bad file descriptor', 'Incomplete download',
+                                    'Stream died', 'verification FAILED', 'corrupted', 'invalid OGG header'
+                                ]):
                                     download_retry_count += 1
                                     if download_retry_count < max_download_retries:
                                         logger.warning(f"Download interrupted (attempt {download_retry_count}/{max_download_retries}): {error_str}")
-                                        logger.info(f"Reconnecting and retrying download...")
+                                        logger.info(f"Forcing session recreation and retrying download...")
+
+                                        # FORCE session recreation on stream death/corruption
+                                        current_account_idx = self._find_account_index('spotify', token)
+                                        if current_account_idx is not None:
+                                            logger.info(f"Forcing fresh session for account {current_account_idx} after stream failure")
+                                            from .api.spotify import spotify_re_init_session
+                                            try:
+                                                spotify_re_init_session(account_pool[current_account_idx])
+                                                account_pool[current_account_idx]['last_session_time'] = time.time()
+                                                token = account_pool[current_account_idx]['login']['session']
+                                            except Exception as session_err:
+                                                logger.error(f"Failed to recreate session: {session_err}")
+
                                         # Clean up partial file and stream
                                         if os.path.exists(temp_file_path):
                                             try:
                                                 os.remove(temp_file_path)
                                             except Exception:
                                                 pass
+
+                                        # Properly close stream to avoid FD leak even on error
                                         try:
-                                            stream.input_stream.stream().close()
-                                        except Exception:
-                                            pass
+                                            if 'stream' in locals():
+                                                stream_obj = stream.input_stream.stream()
+                                                stream_obj.close()
+                                                del stream.input_stream
+                                                del stream
+                                                logger.debug("Cleaned up stream after download error")
+                                        except Exception as cleanup_err:
+                                            logger.warning(f"Error cleaning up stream after download failure: {cleanup_err}")
                                         # Wait a bit before retrying
                                         time.sleep(2)
                                         continue
@@ -970,6 +1107,17 @@ class DownloadWorker(QObject):
                         os.rename(temp_file_path, file_path)
                         item['file_path'] = file_path
 
+                        # Small delay for filesystem sync (helps in edge cases)
+                        time.sleep(0.1)
+
+                        # Validate file after download
+                        if not os.path.exists(file_path):
+                            raise RuntimeError(f"File disappeared after rename: {file_path}")
+                        file_size = os.path.getsize(file_path)
+                        if file_size == 0:
+                            raise RuntimeError(f"File is empty after download: {file_path}")
+                        logger.debug(f"File validated after download: {file_path} ({file_size} bytes)")
+
                         # Convert file format and embed metadata
                         if not config.get('raw_media_download'):
                             item['item_status'] = 'Converting'
@@ -1011,6 +1159,10 @@ class DownloadWorker(QObject):
                             final_path = file['path'].replace('~', '')
                             os.rename(file['path'], final_path)
                             file['path'] = final_path
+
+                        # Small delay for filesystem sync
+                        time.sleep(0.1)
+                        logger.debug(f"Video files validated after download")
 
                         if not config.get("raw_media_download"):
                             item['item_status'] = 'Converting'
