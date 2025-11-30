@@ -12,7 +12,8 @@
 [![License Badge][license-shield]][license-url]
 
    <p>
-     This is a fork of the below, with added functionality, mainly for the web GUI, reconnect logic, and plex playlist import functionality ... All credits go out to the original authors ! Some screenshots:
+     This is a fork of the below, with added functionality, mainly for the web GUI, reconnect logic, direct playlist ID search  and plex playlist import functionality ... All credits go out to the original authors ! 
+     <br /><br /><br />Some screenshots:
      <img width="1525" height="727" alt="image" src="https://github.com/user-attachments/assets/ae26ac24-ca89-44b5-a0f7-2892152a0ad2" />
      <img width="1469" height="447" alt="image" src="https://github.com/user-attachments/assets/117882b6-ca7f-4e09-8c91-1a0174fe09d2" />
      <br /><br /><br />
