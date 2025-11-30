@@ -32,7 +32,7 @@ except Exception as e:
 from .downloader import DownloadWorker, RetryWorker
 from .otsconfig import cache_dir, config_dir, config
 from .parse_item import parsingworker, parse_url
-from .runtimedata import get_logger, account_pool, pending, download_queue, download_queue_lock, pending_lock, parsing, parsing_lock
+from .runtimedata import get_logger, account_pool, pending, download_queue, download_queue_lock, pending_lock, parsing, parsing_lock, register_worker, kill_all_workers, set_worker_restart_callback
 from .search import get_search_results
 from .utils import format_bytes
 
@@ -48,9 +48,10 @@ login_manager.init_app(app)
 class QueueWorker(threading.Thread):
     def __init__(self):
         super().__init__()
+        self.is_running = True
 
     def run(self):
-        while True:
+        while self.is_running:
             try:
                 if pending:
                     local_id = next(iter(pending))
@@ -87,6 +88,11 @@ class QueueWorker(threading.Thread):
                 logger.error(f"Unknown Exception for {item}: {str(e)}\nTraceback: {traceback.format_exc()}")
                 with pending_lock:
                     pending[local_id] = item
+
+    def stop(self):
+        logger.info('Stopping Queue Worker')
+        self.is_running = False
+        self.join(timeout=5)
 
 class User(UserMixin):
     def __init__(self, id):
@@ -539,17 +545,47 @@ def main():
     thread.daemon = True
     thread.start()
 
-    for _ in range(config.get('maximum_queue_workers')):
-        queue_worker = QueueWorker()
-        queue_worker.start()
+    def start_workers():
+        """Start all worker threads and register them"""
+        logger.info("Starting worker threads...")
 
-    for _ in range(config.get('maximum_download_workers')):
-        download_worker = DownloadWorker()
-        download_worker.start()
+        for _ in range(config.get('maximum_queue_workers')):
+            queue_worker = QueueWorker()
+            queue_worker.start()
+            register_worker(queue_worker)
 
-    if config.get('enable_retry_worker'):
-        retryworker = RetryWorker()
-        retryworker.start()
+        for _ in range(config.get('maximum_download_workers')):
+            download_worker = DownloadWorker()
+            download_worker.start()
+            register_worker(download_worker)
+
+        if config.get('enable_retry_worker'):
+            retryworker = RetryWorker()
+            retryworker.start()
+            register_worker(retryworker)
+
+        logger.info("All workers started and registered")
+
+    def restart_workers():
+        """Kill all workers and restart them - called when downloads fail repeatedly"""
+        logger.warning("RESTARTING ALL WORKERS due to repeated download failures...")
+
+        # Kill existing workers
+        kill_all_workers()
+
+        # Wait a bit for cleanup
+        time.sleep(2)
+
+        # Start fresh workers
+        start_workers()
+
+        logger.info("Worker restart complete!")
+
+    # Register the restart callback
+    set_worker_restart_callback(restart_workers)
+
+    # Start initial workers
+    start_workers()
 
     fill_account_pool.wait()
 

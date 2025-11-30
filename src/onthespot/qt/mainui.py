@@ -21,7 +21,7 @@ from ..api.generic import generic_add_account, generic_get_track_metadata, gener
 from ..api.crunchyroll import crunchyroll_add_account, crunchyroll_get_episode_metadata
 from ..downloader import DownloadWorker, RetryWorker
 from ..otsconfig import config, cache_dir
-from ..runtimedata import account_pool, download_queue, download_queue_lock, get_init_tray, parsing, parsing_lock, pending, pending_lock, get_logger, temp_download_path
+from ..runtimedata import account_pool, download_queue, download_queue_lock, get_init_tray, parsing, parsing_lock, pending, pending_lock, get_logger, temp_download_path, register_worker, kill_all_workers, set_worker_restart_callback
 from .dl_progressbtn import DownloadActionsButtons
 from .settings import load_config, save_config
 from .thumb_listitem import LabelWithThumb
@@ -105,19 +105,11 @@ class MainWindow(QMainWindow):
         fillaccountpool.progress.connect(self.show_popup_dialog)
         fillaccountpool.start()
 
-        for i in range(config.get('maximum_queue_workers')):
-            queueworker = QueueWorker()
-            queueworker.add_item_to_download_list.connect(self.add_item_to_download_list)
-            queueworker.start()
+        # Register worker restart callback
+        set_worker_restart_callback(self.restart_workers)
 
-        for i in range(config.get('maximum_download_workers')):
-            downloadworker = DownloadWorker(gui=True)
-            downloadworker.progress.connect(self.update_item_in_download_list)
-            downloadworker.start()
-
-        if config.get('enable_retry_worker'):
-            retryworker = RetryWorker(gui=True)
-            retryworker.start()
+        # Start initial workers
+        self.start_workers()
 
         self.mirrorplayback = MirrorSpotifyPlayback()
         if config.get('mirror_spotify_playback'):
@@ -129,6 +121,46 @@ class MainWindow(QMainWindow):
         # Set the table header properties
         self.set_table_props()
         logger.info("Main window init completed !")
+
+
+    def start_workers(self):
+        """Start all worker threads and register them"""
+        logger.info("Starting worker threads...")
+
+        for i in range(config.get('maximum_queue_workers')):
+            queueworker = QueueWorker()
+            queueworker.add_item_to_download_list.connect(self.add_item_to_download_list)
+            queueworker.start()
+            register_worker(queueworker)
+
+        for i in range(config.get('maximum_download_workers')):
+            downloadworker = DownloadWorker(gui=True)
+            downloadworker.progress.connect(self.update_item_in_download_list)
+            downloadworker.start()
+            register_worker(downloadworker)
+
+        if config.get('enable_retry_worker'):
+            retryworker = RetryWorker(gui=True)
+            retryworker.start()
+            register_worker(retryworker)
+
+        logger.info("All workers started and registered")
+
+
+    def restart_workers(self):
+        """Kill all workers and restart them - called when downloads fail repeatedly"""
+        logger.warning("RESTARTING ALL WORKERS due to repeated download failures...")
+
+        # Kill existing workers
+        kill_all_workers()
+
+        # Wait a bit for cleanup
+        time.sleep(2)
+
+        # Start fresh workers
+        self.start_workers()
+
+        logger.info("Worker restart complete!")
 
 
     def get_icon(self, name):

@@ -23,7 +23,7 @@ from .api.crunchyroll import crunchyroll_get_episode_metadata, crunchyroll_add_a
 from .downloader import DownloadWorker, RetryWorker
 from .otsconfig import config_dir, config
 from .parse_item import parsingworker, parse_url
-from .runtimedata import account_pool, pending, download_queue, download_queue_lock, pending_lock
+from .runtimedata import account_pool, pending, download_queue, download_queue_lock, pending_lock, register_worker, kill_all_workers, set_worker_restart_callback
 from .search import get_search_results
 
 if not config.get('debug_mode'):
@@ -46,10 +46,11 @@ def parse_args():
 class QueueWorker(threading.Thread):
     def __init__(self):
         super().__init__()
+        self.is_running = True
 
 
     def run(self):
-        while True:
+        while self.is_running:
             try:
                 if pending:
                     local_id = next(iter(pending))
@@ -82,6 +83,14 @@ class QueueWorker(threading.Thread):
                     pending[local_id] = item
 
 
+    def stop(self):
+        if config.get('debug_mode'):
+            logger.info('Stopping Queue Worker')
+        print('\033[32mStopping Queue Worker\033[0m')
+        self.is_running = False
+        self.join(timeout=5)
+
+
 def main():
     args = parse_args()
 
@@ -96,17 +105,47 @@ def main():
     thread.daemon = True
     thread.start()
 
-    for i in range(config.get('maximum_queue_workers')):
-        queue_worker = QueueWorker()
-        queue_worker.start()
+    def start_workers():
+        """Start all worker threads and register them"""
+        print('\033[32mStarting worker threads...\033[0m')
 
-    for i in range(config.get('maximum_download_workers')):
-        downloadworker = DownloadWorker()
-        downloadworker.start()
+        for i in range(config.get('maximum_queue_workers')):
+            queue_worker = QueueWorker()
+            queue_worker.start()
+            register_worker(queue_worker)
 
-    if config.get('enable_retry_worker'):
-        retryworker = RetryWorker()
-        retryworker.start()
+        for i in range(config.get('maximum_download_workers')):
+            downloadworker = DownloadWorker()
+            downloadworker.start()
+            register_worker(downloadworker)
+
+        if config.get('enable_retry_worker'):
+            retryworker = RetryWorker()
+            retryworker.start()
+            register_worker(retryworker)
+
+        print('\033[32mAll workers started and registered\033[0m')
+
+    def restart_workers():
+        """Kill all workers and restart them - called when downloads fail repeatedly"""
+        print('\033[33mRESTARTING ALL WORKERS due to repeated download failures...\033[0m')
+
+        # Kill existing workers
+        kill_all_workers()
+
+        # Wait a bit for cleanup
+        time.sleep(2)
+
+        # Start fresh workers
+        start_workers()
+
+        print('\033[32mWorker restart complete!\033[0m')
+
+    # Register the restart callback
+    set_worker_restart_callback(restart_workers)
+
+    # Start initial workers
+    start_workers()
 
     fill_account_pool.wait()
 

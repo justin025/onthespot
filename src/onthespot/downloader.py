@@ -22,7 +22,7 @@ from .api.youtube_music import youtube_music_get_track_metadata
 from .api.crunchyroll import crunchyroll_get_episode_metadata, crunchyroll_get_decryption_key, crunchyroll_get_mpd_info, crunchyroll_close_stream
 from .api.generic import generic_get_track_metadata
 from .otsconfig import config
-from .runtimedata import get_logger, download_queue, download_queue_lock, account_pool, temp_download_path
+from .runtimedata import get_logger, download_queue, download_queue_lock, account_pool, temp_download_path, increment_failure_count, reset_failure_count
 from .utils import format_item_path, convert_audio_format, embed_metadata, set_music_thumbnail, fix_mp3_metadata, add_to_m3u_file, strip_metadata, convert_video_format
 
 logger = get_logger("downloader")
@@ -342,6 +342,7 @@ class DownloadWorker(QObject):
                     logger.error(f"Failed to fetch metadata for '{item_id}', Error: {str(e)}\nTraceback: {traceback.format_exc()}")
                     item['item_status'] = "Failed"
                     self.update_progress(item, self.tr("Failed") if self.gui else "Failed", 0)
+                    increment_failure_count()  # Track failure for worker restart
                     self.readd_item_to_download_queue(item)
                     continue
 
@@ -449,6 +450,7 @@ class DownloadWorker(QObject):
                                     self.update_progress(item, self.tr("Already Exists") if self.gui else "Already Exists", 100)
                                 item['item_status'] = 'Already Exists'
                                 logger.info(f"File already exists (found as {entry.name}), Skipping download for track by id '{item_id}'")
+                                reset_failure_count()  # Reset failure counter since file exists
                                 time.sleep(0.2)
                                 item['progress'] = 100
                                 self.readd_item_to_download_queue(item)
@@ -1110,6 +1112,7 @@ class DownloadWorker(QObject):
                     logger.info(f"Download failed: {item}, Error: {str(e)}\nTraceback: {traceback.format_exc()}")
                     item['item_status'] = 'Failed'
                     self.update_progress(item, self.tr("Failed") if self.gui else "Failed", 0)
+                    increment_failure_count()  # Track failure for worker restart
                     self.readd_item_to_download_queue(item)
                     continue
 
@@ -1208,6 +1211,7 @@ class DownloadWorker(QObject):
                 logger.info("Item Successfully Downloaded")
                 item['progress'] = 100
                 self.update_progress(item, self.tr("Downloaded") if self.gui else "Downloaded", 100)
+                reset_failure_count()  # Reset failure counter on successful download
                 try:
                     config.set('total_downloaded_data', config.get('total_downloaded_data') + os.path.getsize(item['file_path']))
                     config.set('total_downloaded_items', config.get('total_downloaded_items') + 1)
@@ -1222,6 +1226,7 @@ class DownloadWorker(QObject):
                 if item['item_status'] != "Cancelled":
                     item['item_status'] = "Failed"
                     self.update_progress(item, self.tr("Failed") if self.gui else "Failed", 0)
+                    increment_failure_count()  # Track failure for worker restart
                 else:
                     self.update_progress(item, self.tr("Cancelled") if self.gui else "Cancelled", 0)
 

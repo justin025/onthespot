@@ -30,6 +30,13 @@ parsing_lock = Lock()
 pending_lock = Lock()
 download_queue_lock = Lock()
 
+# Worker management
+worker_threads = []
+worker_threads_lock = Lock()
+worker_restart_callback = None  # Function to call to restart workers
+consecutive_failures = 0
+consecutive_failures_lock = Lock()
+
 init_tray = False
 
 
@@ -107,3 +114,74 @@ def log_function_memory(wrap_func):
             logger_.debug(f"{prefix}{stat}")
         return ret_val
     return snapshot_function_call
+
+
+def register_worker(worker):
+    """Register a worker thread for management"""
+    with worker_threads_lock:
+        worker_threads.append(worker)
+        logger_.debug(f"Registered worker: {worker.__class__.__name__}, total workers: {len(worker_threads)}")
+
+
+def kill_all_workers():
+    """Kill all registered worker threads"""
+    global worker_threads
+    logger_.warning("Killing all worker threads...")
+
+    with worker_threads_lock:
+        for worker in worker_threads:
+            try:
+                logger_.info(f"Stopping worker: {worker.__class__.__name__}")
+                worker.stop()
+            except Exception as e:
+                logger_.error(f"Error stopping worker {worker.__class__.__name__}: {e}")
+
+        # Clear the list
+        worker_threads = []
+        logger_.info("All workers stopped and cleared")
+
+
+def increment_failure_count():
+    """Increment consecutive failure counter and trigger restart if threshold reached"""
+    global consecutive_failures, worker_restart_callback
+
+    with consecutive_failures_lock:
+        consecutive_failures += 1
+        current_count = consecutive_failures
+
+    # Threshold for triggering worker restart
+    FAILURE_THRESHOLD = 5
+
+    if current_count >= FAILURE_THRESHOLD:
+        logger_.error(f"Consecutive failures reached {current_count}, triggering worker restart...")
+
+        # Reset counter before restart to avoid repeated restarts
+        reset_failure_count()
+
+        # Trigger restart if callback is set
+        if worker_restart_callback:
+            try:
+                worker_restart_callback()
+            except Exception as e:
+                logger_.error(f"Error during worker restart: {e}")
+        else:
+            logger_.error("No worker restart callback registered!")
+    else:
+        logger_.warning(f"Download failure detected ({current_count}/{FAILURE_THRESHOLD})")
+
+
+def reset_failure_count():
+    """Reset consecutive failure counter (called on successful download)"""
+    global consecutive_failures
+
+    with consecutive_failures_lock:
+        if consecutive_failures > 0:
+            logger_.debug(f"Resetting failure count from {consecutive_failures} to 0")
+        consecutive_failures = 0
+
+
+def set_worker_restart_callback(callback):
+    """Set the callback function to restart workers"""
+    global worker_restart_callback
+    worker_restart_callback = callback
+    logger_.info(f"Worker restart callback registered: {callback.__name__}")
