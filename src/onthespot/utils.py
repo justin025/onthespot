@@ -204,6 +204,22 @@ def convert_audio_format(filename, bitrate, default_format):
 
         for attempt in range(max_retries):
             try:
+                # Clean up output file if it exists from a previous failed attempt
+                # This is critical for Docker environments where partial files may persist
+                if os.path.isfile(filename):
+                    try:
+                        os.remove(filename)
+                        logger.debug(f"Removed existing output file before FFmpeg conversion: {filename}")
+                        # Small delay to ensure filesystem sync, especially for Docker volumes
+                        time.sleep(0.05)
+                    except OSError as e:
+                        logger.warning(f"Could not remove existing output file (attempt {attempt + 1}): {e}")
+                        if attempt < max_retries - 1:
+                            time.sleep(0.5 * (2 ** attempt))
+                            continue
+                        else:
+                            raise
+
                 # Prepare default parameters
                 # Existing command initialization
                 command = [config.get('_ffmpeg_bin_path'), '-y', '-i', temp_name]
