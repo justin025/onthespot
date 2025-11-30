@@ -12,6 +12,8 @@
 [![License Badge][license-shield]][license-url]
 
    <p>
+     This is a fork of the below, with added functionality, mainly for the web GUI, reconnect logic, and plex playlist import functionality ...
+      <br />
       Welcome to OnTheSpot!
       <br />
       <a href="https://discord.gg/GCQwRBFPk9">Join Discord</a>
