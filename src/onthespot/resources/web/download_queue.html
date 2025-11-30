@@ -66,7 +66,6 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            flex-shrink: 0;
         }
 
         .status-dot {
@@ -93,9 +92,6 @@
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
-            flex-shrink: 1;
-            min-width: 0;
-            justify-content: flex-end;
         }
 
         .action-buttons button {
@@ -103,7 +99,6 @@
             font-size: 12px;
             margin: 0;
             white-space: nowrap;
-            flex-shrink: 0;
         }
 
         /* Filters panel */
@@ -371,16 +366,7 @@
         }
 
         /* ============= RESPONSIVE BREAKPOINTS ============= */
-
-        /* Medium desktop screens - compact buttons before mobile layout */
-        @media screen and (max-width: 1200px) {
-            .action-buttons button {
-                padding: 6px 10px;
-                font-size: 11px;
-                gap: 6px;
-            }
-        }
-
+        
         /* Tablet */
         @media screen and (max-width: 900px) {
             .hide-on-tablet {
