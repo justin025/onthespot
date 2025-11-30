@@ -13,7 +13,6 @@
 
    <p>
      This is a fork of the below, with added functionality, mainly for the web GUI, reconnect logic, and plex playlist import functionality ...
-     
       <br /><br /><br />
       Welcome to OnTheSpot!
       <br />
