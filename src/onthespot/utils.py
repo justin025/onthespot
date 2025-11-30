@@ -5,6 +5,7 @@ import platform
 import requests
 import ssl
 import subprocess
+import time
 from hashlib import md5
 from io import BytesIO
 from PIL import Image
@@ -195,51 +196,66 @@ def convert_audio_format(filename, bitrate, default_format):
 
         os.rename(filename, temp_name)
 
-        try:
-            # Prepare default parameters
-            # Existing command initialization
-            command = [config.get('_ffmpeg_bin_path'), '-y', '-i', temp_name]
+        # Add small delay to ensure file is fully accessible after rename
+        time.sleep(0.1)
 
-            # Set log level based on environment variable
-            if int(os.environ.get('SHOW_FFMPEG_OUTPUT', 0)) == 0:
-                command += ['-loglevel', 'error', '-hide_banner', '-nostats']
+        max_retries = 3
+        last_error = None
 
-            # Check if media format is service default
+        for attempt in range(max_retries):
+            try:
+                # Prepare default parameters
+                # Existing command initialization
+                command = [config.get('_ffmpeg_bin_path'), '-y', '-i', temp_name]
 
-            if filetype == default_format and config.get('use_custom_file_bitrate'):
-                command += ['-b:a', bitrate]
-            elif filetype == default_format:
-                command += ['-c:a', 'copy']
-            else:
-                command += [
-                    #'-f', filetype.split('.')[1],
-                    '-ac', '2',
-                    '-ar', f'{config.get("file_hertz") if filetype != ".opus" else 48000}',
-                    '-b:a', bitrate
-                    ]
+                # Set log level based on environment variable
+                if int(os.environ.get('SHOW_FFMPEG_OUTPUT', 0)) == 0:
+                    command += ['-loglevel', 'error', '-hide_banner', '-nostats']
 
-            # Add user defined parameters
-            for param in config.get('ffmpeg_args'):
-                command.append(param)
+                # Check if media format is service default
 
-            # Add output parameter at last
-            command += [filename]
-            logger.debug(
-                f'Converting media with ffmpeg. Built commandline {command}'
-                )
-            # Run subprocess with CREATE_NO_WINDOW flag on Windows
-            if os.name == 'nt':
-                subprocess.check_call(command, shell=False, creationflags=subprocess.CREATE_NO_WINDOW)
-            else:
-                subprocess.check_call(command, shell=False)
-            os.remove(temp_name)
-        except subprocess.CalledProcessError as e:
-            # Clean up both temp input and potentially corrupted output files
-            if os.path.isfile(temp_name):
+                if filetype == default_format and config.get('use_custom_file_bitrate'):
+                    command += ['-b:a', bitrate]
+                elif filetype == default_format:
+                    command += ['-c:a', 'copy']
+                else:
+                    command += [
+                        #'-f', filetype.split('.')[1],
+                        '-ac', '2',
+                        '-ar', f'{config.get("file_hertz") if filetype != ".opus" else 48000}',
+                        '-b:a', bitrate
+                        ]
+
+                # Add user defined parameters
+                for param in config.get('ffmpeg_args'):
+                    command.append(param)
+
+                # Add output parameter at last
+                command += [filename]
+                logger.debug(
+                    f'Converting media with ffmpeg. Built commandline {command}'
+                    )
+                # Run subprocess with CREATE_NO_WINDOW flag on Windows
+                if os.name == 'nt':
+                    subprocess.check_call(command, shell=False, creationflags=subprocess.CREATE_NO_WINDOW)
+                else:
+                    subprocess.check_call(command, shell=False)
                 os.remove(temp_name)
-            if os.path.isfile(filename):
-                os.remove(filename)
-            raise RuntimeError(f"Failed to convert audio file (corrupted or invalid data): {e}")
+                break  # Success, exit retry loop
+            except subprocess.CalledProcessError as e:
+                last_error = e
+                if attempt < max_retries - 1:
+                    # Wait before retrying (exponential backoff)
+                    wait_time = 0.5 * (2 ** attempt)
+                    logger.warning(f"FFmpeg conversion failed (attempt {attempt + 1}/{max_retries}), retrying in {wait_time}s: {e}")
+                    time.sleep(wait_time)
+                else:
+                    # Final attempt failed, clean up and raise
+                    if os.path.isfile(temp_name):
+                        os.remove(temp_name)
+                    if os.path.isfile(filename):
+                        os.remove(filename)
+                    raise RuntimeError(f"Failed to convert audio file after {max_retries} attempts (corrupted or invalid data): {e}")
 
 
 def convert_video_format(item, output_path, output_format, video_files, item_metadata):

@@ -455,6 +455,10 @@ class DownloadWorker(QObject):
                                         if len(data) == 0:
                                             break
 
+                                    # Ensure all data is flushed to disk before closing
+                                    file.flush()
+                                    os.fsync(file.fileno())
+
                                 # Validate that the complete file was downloaded
                                 # Allow a small tolerance (0.1% or 1KB, whichever is larger) for minor stream discrepancies
                                 bytes_missing = total_size - downloaded
@@ -595,6 +599,9 @@ class DownloadWorker(QObject):
                                     self.update_progress(item, self.tr("Decrypting") if self.gui else "Decrypting", 99)
                                     with open(temp_file_path, "wb") as fo:
                                         decryptfile(data_chunks, key, fo)
+                                        # Ensure all data is flushed to disk before closing
+                                        fo.flush()
+                                        os.fsync(fo.fileno())
 
                                     download_successful = True
                                     logger.info(f"Deezer download completed successfully after {download_retry_count + 1} attempt(s)")
@@ -693,6 +700,10 @@ class DownloadWorker(QObject):
                                                 progress_pct = int((downloaded / total_size) * 100)
                                                 self.update_progress(item, self.tr("Downloading") if self.gui else "Downloading", progress_pct)
                                                 last_progress_time = time.time()  # Update progress time when data received
+
+                                    # Ensure all data is flushed to disk before closing
+                                    file.flush()
+                                    os.fsync(file.fileno())
 
                                 download_successful = True
                                 logger.info(f"{item_service} download completed successfully after {download_retry_count + 1} attempt(s)")
