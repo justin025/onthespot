@@ -200,7 +200,7 @@
         .col-service { width: 10%; min-width: 90px; }
         .col-status { width: 12%; min-width: 100px; }
         .col-progress { width: 15%; min-width: 120px; }
-        .col-action { width: 10%; min-width: 80px; text-align: right; }
+        .col-action { width: 8%; min-width: 60px; text-align: right; }
 
         /* Status badges */
         .status-badge {
@@ -267,6 +267,7 @@
             display: flex;
             gap: 4px;
             flex-wrap: nowrap;
+            justify-content: flex-end;
         }
 
         .action-cell .download-action-button {
@@ -416,7 +417,7 @@
             .col-track { width: 50px; }
             .col-name { width: auto; }
             .col-status { width: 100px; }
-            .col-action { width: 80px; text-align: right; }
+            .col-action { width: 60px; text-align: right; }
 
             /* Make name column take available space */
             .name-cell {
@@ -558,7 +559,7 @@
                         <col class="hide-on-mobile" style="width: 10%;"> <!-- Service -->
                         <col style="width: 100px;"> <!-- Status -->
                         <col class="hide-on-tablet hide-on-mobile" style="width: 15%;"> <!-- Progress -->
-                        <col style="width: 80px;"> <!-- Action -->
+                        <col style="width: 60px;"> <!-- Action -->
                     </colgroup>
                     <thead>
                         <tr>
@@ -870,7 +871,8 @@
                 'Unavailable': 'status-failed'
             };
             const className = statusClasses[status] || '';
-            return `<span class="status-badge ${className}">${status || 'N/A'}</span>`;
+            const displayText = status === 'Already Exists' ? 'Exists' : status;
+            return `<span class="status-badge ${className}">${displayText || 'N/A'}</span>`;
         }
 
         function createTableRow(item) {
