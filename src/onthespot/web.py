@@ -264,6 +264,34 @@ def cancel_items():
 @app.route('/api/retry_items', methods=['POST'])
 @login_required
 def retry_items():
+    # First, check if there are any failed downloads
+    has_failed_downloads = False
+    with download_queue_lock:
+        for local_id, item in download_queue.items():
+            if item["item_status"] in ("Failed", "Cancelled"):
+                has_failed_downloads = True
+                break
+
+    # If there are failed downloads, force reconnect all Spotify accounts
+    if has_failed_downloads:
+        logger.info("Found failed downloads - forcing Spotify account reconnection before retry")
+        from .api.spotify import spotify_re_init_session
+
+        reconnected_count = 0
+        for account_idx, account in enumerate(account_pool):
+            if account.get('service') == 'spotify' and account.get('login', {}).get('session'):
+                try:
+                    logger.info(f"Reconnecting Spotify account {account_idx}: {account.get('username', 'unknown')}")
+                    spotify_re_init_session(account)
+                    account['last_session_time'] = time.time()
+                    reconnected_count += 1
+                except Exception as e:
+                    logger.error(f"Failed to reconnect Spotify account {account_idx}: {e}")
+
+        if reconnected_count > 0:
+            logger.info(f"Successfully reconnected {reconnected_count} Spotify account(s) - now retrying failed downloads")
+
+    # Now retry the failed/cancelled downloads
     with download_queue_lock:
         for local_id, item in download_queue.items():
             if item["item_status"] in ("Failed", "Cancelled"):
