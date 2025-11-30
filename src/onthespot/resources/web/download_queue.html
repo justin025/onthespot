@@ -416,7 +416,7 @@
             /* Mobile column widths - redistribute space without hidden columns */
             .col-track { width: 50px; }
             .col-name { width: auto; }
-            .col-status { width: 100px; }
+            .col-status { width: 70px; }
             .col-action { width: 60px; text-align: right; }
 
             /* Make name column take available space */
@@ -557,7 +557,7 @@
                         <col class="hide-on-mobile" style="width: 15%;"> <!-- Album -->
                         <col class="hide-on-tablet hide-on-mobile" style="width: 12%;"> <!-- By -->
                         <col class="hide-on-mobile" style="width: 10%;"> <!-- Service -->
-                        <col style="width: 100px;"> <!-- Status -->
+                        <col style="width: 70px;"> <!-- Status -->
                         <col class="hide-on-tablet hide-on-mobile" style="width: 15%;"> <!-- Progress -->
                         <col style="width: 60px;"> <!-- Action -->
                     </colgroup>
@@ -1042,8 +1042,8 @@
                 .then(data => {
                     if (data.success) {
                         console.log('Clear completed');
-                        // Reload page to ensure proper table layout
-                        setTimeout(() => window.location.reload(), 100);
+                        // Force table rebuild via Ajax
+                        fetchItems(true);
                     }
                 });
         }
@@ -1054,8 +1054,8 @@
                 .then(data => {
                     if (data.success) {
                         console.log('Cancel completed');
-                        // Reload page to ensure proper table layout
-                        setTimeout(() => window.location.reload(), 100);
+                        // Force table rebuild via Ajax
+                        fetchItems(true);
                     }
                 });
         }
@@ -1066,8 +1066,8 @@
                 .then(data => {
                     if (data.success) {
                         console.log('Retry completed');
-                        // Reload page to ensure proper table layout
-                        setTimeout(() => window.location.reload(), 100);
+                        // Force table rebuild via Ajax
+                        fetchItems(true);
                     }
                 });
         }
