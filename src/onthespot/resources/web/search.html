@@ -345,6 +345,9 @@
         /* Image preview popup */
         .image-preview-popup {
             position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
             z-index: 10000;
             opacity: 0;
             pointer-events: none;
@@ -353,19 +356,21 @@
             border-radius: 12px;
             padding: 8px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
-            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-            transform-origin: center center;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
         .image-preview-popup.visible {
             opacity: 1;
             pointer-events: auto;
+            transform: translate(-50%, -50%) scale(1);
         }
 
         .image-preview-popup img {
             display: block;
-            max-width: 500px;
-            max-height: 500px;
+            max-width: 80vw;
+            max-height: 80vh;
+            min-width: 300px;
+            min-height: 300px;
             width: auto;
             height: auto;
             border-radius: 8px;
@@ -454,8 +459,10 @@
             }
 
             .image-preview-popup img {
-                max-width: 350px;
-                max-height: 350px;
+                max-width: 70vw;
+                max-height: 70vh;
+                min-width: 250px;
+                min-height: 250px;
             }
         }
 
@@ -491,8 +498,10 @@
             }
 
             .image-preview-popup img {
-                max-width: 280px;
-                max-height: 280px;
+                max-width: 85vw;
+                max-height: 85vh;
+                min-width: 200px;
+                min-height: 200px;
             }
         }
     </style>
@@ -637,16 +646,16 @@
             // Try to get a larger version of the image
             let largerUrl = thumbnailUrl;
 
-            // Spotify pattern: replace smaller sizes with larger ones
-            largerUrl = largerUrl.replace(/\/(\d+)x(\d+)\//, '/640x640/');
+            // Spotify pattern: replace any size with 1280x1280 or larger
+            largerUrl = largerUrl.replace(/\/(\d+)x(\d+)\//, '/1280x1280/');
 
             // Try to replace common thumbnail size indicators
             largerUrl = largerUrl.replace(/small|thumb|thumbnail|medium/gi, 'large');
             largerUrl = largerUrl.replace(/_small\.|_thumb\.|_thumbnail\.|_medium\./gi, '_large.');
 
-            // If URL has size parameters, try to increase them
-            largerUrl = largerUrl.replace(/([?&])(width|w|size)=\d+/gi, '$1$2=640');
-            largerUrl = largerUrl.replace(/([?&])(height|h)=\d+/gi, '$1$2=640');
+            // If URL has size parameters, try to increase them to 1280
+            largerUrl = largerUrl.replace(/([?&])(width|w|size)=\d+/gi, '$1$2=1280');
+            largerUrl = largerUrl.replace(/([?&])(height|h)=\d+/gi, '$1$2=1280');
 
             return largerUrl;
         }
@@ -659,39 +668,13 @@
             const largerUrl = getLargerImageUrl(imageUrl);
             img.src = largerUrl;
 
-            // Get thumbnail position for animation
-            const rect = thumbnailElement.getBoundingClientRect();
-            const thumbnailCenterX = rect.left + rect.width / 2;
-            const thumbnailCenterY = rect.top + rect.height / 2;
-
-            // Position popup at thumbnail location initially with small scale
-            popup.style.left = thumbnailCenterX + 'px';
-            popup.style.top = thumbnailCenterY + 'px';
-            popup.style.transform = 'translate(-50%, -50%) scale(0.1)';
-
-            // Force reflow
-            popup.offsetHeight;
-
-            // Add visible class and animate to center
+            // Simply show the popup (CSS handles the animation)
             popup.classList.add('visible');
-
-            // Calculate center position
-            const centerX = window.innerWidth / 2;
-            const centerY = window.innerHeight / 2;
-
-            popup.style.left = centerX + 'px';
-            popup.style.top = centerY + 'px';
-            popup.style.transform = 'translate(-50%, -50%) scale(1)';
         }
 
         function hideImagePreview() {
             const popup = document.getElementById('image-preview-popup');
             popup.classList.remove('visible');
-
-            // Reset scale for next show
-            setTimeout(() => {
-                popup.style.transform = 'translate(-50%, -50%) scale(0.1)';
-            }, 250);
         }
 
         function showLoading() {
