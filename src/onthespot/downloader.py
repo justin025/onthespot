@@ -6,6 +6,7 @@ import threading
 import time
 import traceback
 import os
+import queue
 from PyQt6.QtCore import QObject, pyqtSignal
 from librespot.audio.decoders import AudioQuality, VorbisOnlyAudioQuality
 from librespot.metadata import TrackId, EpisodeId
@@ -64,7 +65,6 @@ class RetryWorker(QObject):
                             try:
                                 logger.info(f"Reconnecting Spotify account {account_idx}: {account.get('username', 'unknown')}")
                                 spotify_re_init_session(account)
-                                account['last_session_time'] = time.time()
                                 reconnected_count += 1
                             except Exception as e:
                                 logger.error(f"Failed to reconnect Spotify account {account_idx}: {e}")
@@ -213,11 +213,19 @@ class DownloadWorker(QObject):
                     stream = token.content_feeder().load(audio_key, VorbisOnlyAudioQuality(quality), False, None)
                     logger.info(f"Successfully got stream from account index {current_account_idx}")
                     return stream, token, current_account_idx
-                except (RuntimeError, OSError) as e:
+                except (RuntimeError, OSError, queue.Empty) as e:
                     error_str = str(e)
-                    if any(x in error_str for x in ['Bad file descriptor', 'Cannot get alternative track', 'Unable to', 'Failed fetching audio key']):
+                    error_type = type(e).__name__
+
+                    # queue.Empty means audio key fetch timed out - always retry
+                    # Other errors check if they're in the known retryable list
+                    is_retryable = (error_type == 'Empty' or
+                                   any(x in error_str for x in ['Bad file descriptor', 'Cannot get alternative track',
+                                                                 'Unable to', 'Failed fetching audio key']))
+
+                    if is_retryable:
                         if attempt < max_retries_per_account - 1:
-                            logger.warning(f"Download stream failed (attempt {attempt + 1}) on account {current_account_idx}, reconnecting session: {e}")
+                            logger.warning(f"Download stream failed ({error_type}, attempt {attempt + 1}) on account {current_account_idx}, reconnecting session: {e}")
                             try:
                                 spotify_re_init_session(account_pool[current_account_idx])
                                 token = account_pool[current_account_idx]['login']['session']
@@ -258,11 +266,18 @@ class DownloadWorker(QObject):
                         stream = fallback_token.content_feeder().load(audio_key, VorbisOnlyAudioQuality(fallback_quality), False, None)
                         logger.info(f"Successfully got stream from fallback account index {account_idx}")
                         return stream, fallback_token, account_idx
-                    except (RuntimeError, OSError) as e:
+                    except (RuntimeError, OSError, queue.Empty) as e:
                         error_str = str(e)
-                        if any(x in error_str for x in ['Bad file descriptor', 'Cannot get alternative track', 'Unable to', 'Failed fetching audio key']):
+                        error_type = type(e).__name__
+
+                        # queue.Empty means audio key fetch timed out - always retry
+                        is_retryable = (error_type == 'Empty' or
+                                       any(x in error_str for x in ['Bad file descriptor', 'Cannot get alternative track',
+                                                                     'Unable to', 'Failed fetching audio key']))
+
+                        if is_retryable:
                             if attempt < max_retries_per_account - 1:
-                                logger.warning(f"Fallback account {account_idx} stream failed (attempt {attempt + 1}), reconnecting: {e}")
+                                logger.warning(f"Fallback account {account_idx} stream failed ({error_type}, attempt {attempt + 1}), reconnecting: {e}")
                                 try:
                                     spotify_re_init_session(account_pool[account_idx])
                                     fallback_token = account_pool[account_idx]['login']['session']
@@ -489,6 +504,7 @@ class DownloadWorker(QObject):
                         download_successful = False
 
                         while download_retry_count < max_download_retries and not download_successful:
+                            stream = None  # Initialize for finally block
                             try:
                                 # Get stream (with account fallback)
                                 stream, token, _ = self._try_get_spotify_stream(item, item_id, item_type, token, quality)
@@ -606,34 +622,17 @@ class DownloadWorker(QObject):
 
                                 logger.info(f"Download verified: {actual_file_size} bytes, valid OGG header")
 
-                                # Clean up stream - CRITICAL for preventing file descriptor leaks
-                                # Each unclosed stream consumes a file descriptor
-                                # After many downloads, worker exhausts FDs causing FFmpeg to fail
-                                try:
-                                    # Close the underlying stream first
-                                    stream_obj = stream.input_stream.stream()
-                                    stream_obj.close()
-                                    logger.debug("Closed Spotify stream successfully")
-                                except Exception as stream_err:
-                                    logger.warning(f"Error closing Spotify stream (may cause FD leak): {stream_err}")
-
-                                # Delete references to allow garbage collection
-                                try:
-                                    del stream.input_stream
-                                    del stream
-                                except Exception as del_err:
-                                    logger.warning(f"Error deleting stream references: {del_err}")
-
+                                # Mark as successful - stream cleanup will happen in finally block
                                 download_successful = True
                                 logger.info(f"Download completed successfully after {download_retry_count + 1} attempt(s)")
 
                             except (RuntimeError, OSError, Exception) as e:
                                 error_str = str(e)
                                 # Check if this is a stall, connection, or stream death error
-                                if any(x in error_str for x in [
-                                    'stalled', 'Connection reset', 'Failed reading packet',
-                                    'Broken pipe', 'Bad file descriptor', 'Incomplete download',
-                                    'Stream died', 'verification FAILED', 'corrupted', 'invalid OGG header'
+                                if any(x in error_str.lower() for x in [
+                                    'stalled', 'timeout', 'timed out', 'connection reset', 'failed reading packet',
+                                    'broken pipe', 'bad file descriptor', 'incomplete download',
+                                    'stream died', 'verification failed', 'corrupted', 'invalid ogg header'
                                 ]):
                                     download_retry_count += 1
                                     if download_retry_count < max_download_retries:
@@ -647,28 +646,17 @@ class DownloadWorker(QObject):
                                             from .api.spotify import spotify_re_init_session
                                             try:
                                                 spotify_re_init_session(account_pool[current_account_idx])
-                                                account_pool[current_account_idx]['last_session_time'] = time.time()
                                                 token = account_pool[current_account_idx]['login']['session']
                                             except Exception as session_err:
                                                 logger.error(f"Failed to recreate session: {session_err}")
 
-                                        # Clean up partial file and stream
+                                        # Clean up partial file (stream cleanup in finally block)
                                         if os.path.exists(temp_file_path):
                                             try:
                                                 os.remove(temp_file_path)
                                             except Exception:
                                                 pass
 
-                                        # Properly close stream to avoid FD leak even on error
-                                        try:
-                                            if 'stream' in locals():
-                                                stream_obj = stream.input_stream.stream()
-                                                stream_obj.close()
-                                                del stream.input_stream
-                                                del stream
-                                                logger.debug("Cleaned up stream after download error")
-                                        except Exception as cleanup_err:
-                                            logger.warning(f"Error cleaning up stream after download failure: {cleanup_err}")
                                         # Wait a bit before retrying
                                         time.sleep(2)
                                         continue
@@ -678,6 +666,27 @@ class DownloadWorker(QObject):
                                 else:
                                     # Not a recoverable error, re-raise immediately
                                     raise
+
+                            finally:
+                                # CRITICAL: Always clean up stream to prevent file descriptor leaks
+                                # This runs whether download succeeds, fails, or is cancelled
+                                if stream is not None:
+                                    try:
+                                        stream_obj = stream.input_stream.stream()
+                                        stream_obj.close()
+                                        logger.debug("Closed Spotify stream in finally block")
+                                    except Exception as stream_err:
+                                        logger.warning(f"Error closing stream in finally: {stream_err}")
+
+                                    try:
+                                        del stream.input_stream
+                                        del stream
+                                    except Exception as del_err:
+                                        logger.warning(f"Error deleting stream references: {del_err}")
+
+                                    # Force garbage collection to clean up librespot resources
+                                    import gc
+                                    gc.collect()
 
                     elif item_service == 'deezer':
                         song = get_song_info_from_deezer_website(token, item['item_id'])
@@ -742,14 +751,18 @@ class DownloadWorker(QObject):
                                     urlkey = genurlkey(song["SNG_ID"], song["MD5_ORIGIN"], song["MEDIA_VERSION"], song_quality)
                                     url = "https://e-cdns-proxy-%s.dzcdn.net/mobile/1/%s" % (song["MD5_ORIGIN"][0], urlkey.decode())
 
-                                file = requests.get(url, stream=True)
+                                stall_timeout = config.get("download_stall_timeout")
+                                # Timeout tuple: (connect timeout, read timeout)
+                                # Both set to stall_timeout to ensure requests don't hang
+                                request_timeout = (stall_timeout, stall_timeout)
+
+                                file = requests.get(url, stream=True, timeout=request_timeout)
 
                                 if file.status_code == 200:
                                     total_size = int(file.headers.get('content-length', 0))
                                     downloaded = 0
                                     data_chunks = b''
                                     last_progress_time = time.time()
-                                    stall_timeout = config.get("download_stall_timeout")
 
                                     for data in file.iter_content(chunk_size=config.get("download_chunk_size")):
                                         # Check for stalled download
@@ -785,10 +798,22 @@ class DownloadWorker(QObject):
                                     self.readd_item_to_download_queue(item)
                                     break
 
+                            except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+                                # Timeout or connection errors are always recoverable
+                                download_retry_count += 1
+                                if download_retry_count < max_download_retries:
+                                    logger.warning(f"Deezer download connection/timeout error (attempt {download_retry_count}/{max_download_retries}): {e}")
+                                    logger.info(f"Reconnecting and retrying Deezer download...")
+                                    # Wait a bit before retrying
+                                    time.sleep(2)
+                                    continue
+                                else:
+                                    logger.error(f"Max Deezer download retries ({max_download_retries}) reached, giving up")
+                                    raise
                             except Exception as e:
                                 error_str = str(e)
                                 # Check if this is a stall or connection error
-                                if any(x in error_str for x in ['stalled', 'Connection reset', 'Failed reading packet', 'Broken pipe', 'Connection aborted', 'Incomplete download']):
+                                if any(x in error_str.lower() for x in ['stalled', 'timeout', 'timed out', 'connection reset', 'failed reading packet', 'broken pipe', 'connection aborted', 'incomplete download']):
                                     download_retry_count += 1
                                     if download_retry_count < max_download_retries:
                                         logger.warning(f"Deezer download interrupted (attempt {download_retry_count}/{max_download_retries}): {error_str}")
@@ -849,12 +874,16 @@ class DownloadWorker(QObject):
 
                         while download_retry_count < max_download_retries and not download_successful:
                             try:
-                                response = requests.get(file_url, stream=True)
+                                stall_timeout = config.get("download_stall_timeout")
+                                # Timeout tuple: (connect timeout, read timeout)
+                                # Both set to stall_timeout to ensure requests don't hang
+                                request_timeout = (stall_timeout, stall_timeout)
+
+                                response = requests.get(file_url, stream=True, timeout=request_timeout)
                                 total_size = int(response.headers.get('Content-Length', 0))
                                 downloaded = 0
                                 data_chunks = b''
                                 last_progress_time = time.time()
-                                stall_timeout = config.get("download_stall_timeout")
                                 with open(temp_file_path, 'wb') as file:
                                     for data in response.iter_content(chunk_size=config.get("download_chunk_size", 1024)):
                                         # Check for stalled download
@@ -880,10 +909,28 @@ class DownloadWorker(QObject):
                                 download_successful = True
                                 logger.info(f"{item_service} download completed successfully after {download_retry_count + 1} attempt(s)")
 
+                            except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+                                # Timeout or connection errors are always recoverable
+                                download_retry_count += 1
+                                if download_retry_count < max_download_retries:
+                                    logger.warning(f"{item_service} download connection/timeout error (attempt {download_retry_count}/{max_download_retries}): {e}")
+                                    logger.info(f"Reconnecting and retrying {item_service} download...")
+                                    # Clean up partial file
+                                    if os.path.exists(temp_file_path):
+                                        try:
+                                            os.remove(temp_file_path)
+                                        except Exception:
+                                            pass
+                                    # Wait a bit before retrying
+                                    time.sleep(2)
+                                    continue
+                                else:
+                                    logger.error(f"Max {item_service} download retries ({max_download_retries}) reached, giving up")
+                                    raise
                             except Exception as e:
                                 error_str = str(e)
                                 # Check if this is a stall or connection error
-                                if any(x in error_str for x in ['stalled', 'Connection reset', 'Failed reading packet', 'Broken pipe', 'Connection aborted', 'Incomplete download']):
+                                if any(x in error_str.lower() for x in ['stalled', 'timeout', 'timed out', 'connection reset', 'failed reading packet', 'broken pipe', 'connection aborted', 'incomplete download']):
                                     download_retry_count += 1
                                     if download_retry_count < max_download_retries:
                                         logger.warning(f"{item_service} download interrupted (attempt {download_retry_count}/{max_download_retries}): {error_str}")
@@ -1020,7 +1067,8 @@ class DownloadWorker(QObject):
                                     self.update_progress(item, self.tr("Downloading Chapters") if self.gui else "Downloading Chapters", 1)
                                     chapter_file = temp_file_path + f' - {version["audio_locale"]}.txt'
                                     if not os.path.exists(chapter_file):
-                                        resp = requests.get(f'https://static.crunchyroll.com/skip-events/production/{version["guid"]}.json')
+                                        stall_timeout = config.get("download_stall_timeout")
+                                        resp = requests.get(f'https://static.crunchyroll.com/skip-events/production/{version["guid"]}.json', timeout=(stall_timeout, stall_timeout))
                                         if resp.status_code == 200:
                                             chapter_data = resp.json()
                                             with open(chapter_file, 'w', encoding='utf-8') as file:
@@ -1079,7 +1127,8 @@ class DownloadWorker(QObject):
                                 if lang in config.get('preferred_subtitle_language').split(',') or config.get('download_all_available_subtitles'):
                                     subtitle_file = temp_file_path + f' - {lang}.{subtitle_format["extension"]}'
                                     if not os.path.exists(subtitle_file):
-                                        subtitle_data = requests.get(subtitle_format['url']).text
+                                        stall_timeout = config.get("download_stall_timeout")
+                                        subtitle_data = requests.get(subtitle_format['url'], timeout=(stall_timeout, stall_timeout)).text
                                         with open(subtitle_file, 'w', encoding='utf-8') as file:
                                             file.write(subtitle_data)
                                     video_files.append({

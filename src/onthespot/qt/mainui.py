@@ -74,6 +74,76 @@ class QueueWorker(QObject):
         self.thread.join()
 
 
+class AutoClearWorker(threading.Thread):
+    """
+    Worker that automatically clears completed downloads after all items are done.
+    Waits 60 seconds after the queue is fully complete before clearing.
+    """
+    def __init__(self):
+        super().__init__()
+        self.is_running = True
+        self.last_all_done_time = None
+        self.CLEAR_DELAY_SECONDS = 60
+
+    def run(self):
+        logger.info('AutoClearWorker started')
+        while self.is_running:
+            try:
+                time.sleep(5)  # Check every 5 seconds
+
+                with download_queue_lock:
+                    if not download_queue:
+                        # Queue is empty, reset timer
+                        self.last_all_done_time = None
+                        continue
+
+                    # Check if all items are in a "done" state
+                    all_done = True
+                    for local_id, item in download_queue.items():
+                        status = item.get("item_status", "")
+                        if status not in ("Downloaded", "Already Exists", "Cancelled", "Unavailable", "Deleted", "Failed"):
+                            # Found an item that's still in progress
+                            all_done = False
+                            break
+
+                    if all_done:
+                        # All items are done
+                        if self.last_all_done_time is None:
+                            # First time we've noticed everything is done
+                            self.last_all_done_time = time.time()
+                            logger.info(f"All downloads complete. Will auto-clear in {self.CLEAR_DELAY_SECONDS} seconds...")
+                        else:
+                            # Check if enough time has passed
+                            elapsed = time.time() - self.last_all_done_time
+                            if elapsed >= self.CLEAR_DELAY_SECONDS:
+                                # Time to clear!
+                                logger.info("Auto-clearing completed downloads...")
+                                keys_to_delete = []
+                                for local_id, item in download_queue.items():
+                                    if item["item_status"] in ("Downloaded", "Already Exists", "Cancelled", "Unavailable", "Deleted"):
+                                        keys_to_delete.append(local_id)
+
+                                for key in keys_to_delete:
+                                    del download_queue[key]
+
+                                logger.info(f"Auto-cleared {len(keys_to_delete)} items from download queue")
+                                self.last_all_done_time = None
+                    else:
+                        # Not all items are done, reset timer
+                        if self.last_all_done_time is not None:
+                            logger.debug("New downloads detected, resetting auto-clear timer")
+                        self.last_all_done_time = None
+
+            except Exception as e:
+                logger.error(f"Error in AutoClearWorker: {str(e)}\nTraceback: {traceback.format_exc()}")
+                time.sleep(5)
+
+    def stop(self):
+        logger.info('Stopping AutoClear Worker')
+        self.is_running = False
+        self.join(timeout=5)
+
+
 class MainWindow(QMainWindow):
     def closeEvent(self, event):
         if config.get('close_to_tray') and get_init_tray():
@@ -143,6 +213,11 @@ class MainWindow(QMainWindow):
             retryworker = RetryWorker(gui=True)
             retryworker.start()
             register_worker(retryworker)
+
+        # Start auto-clear worker
+        autoclear_worker = AutoClearWorker()
+        autoclear_worker.start()
+        register_worker(autoclear_worker)
 
         logger.info("All workers started and registered")
 

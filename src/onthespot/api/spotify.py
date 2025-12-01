@@ -221,18 +221,38 @@ def spotify_login_user(account):
         return False
 
 
-def spotify_re_init_session(account):
+def spotify_re_init_session(account, max_retries=4, force=False):
     """
     NUCLEAR OPTION: Completely destroy and recreate a Spotify session from scratch.
 
     This aggressively cleans up ALL session state and forces a completely fresh session.
     Librespot sessions go stale and this ensures we start with a clean slate.
+
+    RATE LIMITED: Won't reconnect more than once per 30 seconds unless forced.
+
+    Args:
+        account: Account dictionary containing session information
+        max_retries: Maximum number of connection retry attempts (default: 4)
+        force: If True, bypass rate limiting and force reconnection
     """
     import gc
     import time
 
     session_json_path = os.path.join(cache_dir(), "sessions", f"ots_login_{account['uuid']}.json")
     username = account.get('username', 'unknown')
+
+    # Rate limiting: Don't reconnect more than once per 30 seconds
+    MIN_RECONNECT_INTERVAL = 30  # seconds
+    last_reconnect = account.get('last_reconnect_time', 0)
+    time_since_last = time.time() - last_reconnect
+
+    if not force and time_since_last < MIN_RECONNECT_INTERVAL:
+        logger.info(
+            f"Rate limit: Session for {username} was reconnected {time_since_last:.1f}s ago, "
+            f"skipping reconnection (min interval: {MIN_RECONNECT_INTERVAL}s)"
+        )
+        # Return existing session without reconnecting
+        return account.get('login', {}).get('session')
 
     logger.info(f"NUCLEAR SESSION RESET for account {username} (UUID: {account['uuid']})")
 
@@ -262,80 +282,102 @@ def spotify_re_init_session(account):
     # STEP 3: Small delay to ensure everything is cleaned up
     time.sleep(0.5)
 
-    # STEP 4: Create completely fresh session from stored credentials
-    try:
-        logger.info(f"Creating fresh session for {username}...")
+    # STEP 4: Create completely fresh session from stored credentials with retry logic
+    session = None
+    last_error = None
 
-        # Build completely new config
-        config = Session.Configuration.Builder().set_stored_credential_file(session_json_path).build()
-
-        # Create completely new session - this establishes a new TCP connection
-        session = Session.Builder(conf=config).stored_file(session_json_path).create()
-
-        # Verify session is actually working
+    for attempt in range(max_retries):
         try:
-            account_type = session.get_user_attribute("type")
-            logger.info(f"✓ NEW SESSION ACTIVE for {username} (type: {account_type})")
-        except Exception as verify_err:
-            logger.error(f"New session created but verification failed: {verify_err}")
-            raise RuntimeError(f"Session verification failed: {verify_err}")
+            if attempt > 0:
+                # Exponential backoff: 2s, 4s, 8s, 16s
+                delay = 2 ** attempt
+                logger.info(f"Retry {attempt}/{max_retries-1} for {username} after {delay}s delay...")
+                time.sleep(delay)
 
-        # Update account with fresh session
-        account['login']['session_path'] = session_json_path
-        account['login']['session'] = session
-        account['status'] = 'active'
-        account['account_type'] = account_type
-        account['bitrate'] = "320k" if account_type == "premium" else "160k"
+            logger.info(f"Creating fresh session for {username}... (attempt {attempt + 1}/{max_retries})")
 
-        logger.info(f"✓ NUCLEAR SESSION RESET SUCCESSFUL for {username} (bitrate: {account['bitrate']})")
-        return session
+            # Build completely new config
+            session_config = Session.Configuration.Builder().set_stored_credential_file(session_json_path).build()
 
-    except Exception as e:
-        logger.error(f'✗ NUCLEAR SESSION RESET FAILED for {username}: {e}')
-        account['status'] = 'error'
-        raise RuntimeError(f"Failed to recreate session for {username}: {e}")
+            # Create completely new session - this establishes a new TCP connection
+            session = Session.Builder(conf=session_config).stored_file(session_json_path).create()
+
+            # Verify session is actually working
+            try:
+                account_type = session.get_user_attribute("type")
+                logger.info(f"✓ NEW SESSION ACTIVE for {username} (type: {account_type})")
+            except Exception as verify_err:
+                logger.error(f"New session created but verification failed: {verify_err}")
+                raise RuntimeError(f"Session verification failed: {verify_err}")
+
+            # Update account with fresh session
+            account['login']['session_path'] = session_json_path
+            account['login']['session'] = session
+            account['status'] = 'active'
+            account['account_type'] = account_type
+            account['bitrate'] = "320k" if account_type == "premium" else "160k"
+            account['last_reconnect_time'] = time.time()  # Track reconnection time for rate limiting
+
+            logger.info(f"✓ NUCLEAR SESSION RESET SUCCESSFUL for {username} (bitrate: {account['bitrate']})")
+            return session
+
+        except (ConnectionRefusedError, ConnectionError, OSError, TimeoutError) as e:
+            last_error = e
+            error_type = type(e).__name__
+            logger.warning(f"Connection error during session creation (attempt {attempt + 1}/{max_retries}): {error_type} - {e}")
+
+            # Clean up failed session attempt
+            if session:
+                try:
+                    session.close()
+                except:
+                    pass
+                session = None
+
+            # If this was the last attempt, we'll raise the error below
+            if attempt == max_retries - 1:
+                logger.error(f"✗ All {max_retries} connection attempts failed for {username}")
+                break
+
+        except Exception as e:
+            # For non-connection errors, fail immediately
+            last_error = e
+            logger.error(f'✗ NUCLEAR SESSION RESET FAILED for {username}: {e}')
+            account['status'] = 'error'
+            raise RuntimeError(f"Failed to recreate session for {username}: {e}")
+
+    # If we get here, all retries failed
+    account['status'] = 'error'
+    raise RuntimeError(f"Failed to recreate session for {username} after {max_retries} attempts: {last_error}")
 
 
 def spotify_get_token(parsing_index):
     """
-    Get Spotify token with ultra-aggressive session recreation.
+    Get Spotify session token.
 
-    Recreates session if it's been >30 seconds since last recreation
-    or if session is missing/invalid. Ultra-aggressive 30-second cooldown
-    because sessions degrade extremely fast under load and cause corrupted downloads.
+    LAZY RECONNECTION: Only recreates session when it's actually invalid,
+    not proactively. Sessions can stay healthy for hours if properly managed.
+
+    The old 30-second cooldown was counter-productive - it caused:
+    - Unnecessary Spotify API load → rate limiting
+    - TCP connection churn → connection resets
+    - More problems than it solved
+
+    Sessions go stale from INACTIVITY (30-60 min), not age.
     """
-    import time
     username = account_pool[parsing_index].get('username', 'unknown')
-
-    # Track last session creation time
-    last_session_time = account_pool[parsing_index].get('last_session_time', 0)
-    current_time = time.time()
-    time_since_reset = current_time - last_session_time
-
-    # Cooldown period: only recreate if >30 seconds old or if session missing
-    # Ultra-aggressive refresh - sessions degrade very quickly under load
-    COOLDOWN_SECONDS = 30  # 30 seconds
 
     try:
         token = account_pool[parsing_index]['login']['session']
-
-        # Check if session needs recreation
-        if time_since_reset > COOLDOWN_SECONDS:
-            logger.info(f"Session for {username} is {time_since_reset:.0f}s old, recreating...")
-            spotify_re_init_session(account_pool[parsing_index])
-            account_pool[parsing_index]['last_session_time'] = current_time
-            token = account_pool[parsing_index]['login']['session']
-        else:
-            logger.debug(f"Using existing session for {username} ({time_since_reset:.0f}s old)")
+        logger.debug(f"Using existing session for {username}")
+        return token
 
     except (OSError, AttributeError, KeyError) as e:
-        # Session missing or invalid - recreate immediately
+        # Session missing or invalid - recreate ONLY when needed
         logger.info(f'Session invalid for {username} ({e}), recreating...')
         spotify_re_init_session(account_pool[parsing_index])
-        account_pool[parsing_index]['last_session_time'] = current_time
         token = account_pool[parsing_index]['login']['session']
-
-    return token
+        return token
 
 
 def spotify_get_artist_album_ids(token, artist_id, _retry=False):
@@ -655,18 +697,22 @@ def spotify_get_search_results(token, search_term, content_types, _retry=False):
     headers = {}
     try:
         headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
-    except (RuntimeError, OSError) as e:
+    except (RuntimeError, OSError, ConnectionError, Exception) as e:
         if _retry:
             logger.error(f"Failed to get token after retry: {e}")
             raise
         logger.warning(f"Token retrieval failed, attempting session reconnect: {e}")
-        # Re-initialize the session
-        parsing_index = config.get('active_account_number')
-        spotify_re_init_session(account_pool[parsing_index])
-        # Get the new token
-        new_token = account_pool[parsing_index]['login']['session']
-        # Retry the search with the new token
-        return spotify_get_search_results(new_token, search_term, content_types, _retry=True)
+        try:
+            # Re-initialize the session with retry logic
+            parsing_index = config.get('active_account_number')
+            spotify_re_init_session(account_pool[parsing_index])
+            # Get the new token
+            new_token = account_pool[parsing_index]['login']['session']
+            # Retry the search with the new token
+            return spotify_get_search_results(new_token, search_term, content_types, _retry=True)
+        except Exception as reconnect_error:
+            logger.error(f"Failed to reconnect and search: {reconnect_error}")
+            raise
 
     params = {}
     params['limit'] = config.get("max_search_results")
@@ -745,16 +791,16 @@ def spotify_get_item_by_id(token, item_id, item_type, _retry=False):
         headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
     except (RuntimeError, OSError, ConnectionError, Exception) as e:
         if _retry:
-            logger.error(f"Failed to get token after retry: {e}")
+            logger.error(f"Failed to get token after retry for item {item_type}/{item_id}: {e}")
             return []
-        logger.warning(f"Token retrieval failed, attempting session reconnect: {e}")
+        logger.warning(f"Token retrieval failed for item {item_type}/{item_id}, attempting session reconnect: {e}")
         try:
             parsing_index = config.get('active_account_number')
             spotify_re_init_session(account_pool[parsing_index])
             new_token = account_pool[parsing_index]['login']['session']
             return spotify_get_item_by_id(new_token, item_id, item_type, _retry=True)
         except Exception as retry_error:
-            logger.error(f"Failed to reconnect session: {retry_error}")
+            logger.error(f"Failed to reconnect session for item {item_type}/{item_id}: {retry_error}")
             return []
 
     # Map internal types to API endpoints
