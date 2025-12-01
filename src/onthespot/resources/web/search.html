@@ -345,9 +345,6 @@
         /* Image preview popup */
         .image-preview-popup {
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.8);
             z-index: 10000;
             opacity: 0;
             pointer-events: none;
@@ -356,13 +353,13 @@
             border-radius: 12px;
             padding: 8px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform-origin: top left;
         }
 
         .image-preview-popup.visible {
             opacity: 1;
             pointer-events: auto;
-            transform: translate(-50%, -50%) scale(1);
         }
 
         .image-preview-popup img {
@@ -643,19 +640,26 @@
 
         // ============= IMAGE PREVIEW FUNCTIONS =============
         function getLargerImageUrl(thumbnailUrl) {
-            // Try to get a larger version of the image
+            // Try to get the highest quality version
             let largerUrl = thumbnailUrl;
 
-            // Spotify pattern: replace any size with 1280x1280 or larger
-            largerUrl = largerUrl.replace(/\/(\d+)x(\d+)\//, '/1280x1280/');
+            // For Spotify images, try to get the original unscaled version
+            // Spotify pattern: Try removing size constraint or using ab67616d0000b273 (full size)
+            if (largerUrl.includes('i.scdn.co/image/')) {
+                // Try to use the full-size version by using the image hash without size prefix
+                largerUrl = largerUrl.replace(/ab67616d[0-9a-f]{8}/, 'ab67616d0000b273');
+            }
+
+            // Also try larger explicit sizes as fallback
+            largerUrl = largerUrl.replace(/\/(\d+)x(\d+)\//, '/640x640/');
 
             // Try to replace common thumbnail size indicators
             largerUrl = largerUrl.replace(/small|thumb|thumbnail|medium/gi, 'large');
             largerUrl = largerUrl.replace(/_small\.|_thumb\.|_thumbnail\.|_medium\./gi, '_large.');
 
-            // If URL has size parameters, try to increase them to 1280
-            largerUrl = largerUrl.replace(/([?&])(width|w|size)=\d+/gi, '$1$2=1280');
-            largerUrl = largerUrl.replace(/([?&])(height|h)=\d+/gi, '$1$2=1280');
+            // If URL has size parameters, try to increase them
+            largerUrl = largerUrl.replace(/([?&])(width|w|size)=\d+/gi, '$1$2=640');
+            largerUrl = largerUrl.replace(/([?&])(height|h)=\d+/gi, '$1$2=640');
 
             return largerUrl;
         }
@@ -664,12 +668,43 @@
             const popup = document.getElementById('image-preview-popup');
             const img = document.getElementById('image-preview-img');
 
+            // Get thumbnail position and size
+            const rect = thumbnailElement.getBoundingClientRect();
+            const thumbnailLeft = rect.left;
+            const thumbnailTop = rect.top;
+            const thumbnailWidth = rect.width;
+            const thumbnailHeight = rect.height;
+
             // Try to get larger image URL
             const largerUrl = getLargerImageUrl(imageUrl);
             img.src = largerUrl;
 
-            // Simply show the popup (CSS handles the animation)
+            // Calculate target (center) position and size
+            const targetLeft = window.innerWidth / 2;
+            const targetTop = window.innerHeight / 2;
+
+            // Start at thumbnail position with thumbnail size
+            popup.style.left = thumbnailLeft + 'px';
+            popup.style.top = thumbnailTop + 'px';
+            popup.style.width = thumbnailWidth + 'px';
+            popup.style.height = thumbnailHeight + 'px';
+            popup.style.transform = 'translate(0, 0) scale(1)';
+
+            // Force reflow
+            popup.offsetHeight;
+
+            // Add visible class for opacity transition
             popup.classList.add('visible');
+
+            // Animate to center with larger size
+            // Use setTimeout to ensure the transition applies
+            setTimeout(() => {
+                popup.style.left = targetLeft + 'px';
+                popup.style.top = targetTop + 'px';
+                popup.style.width = 'auto';
+                popup.style.height = 'auto';
+                popup.style.transform = 'translate(-50%, -50%) scale(1)';
+            }, 10);
         }
 
         function hideImagePreview() {
