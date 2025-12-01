@@ -342,6 +342,46 @@
 
         /* Toast notification styles now in global style.css */
 
+        /* Image preview popup */
+        .image-preview-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+        }
+
+        .image-preview-popup.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .image-preview-popup img {
+            display: block;
+            max-width: 400px;
+            max-height: 400px;
+            width: auto;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        .item-thumbnail {
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .item-thumbnail:hover {
+            transform: scale(1.05);
+        }
+
         /* ============= RESPONSIVE BREAKPOINTS ============= */
         @media screen and (max-width: 768px) {
             .search-section {
@@ -414,6 +454,11 @@
             .toast.visible {
                 transform: translateX(0) translateY(0);
             }
+
+            .image-preview-popup img {
+                max-width: 300px;
+                max-height: 300px;
+            }
         }
 
         @media screen and (max-width: 480px) {
@@ -445,6 +490,11 @@
 
             .item-name {
                 max-width: 100px;
+            }
+
+            .image-preview-popup img {
+                max-width: 250px;
+                max-height: 250px;
             }
         }
     </style>
@@ -556,6 +606,11 @@
         <span class="toast-message"></span>
     </div>
 
+    <!-- Image preview popup -->
+    <div id="image-preview-popup" class="image-preview-popup">
+        <img id="image-preview-img" src="" alt="Preview">
+    </div>
+
     <script>
         let filtersVisible = false;
         let isSearching = false;
@@ -578,6 +633,19 @@
         }
 
         // showToast function now in global utils.js
+
+        // ============= IMAGE PREVIEW FUNCTIONS =============
+        function showImagePreview(imageUrl) {
+            const popup = document.getElementById('image-preview-popup');
+            const img = document.getElementById('image-preview-img');
+            img.src = imageUrl;
+            popup.classList.add('visible');
+        }
+
+        function hideImagePreview() {
+            const popup = document.getElementById('image-preview-popup');
+            popup.classList.remove('visible');
+        }
 
         function showLoading() {
             const tableBody = document.getElementById('results-body');
@@ -718,7 +786,18 @@
                 if (showThumbnails) {
                     const imgCell = document.createElement('td');
                     if (item.item_thumbnail_url) {
-                        imgCell.innerHTML = `<img src="${item.item_thumbnail_url}" class="item-thumbnail" loading="lazy" style="width: ${thumbnailSize}px; height: ${thumbnailSize}px;">`;
+                        const img = document.createElement('img');
+                        img.src = item.item_thumbnail_url;
+                        img.className = 'item-thumbnail';
+                        img.loading = 'lazy';
+                        img.style.width = `${thumbnailSize}px`;
+                        img.style.height = `${thumbnailSize}px`;
+
+                        // Add hover event listeners for image preview
+                        img.addEventListener('mouseenter', () => showImagePreview(item.item_thumbnail_url));
+                        img.addEventListener('mouseleave', hideImagePreview);
+
+                        imgCell.appendChild(img);
                     }
                     row.appendChild(imgCell);
                 }
