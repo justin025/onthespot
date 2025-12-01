@@ -661,6 +661,10 @@
                 audiobooks: filters.enable_search_audiobooks
             });
 
+            // Save search state to localStorage
+            localStorage.setItem('lastSearchQuery', query);
+            localStorage.setItem('lastSearchFilters', JSON.stringify(filters));
+
             fetch(`/api/search_results?${params}`)
                 .then(response => response.json())
                 .then(data => {
@@ -783,8 +787,35 @@
 
         // ============= INITIALIZATION =============
         document.addEventListener('DOMContentLoaded', () => {
-            // Focus search input on load
-            document.getElementById('search-bar').focus();
+            // Restore last search state from localStorage
+            const lastSearchQuery = localStorage.getItem('lastSearchQuery');
+            const lastSearchFilters = localStorage.getItem('lastSearchFilters');
+
+            if (lastSearchFilters) {
+                try {
+                    const filters = JSON.parse(lastSearchFilters);
+                    // Restore checkbox states
+                    document.getElementById('enable_search_tracks').checked = filters.enable_search_tracks;
+                    document.getElementById('enable_search_albums').checked = filters.enable_search_albums;
+                    document.getElementById('enable_search_playlists').checked = filters.enable_search_playlists;
+                    document.getElementById('enable_search_artists').checked = filters.enable_search_artists;
+                    document.getElementById('enable_search_episodes').checked = filters.enable_search_episodes;
+                    document.getElementById('enable_search_podcasts').checked = filters.enable_search_podcasts;
+                    document.getElementById('enable_search_audiobooks').checked = filters.enable_search_audiobooks;
+                } catch (e) {
+                    console.error('Error restoring filters:', e);
+                }
+            }
+
+            if (lastSearchQuery) {
+                // Restore search query
+                document.getElementById('search-bar').value = lastSearchQuery;
+                // Auto-trigger search to restore results
+                submitSearch(new Event('submit'));
+            } else {
+                // Focus search input only if no previous search
+                document.getElementById('search-bar').focus();
+            }
 
             // Handle Enter key in search
             document.getElementById('search-bar').addEventListener('keypress', (e) => {
