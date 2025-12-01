@@ -685,7 +685,11 @@
                     }
 
                     // Render search results
-                    renderResults(data.results || data);
+                    const results = data.results || data;
+                    renderResults(results);
+
+                    // Cache the search results
+                    localStorage.setItem('lastSearchResults', JSON.stringify(results));
                 })
                 .catch(error => {
                     isSearching = false;
@@ -811,8 +815,23 @@
                 // Restore search query
                 const searchBar = document.getElementById('search-bar');
                 searchBar.value = lastSearchQuery;
-                // Auto-trigger search to restore results
-                submitSearch(new Event('submit'));
+
+                // Try to load cached results first
+                const cachedResults = localStorage.getItem('lastSearchResults');
+                if (cachedResults) {
+                    try {
+                        const results = JSON.parse(cachedResults);
+                        renderResults(results);
+                    } catch (e) {
+                        console.error('Error loading cached results:', e);
+                        // Fall back to fetching new results
+                        submitSearch(new Event('submit'));
+                    }
+                } else {
+                    // No cached results, fetch new ones
+                    submitSearch(new Event('submit'));
+                }
+
                 // Select the text so user can start typing immediately
                 searchBar.select();
             } else {
