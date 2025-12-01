@@ -252,21 +252,26 @@ def about():
 def search_results():
     query = request.args.get('q')
 
+    # Read filter states from URL parameters, default to only albums
     content_types = []
-    if config.get('enable_search_tracks'):
+    if request.args.get('tracks') == 'true':
         content_types.append('track')
-    if config.get('enable_search_playlists'):
+    if request.args.get('playlists') == 'true':
         content_types.append('playlist')
-    if config.get('enable_search_albums'):
+    if request.args.get('albums') == 'true':
         content_types.append('album')
-    if config.get('enable_search_artists'):
+    if request.args.get('artists') == 'true':
         content_types.append('artist')
-    if config.get('enable_search_podcasts'):
+    if request.args.get('podcasts') == 'true':
         content_types.append('show')
-    if config.get('enable_search_episodes'):
+    if request.args.get('episodes') == 'true':
         content_types.append('episode')
-    if config.get('enable_search_audiobooks'):
+    if request.args.get('audiobooks') == 'true':
         content_types.append('audiobook')
+
+    # If no filters specified, default to albums only
+    if not content_types:
+        content_types = ['album']
 
     results = get_search_results(query, content_types=content_types)
 

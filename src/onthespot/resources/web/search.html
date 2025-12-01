@@ -184,19 +184,6 @@
             cursor: pointer;
         }
 
-        .filters-actions {
-            display: flex;
-            justify-content: flex-end;
-            padding-top: 12px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .filters-actions button {
-            padding: 10px 16px;
-            font-size: 12px;
-            margin: 0;
-        }
-
         /* Table wrapper */
         .table-wrapper {
             background: rgba(255, 255, 255, 0.02);
@@ -501,39 +488,33 @@
             <div class="filters-title">Search For</div>
             <div class="filters-grid">
                 <div class="filter-item">
-                    <input type="checkbox" id="enable_search_tracks" {% if config.enable_search_tracks %}checked{% endif %}>
+                    <input type="checkbox" id="enable_search_tracks">
                     <label for="enable_search_tracks">Tracks</label>
                 </div>
                 <div class="filter-item">
-                    <input type="checkbox" id="enable_search_albums" {% if config.enable_search_albums %}checked{% endif %}>
+                    <input type="checkbox" id="enable_search_albums" checked>
                     <label for="enable_search_albums">Albums</label>
                 </div>
                 <div class="filter-item">
-                    <input type="checkbox" id="enable_search_playlists" {% if config.enable_search_playlists %}checked{% endif %}>
+                    <input type="checkbox" id="enable_search_playlists">
                     <label for="enable_search_playlists">Playlists</label>
                 </div>
                 <div class="filter-item">
-                    <input type="checkbox" id="enable_search_artists" {% if config.enable_search_artists %}checked{% endif %}>
+                    <input type="checkbox" id="enable_search_artists">
                     <label for="enable_search_artists">Artists</label>
                 </div>
                 <div class="filter-item">
-                    <input type="checkbox" id="enable_search_episodes" {% if config.enable_search_episodes %}checked{% endif %}>
+                    <input type="checkbox" id="enable_search_episodes">
                     <label for="enable_search_episodes">Episodes</label>
                 </div>
                 <div class="filter-item">
-                    <input type="checkbox" id="enable_search_podcasts" {% if config.enable_search_podcasts %}checked{% endif %}>
+                    <input type="checkbox" id="enable_search_podcasts">
                     <label for="enable_search_podcasts">Podcasts</label>
                 </div>
                 <div class="filter-item">
-                    <input type="checkbox" id="enable_search_audiobooks" {% if config.enable_search_audiobooks %}checked{% endif %}>
+                    <input type="checkbox" id="enable_search_audiobooks">
                     <label for="enable_search_audiobooks">Audiobooks</label>
                 </div>
-            </div>
-            <div class="filters-actions">
-                <button onclick="updateSettings(returnSearchFilters())">
-                    <img src="/icons/save.png" loading="lazy" style="width: 14px; height: 14px; margin-right: 6px; vertical-align: middle;">
-                    Save Filters
-                </button>
             </div>
         </div>
 
@@ -658,16 +639,29 @@
         // ============= SEARCH FUNCTIONS =============
         function submitSearch(event) {
             event.preventDefault();
-            
+
             if (isSearching) return;
-            
+
             const query = document.getElementById('search-bar').value.trim();
             if (!query) return;
-            
+
             isSearching = true;
             showLoading();
-            
-            fetch(`/api/search_results?q=${encodeURIComponent(query)}`)
+
+            // Build URL with filter parameters
+            const filters = returnSearchFilters();
+            const params = new URLSearchParams({
+                q: query,
+                tracks: filters.enable_search_tracks,
+                albums: filters.enable_search_albums,
+                playlists: filters.enable_search_playlists,
+                artists: filters.enable_search_artists,
+                episodes: filters.enable_search_episodes,
+                podcasts: filters.enable_search_podcasts,
+                audiobooks: filters.enable_search_audiobooks
+            });
+
+            fetch(`/api/search_results?${params}`)
                 .then(response => response.json())
                 .then(data => {
                     isSearching = false;
@@ -797,6 +791,27 @@
                 if (e.key === 'Enter') {
                     submitSearch(e);
                 }
+            });
+
+            // Add event listeners to filter checkboxes to auto-trigger search
+            const filterCheckboxes = [
+                'enable_search_tracks',
+                'enable_search_albums',
+                'enable_search_playlists',
+                'enable_search_artists',
+                'enable_search_episodes',
+                'enable_search_podcasts',
+                'enable_search_audiobooks'
+            ];
+
+            filterCheckboxes.forEach(id => {
+                document.getElementById(id).addEventListener('change', () => {
+                    const query = document.getElementById('search-bar').value.trim();
+                    // Only auto-search if there's a query and we're not already searching
+                    if (query && !isSearching) {
+                        submitSearch(new Event('submit'));
+                    }
+                });
             });
 
             // Load auto-redirect preference from localStorage
