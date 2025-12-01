@@ -355,6 +355,7 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
             transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
             transform-origin: top left;
+            cursor: pointer;
         }
 
         .image-preview-popup.visible {
@@ -1039,6 +1040,14 @@
 
         // ============= INITIALIZATION =============
         document.addEventListener('DOMContentLoaded', () => {
+            // Add click handler to image preview to dismiss it
+            const imagePopup = document.getElementById('image-preview-popup');
+            imagePopup.addEventListener('click', () => {
+                if (imagePreviewVisible) {
+                    hideImagePreview();
+                }
+            });
+
             // Close popups when clicking outside on touch devices
             if (isTouchDevice) {
                 document.addEventListener('click', (e) => {
