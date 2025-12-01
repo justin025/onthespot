@@ -8,10 +8,11 @@ function copyToClipboard(text) {
     navigator.clipboard.writeText(text)
         .then(() => {
             console.log('Link copied to clipboard');
-            // alert('Link copied to clipboard!');
+            showToast('Link copied to clipboard!', 'success');
         })
         .catch(err => {
             console.error('Failed to copy: ', err);
+            showToast('Failed to copy link', 'error');
         });
 }
 
