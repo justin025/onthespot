@@ -630,10 +630,10 @@ class DownloadWorker(QObject):
                             except (RuntimeError, OSError, Exception) as e:
                                 error_str = str(e)
                                 # Check if this is a stall, connection, or stream death error
-                                if any(x in error_str.lower() for x in [
-                                    'stalled', 'timeout', 'timed out', 'connection reset', 'failed reading packet',
-                                    'broken pipe', 'bad file descriptor', 'incomplete download',
-                                    'stream died', 'verification failed', 'corrupted', 'invalid ogg header'
+                                if any(x in error_str for x in [
+                                    'stalled', 'Connection reset', 'Failed reading packet',
+                                    'Broken pipe', 'Bad file descriptor', 'Incomplete download',
+                                    'Stream died', 'verification FAILED', 'corrupted', 'invalid OGG header'
                                 ]):
                                     download_retry_count += 1
                                     if download_retry_count < max_download_retries:
@@ -742,18 +742,14 @@ class DownloadWorker(QObject):
                                     urlkey = genurlkey(song["SNG_ID"], song["MD5_ORIGIN"], song["MEDIA_VERSION"], song_quality)
                                     url = "https://e-cdns-proxy-%s.dzcdn.net/mobile/1/%s" % (song["MD5_ORIGIN"][0], urlkey.decode())
 
-                                stall_timeout = config.get("download_stall_timeout")
-                                # Timeout tuple: (connect timeout, read timeout)
-                                # Both set to stall_timeout to ensure requests don't hang
-                                request_timeout = (stall_timeout, stall_timeout)
-
-                                file = requests.get(url, stream=True, timeout=request_timeout)
+                                file = requests.get(url, stream=True)
 
                                 if file.status_code == 200:
                                     total_size = int(file.headers.get('content-length', 0))
                                     downloaded = 0
                                     data_chunks = b''
                                     last_progress_time = time.time()
+                                    stall_timeout = config.get("download_stall_timeout")
 
                                     for data in file.iter_content(chunk_size=config.get("download_chunk_size")):
                                         # Check for stalled download
@@ -789,22 +785,10 @@ class DownloadWorker(QObject):
                                     self.readd_item_to_download_queue(item)
                                     break
 
-                            except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-                                # Timeout or connection errors are always recoverable
-                                download_retry_count += 1
-                                if download_retry_count < max_download_retries:
-                                    logger.warning(f"Deezer download connection/timeout error (attempt {download_retry_count}/{max_download_retries}): {e}")
-                                    logger.info(f"Reconnecting and retrying Deezer download...")
-                                    # Wait a bit before retrying
-                                    time.sleep(2)
-                                    continue
-                                else:
-                                    logger.error(f"Max Deezer download retries ({max_download_retries}) reached, giving up")
-                                    raise
                             except Exception as e:
                                 error_str = str(e)
                                 # Check if this is a stall or connection error
-                                if any(x in error_str.lower() for x in ['stalled', 'timeout', 'timed out', 'connection reset', 'failed reading packet', 'broken pipe', 'connection aborted', 'incomplete download']):
+                                if any(x in error_str for x in ['stalled', 'Connection reset', 'Failed reading packet', 'Broken pipe', 'Connection aborted', 'Incomplete download']):
                                     download_retry_count += 1
                                     if download_retry_count < max_download_retries:
                                         logger.warning(f"Deezer download interrupted (attempt {download_retry_count}/{max_download_retries}): {error_str}")
@@ -865,16 +849,12 @@ class DownloadWorker(QObject):
 
                         while download_retry_count < max_download_retries and not download_successful:
                             try:
-                                stall_timeout = config.get("download_stall_timeout")
-                                # Timeout tuple: (connect timeout, read timeout)
-                                # Both set to stall_timeout to ensure requests don't hang
-                                request_timeout = (stall_timeout, stall_timeout)
-
-                                response = requests.get(file_url, stream=True, timeout=request_timeout)
+                                response = requests.get(file_url, stream=True)
                                 total_size = int(response.headers.get('Content-Length', 0))
                                 downloaded = 0
                                 data_chunks = b''
                                 last_progress_time = time.time()
+                                stall_timeout = config.get("download_stall_timeout")
                                 with open(temp_file_path, 'wb') as file:
                                     for data in response.iter_content(chunk_size=config.get("download_chunk_size", 1024)):
                                         # Check for stalled download
@@ -900,28 +880,10 @@ class DownloadWorker(QObject):
                                 download_successful = True
                                 logger.info(f"{item_service} download completed successfully after {download_retry_count + 1} attempt(s)")
 
-                            except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-                                # Timeout or connection errors are always recoverable
-                                download_retry_count += 1
-                                if download_retry_count < max_download_retries:
-                                    logger.warning(f"{item_service} download connection/timeout error (attempt {download_retry_count}/{max_download_retries}): {e}")
-                                    logger.info(f"Reconnecting and retrying {item_service} download...")
-                                    # Clean up partial file
-                                    if os.path.exists(temp_file_path):
-                                        try:
-                                            os.remove(temp_file_path)
-                                        except Exception:
-                                            pass
-                                    # Wait a bit before retrying
-                                    time.sleep(2)
-                                    continue
-                                else:
-                                    logger.error(f"Max {item_service} download retries ({max_download_retries}) reached, giving up")
-                                    raise
                             except Exception as e:
                                 error_str = str(e)
                                 # Check if this is a stall or connection error
-                                if any(x in error_str.lower() for x in ['stalled', 'timeout', 'timed out', 'connection reset', 'failed reading packet', 'broken pipe', 'connection aborted', 'incomplete download']):
+                                if any(x in error_str for x in ['stalled', 'Connection reset', 'Failed reading packet', 'Broken pipe', 'Connection aborted', 'Incomplete download']):
                                     download_retry_count += 1
                                     if download_retry_count < max_download_retries:
                                         logger.warning(f"{item_service} download interrupted (attempt {download_retry_count}/{max_download_retries}): {error_str}")
@@ -1058,8 +1020,7 @@ class DownloadWorker(QObject):
                                     self.update_progress(item, self.tr("Downloading Chapters") if self.gui else "Downloading Chapters", 1)
                                     chapter_file = temp_file_path + f' - {version["audio_locale"]}.txt'
                                     if not os.path.exists(chapter_file):
-                                        stall_timeout = config.get("download_stall_timeout")
-                                        resp = requests.get(f'https://static.crunchyroll.com/skip-events/production/{version["guid"]}.json', timeout=(stall_timeout, stall_timeout))
+                                        resp = requests.get(f'https://static.crunchyroll.com/skip-events/production/{version["guid"]}.json')
                                         if resp.status_code == 200:
                                             chapter_data = resp.json()
                                             with open(chapter_file, 'w', encoding='utf-8') as file:
@@ -1118,8 +1079,7 @@ class DownloadWorker(QObject):
                                 if lang in config.get('preferred_subtitle_language').split(',') or config.get('download_all_available_subtitles'):
                                     subtitle_file = temp_file_path + f' - {lang}.{subtitle_format["extension"]}'
                                     if not os.path.exists(subtitle_file):
-                                        stall_timeout = config.get("download_stall_timeout")
-                                        subtitle_data = requests.get(subtitle_format['url'], timeout=(stall_timeout, stall_timeout)).text
+                                        subtitle_data = requests.get(subtitle_format['url']).text
                                         with open(subtitle_file, 'w', encoding='utf-8') as file:
                                             file.write(subtitle_data)
                                     video_files.append({

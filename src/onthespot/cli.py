@@ -91,90 +91,6 @@ class QueueWorker(threading.Thread):
         self.join(timeout=5)
 
 
-class AutoClearWorker(threading.Thread):
-    """
-    Worker that automatically clears completed downloads after all items are done.
-    Waits 60 seconds after the queue is fully complete before clearing.
-    """
-    def __init__(self):
-        super().__init__()
-        self.is_running = True
-        self.last_all_done_time = None
-        self.CLEAR_DELAY_SECONDS = 60
-
-    def run(self):
-        if config.get('debug_mode'):
-            logger.info('AutoClearWorker started')
-        print('\033[32mAutoClearWorker started\033[0m')
-
-        while self.is_running:
-            try:
-                time.sleep(5)  # Check every 5 seconds
-
-                with download_queue_lock:
-                    if not download_queue:
-                        # Queue is empty, reset timer
-                        self.last_all_done_time = None
-                        continue
-
-                    # Check if all items are in a "done" state
-                    all_done = True
-                    for local_id, item in download_queue.items():
-                        status = item.get("item_status", "")
-                        if status not in ("Downloaded", "Already Exists", "Cancelled", "Unavailable", "Deleted", "Failed"):
-                            # Found an item that's still in progress
-                            all_done = False
-                            break
-
-                    if all_done:
-                        # All items are done
-                        if self.last_all_done_time is None:
-                            # First time we've noticed everything is done
-                            self.last_all_done_time = time.time()
-                            if config.get('debug_mode'):
-                                logger.info(f"All downloads complete. Will auto-clear in {self.CLEAR_DELAY_SECONDS} seconds...")
-                            print(f'\033[33mAll downloads complete. Will auto-clear in {self.CLEAR_DELAY_SECONDS} seconds...\033[0m')
-                        else:
-                            # Check if enough time has passed
-                            elapsed = time.time() - self.last_all_done_time
-                            if elapsed >= self.CLEAR_DELAY_SECONDS:
-                                # Time to clear!
-                                if config.get('debug_mode'):
-                                    logger.info("Auto-clearing completed downloads...")
-                                print('\033[32mAuto-clearing completed downloads...\033[0m')
-
-                                keys_to_delete = []
-                                for local_id, item in download_queue.items():
-                                    if item["item_status"] in ("Downloaded", "Already Exists", "Cancelled", "Unavailable", "Deleted"):
-                                        keys_to_delete.append(local_id)
-
-                                for key in keys_to_delete:
-                                    del download_queue[key]
-
-                                if config.get('debug_mode'):
-                                    logger.info(f"Auto-cleared {len(keys_to_delete)} items from download queue")
-                                print(f'\033[32mAuto-cleared {len(keys_to_delete)} items from download queue\033[0m')
-                                self.last_all_done_time = None
-                    else:
-                        # Not all items are done, reset timer
-                        if self.last_all_done_time is not None:
-                            if config.get('debug_mode'):
-                                logger.debug("New downloads detected, resetting auto-clear timer")
-                        self.last_all_done_time = None
-
-            except Exception as e:
-                if config.get('debug_mode'):
-                    logger.error(f"Error in AutoClearWorker: {str(e)}\nTraceback: {traceback.format_exc()}")
-                time.sleep(5)
-
-    def stop(self):
-        if config.get('debug_mode'):
-            logger.info('Stopping AutoClear Worker')
-        print('\033[32mStopping AutoClear Worker\033[0m')
-        self.is_running = False
-        self.join(timeout=5)
-
-
 def main():
     args = parse_args()
 
@@ -207,11 +123,6 @@ def main():
             retryworker = RetryWorker()
             retryworker.start()
             register_worker(retryworker)
-
-        # Start auto-clear worker
-        autoclear_worker = AutoClearWorker()
-        autoclear_worker.start()
-        register_worker(autoclear_worker)
 
         print('\033[32mAll workers started and registered\033[0m')
 
