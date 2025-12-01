@@ -382,6 +382,38 @@
             transform: scale(1.05);
         }
 
+        /* Title popup */
+        .title-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            z-index: 10001;
+            opacity: 0;
+            pointer-events: none;
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 80vw;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .title-popup.visible {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .title-popup-content {
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+            text-align: center;
+            word-wrap: break-word;
+        }
+
         /* ============= RESPONSIVE BREAKPOINTS ============= */
         @media screen and (max-width: 768px) {
             .search-section {
@@ -615,9 +647,18 @@
         <img id="image-preview-img" src="" alt="Preview">
     </div>
 
+    <!-- Title popup -->
+    <div id="title-popup" class="title-popup">
+        <div class="title-popup-content"></div>
+    </div>
+
     <script>
         let filtersVisible = false;
         let isSearching = false;
+        let imagePreviewVisible = false;
+
+        // Detect if touch device
+        const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
         // ============= UI FUNCTIONS =============
         function toggleFilters() {
@@ -664,6 +705,15 @@
             return largerUrl;
         }
 
+        function toggleImagePreview(imageUrl, thumbnailElement) {
+            // Toggle behavior for touch devices
+            if (imagePreviewVisible) {
+                hideImagePreview();
+            } else {
+                showImagePreview(imageUrl, thumbnailElement);
+            }
+        }
+
         function showImagePreview(imageUrl, thumbnailElement) {
             const popup = document.getElementById('image-preview-popup');
             const img = document.getElementById('image-preview-img');
@@ -695,6 +745,7 @@
 
             // Add visible class for opacity transition
             popup.classList.add('visible');
+            imagePreviewVisible = true;
 
             // Animate to center with larger size
             // Use setTimeout to ensure the transition applies
@@ -710,6 +761,41 @@
         function hideImagePreview() {
             const popup = document.getElementById('image-preview-popup');
             popup.classList.remove('visible');
+            imagePreviewVisible = false;
+        }
+
+        // ============= TITLE POPUP FUNCTIONS =============
+        let titlePopupVisible = false;
+
+        function toggleTitlePopup(title) {
+            if (titlePopupVisible) {
+                hideTitlePopup();
+            } else {
+                showTitlePopup(title);
+            }
+        }
+
+        function showTitlePopup(title) {
+            const popup = document.getElementById('title-popup');
+            const content = popup.querySelector('.title-popup-content');
+            content.textContent = title;
+            popup.classList.add('visible');
+            titlePopupVisible = true;
+
+            // Auto-hide after 3 seconds on touch devices
+            if (isTouchDevice) {
+                setTimeout(() => {
+                    if (titlePopupVisible) {
+                        hideTitlePopup();
+                    }
+                }, 3000);
+            }
+        }
+
+        function hideTitlePopup() {
+            const popup = document.getElementById('title-popup');
+            popup.classList.remove('visible');
+            titlePopupVisible = false;
         }
 
         function showLoading() {
@@ -858,9 +944,18 @@
                         img.style.width = `${thumbnailSize}px`;
                         img.style.height = `${thumbnailSize}px`;
 
-                        // Add hover event listeners for image preview
-                        img.addEventListener('mouseenter', () => showImagePreview(item.item_thumbnail_url, img));
-                        img.addEventListener('mouseleave', hideImagePreview);
+                        // Add event listeners for image preview
+                        if (isTouchDevice) {
+                            // On touch devices, use click to toggle
+                            img.addEventListener('click', (e) => {
+                                e.preventDefault();
+                                toggleImagePreview(item.item_thumbnail_url, img);
+                            });
+                        } else {
+                            // On desktop, use hover
+                            img.addEventListener('mouseenter', () => showImagePreview(item.item_thumbnail_url, img));
+                            img.addEventListener('mouseleave', hideImagePreview);
+                        }
 
                         imgCell.appendChild(img);
                     }
@@ -872,6 +967,15 @@
                 nameCell.className = 'item-name';
                 nameCell.textContent = item.item_name;
                 nameCell.title = item.item_name;
+
+                // Add click listener for touch devices to show full title
+                if (isTouchDevice) {
+                    nameCell.style.cursor = 'pointer';
+                    nameCell.addEventListener('click', () => {
+                        toggleTitlePopup(item.item_name);
+                    });
+                }
+
                 row.appendChild(nameCell);
                 
                 // By
@@ -935,6 +1039,24 @@
 
         // ============= INITIALIZATION =============
         document.addEventListener('DOMContentLoaded', () => {
+            // Close popups when clicking outside on touch devices
+            if (isTouchDevice) {
+                document.addEventListener('click', (e) => {
+                    const imagePopup = document.getElementById('image-preview-popup');
+                    const titlePopup = document.getElementById('title-popup');
+
+                    // Close image preview if clicking outside
+                    if (imagePreviewVisible && !imagePopup.contains(e.target) && !e.target.classList.contains('item-thumbnail')) {
+                        hideImagePreview();
+                    }
+
+                    // Close title popup if clicking outside
+                    if (titlePopupVisible && !titlePopup.contains(e.target) && !e.target.classList.contains('item-name')) {
+                        hideTitlePopup();
+                    }
+                });
+            }
+
             // Restore last search state from localStorage
             const lastSearchQuery = localStorage.getItem('lastSearchQuery');
             const lastSearchFilters = localStorage.getItem('lastSearchFilters');
