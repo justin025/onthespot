@@ -752,9 +752,9 @@
                 
                 // Actions
                 const actionCell = document.createElement('td');
-                const copyButton = createButton('icons/link.png', 'Copy Link', `copyToClipboard('${item.item_url}')`, `${item.item_url}`);
+                const linkButton = createButton('icons/link.png', 'Open Link', `window.open('${item.item_url}', '_blank')`);
                 const downloadButton = createButton('icons/download.png', 'Download', `handleDownload('${item.item_url}')`);
-                actionCell.innerHTML = `<div class="action-cell">${copyButton}${downloadButton}</div>`;
+                actionCell.innerHTML = `<div class="action-cell">${linkButton}${downloadButton}</div>`;
                 row.appendChild(actionCell);
                 
                 tableBody.appendChild(row);
