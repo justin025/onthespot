@@ -44,8 +44,16 @@ def get_search_results(search_term, content_types=None):
         # Get token and fetch item details to show in search results
         service = account_pool[config.get('active_account_number')]['service']
         if service == 'spotify':
-            token = get_account_token(service)
-            return spotify_get_item_by_id(token, spotify_id, spotify_type)
+            try:
+                token = get_account_token(service)
+                return spotify_get_item_by_id(token, spotify_id, spotify_type)
+            except (ConnectionError, ConnectionRefusedError, OSError, TimeoutError) as e:
+                logger.error(f"Connection error while fetching Spotify URI: {e}")
+                logger.error("This may be due to temporary network issues or Spotify rate limiting. Please try again in a moment.")
+                return False
+            except Exception as e:
+                logger.error(f"Error fetching Spotify URI: {e}")
+                return False
         else:
             logger.warning(f"Spotify ID detected but active account is {service}")
             return False
@@ -57,8 +65,16 @@ def get_search_results(search_term, content_types=None):
         # Get token and fetch playlist details to show in search results
         service = account_pool[config.get('active_account_number')]['service']
         if service == 'spotify':
-            token = get_account_token(service)
-            return spotify_get_item_by_id(token, search_term, 'playlist')
+            try:
+                token = get_account_token(service)
+                return spotify_get_item_by_id(token, search_term, 'playlist')
+            except (ConnectionError, ConnectionRefusedError, OSError, TimeoutError) as e:
+                logger.error(f"Connection error while fetching Spotify ID: {e}")
+                logger.error("This may be due to temporary network issues or Spotify rate limiting. Please try again in a moment.")
+                return False
+            except Exception as e:
+                logger.error(f"Error fetching Spotify ID: {e}")
+                return False
         else:
             logger.warning(f"Spotify ID detected but active account is {service}")
             return False
@@ -83,7 +99,15 @@ def get_search_results(search_term, content_types=None):
         logger.info(f"Search clicked with value term {search_term}")
         service = account_pool[config.get('active_account_number')]['service']
         if search_term and service != 'generic':
-            token = get_account_token(service)
-            return globals()[f"{service}_get_search_results"](token, search_term, content_types)
+            try:
+                token = get_account_token(service)
+                return globals()[f"{service}_get_search_results"](token, search_term, content_types)
+            except (ConnectionError, ConnectionRefusedError, OSError, TimeoutError) as e:
+                logger.error(f"Connection error during search: {e}")
+                logger.error("This may be due to temporary network issues or Spotify rate limiting. Please try again in a moment.")
+                return False
+            except Exception as e:
+                logger.error(f"Unexpected error during search: {e}")
+                return False
         else:
             return False
