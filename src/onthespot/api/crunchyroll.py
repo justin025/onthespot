@@ -27,14 +27,10 @@ def crunchyroll_login_user(account):
         headers['Content-Type'] = 'application/x-www-form-urlencoded'
 
         if account['uuid'] == 'public_crunchyroll':
-            response = requests.get("https://static.crunchyroll.com/vilos-v2/web/vilos/js/bundle.js")
-            tokens = re.search(r'prod="([\w-]+:[\w-]+)",\w+\.staging="([\w-]+:[\w-]+)",\w+\.proto0="([\w-]+:[\w-]+)"', response.text)
-            if not tokens:
-                raise ValueError("Couldn't find tokens.")
-            prod, staging, proto = tokens.groups()
-            prod_token = base64.b64encode(prod.encode("iso-8859-1")).decode()
-
-            headers['Authorization'] = f'Basic {prod_token}'
+            prodt = "cr_web:"
+            prod_token = base64.b64encode(prodt.encode("iso-8859-1")).decode()
+            logger.debug("custom token: %s", prod_token)
+            headers['Authorization'] = f'Basic {prod_token}=='
             headers['ETP-Anonymous-ID'] = str(uuid4())
 
             payload = {}
@@ -54,6 +50,7 @@ def crunchyroll_login_user(account):
             payload['device_type'] = 'OnTheSpot'
 
         token_data = requests.post(f"{BASE_URL}/auth/v1/token", headers=headers, data=payload).json()
+        logger.debug("token-data  is: %s", token_data)
         token = token_data.get('access_token')
         refresh_token = token_data.get('refresh_token')
         token_expiry = time.time() + token_data.get('expires_in')
@@ -96,6 +93,8 @@ def crunchyroll_login_user(account):
                     "token_expiry": token_expiry
                 }
             })
+        
+        logger.debug("token is: %s", token)
         return True
     except Exception as e:
         logger.error(f"Unknown Exception: {str(e)}")
@@ -133,6 +132,7 @@ def crunchyroll_add_account(email, password):
 
 def crunchyroll_get_token(parsing_index):
     if time.time() >= account_pool[parsing_index]['login']['token_expiry']:
+        logger.debug("Refreshing Crunchyroll token")
         headers = {}
         headers['Content-Type'] = 'application/x-www-form-urlencoded'
         if account_pool[parsing_index]['uuid'] == 'public_crunchyroll':
@@ -296,7 +296,7 @@ def crunchyroll_get_mpd_info(token, episode_id):
     url = f"https://cr-play-service.prd.crunchyrollsvc.com/v1/{episode_id.split('/')[0]}/android/phone/play"
     resp = requests.get(url, headers=headers, params=params)
     if resp.status_code != 200:
-        raise Exception(f'{resp.status_code} Response: {resp.text}')
+        raise Exception(f'mpd_info_req: {resp.status_code} Response: {resp.text}')
     stream_data = resp.json()
     mpd_url = stream_data.get('url')
     stream_token = stream_data.get('token')
