@@ -326,10 +326,11 @@ def crunchyroll_get_decryption_key(token, item_id, mpd_url, stream_token):
     mpd_content = requests.get(mpd_url, headers=headers).text
     match = re.search(r'<cenc:pssh>(.*?)</cenc:pssh>', mpd_content)
     if match:
-        pssh = match.group(1)
-
+        pssh_match = match.group(1)
+        pssh = PSSH(pssh_match)
+    else:
+        raise KeyError
     cdm = Cdm.from_device(Device.loads(WVN_KEY))
-    pssh = PSSH(pssh)
     session_id = cdm.open()
     challenge = cdm.get_license_challenge(session_id, pssh)
     headers['Content-Type'] = 'application/octet-stream'
