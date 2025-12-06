@@ -30,7 +30,7 @@ body:
   - type: dropdown
     id: service
     attributes:
-      label: service
+      label: Service
       description: Select the service used, if applicable.
       options:
         - Spotify
@@ -39,7 +39,7 @@ body:
         - Soundcloud
         - YouTube
         - Crunchyroll
-        - Other (Specify in description)
+        - Other
     validations:
       required: false
 

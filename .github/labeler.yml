@@ -1,0 +1,20 @@
+# Add/remove label if regex matches
+# the action uses js regex syntax
+macOS:
+  - '### Operating System\n\nmacOS'
+Windows:
+  - '### Operating System\n\nWindows'
+Linux:
+  - '### Operating System\n\nLinux'
+Spotify:
+  - '### Service\n\nSpotify'
+Apple Music:
+  - '### Service\n\nApple Music'
+Tidal/Deezer:
+  - '### Service\n\nTidal\/Deezer'
+Soundcloud:
+  - '### Service\n\nSoundcloud'
+YouTube:
+  - '### Service\n\nYouTube'
+Crunchyroll:
+  - '### Service\n\nCrunchyroll'
