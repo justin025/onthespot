@@ -27,10 +27,10 @@ def crunchyroll_login_user(account):
         headers['Content-Type'] = 'application/x-www-form-urlencoded'
 
         if account['uuid'] == 'public_crunchyroll':
-            prodt = "cr_web:"
-            prod_token = base64.b64encode(prodt.encode("iso-8859-1")).decode()
-            logger.debug("custom token: %s", prod_token)
-            headers['Authorization'] = f'Basic {prod_token}=='
+            prod = "cr_web:"
+            prod_token = base64.b64encode(prod.encode("iso-8859-1")).decode()
+            
+            headers['Authorization'] = f'Basic {prod_token}'
             headers['ETP-Anonymous-ID'] = str(uuid4())
 
             payload = {}
