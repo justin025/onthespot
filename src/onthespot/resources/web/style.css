@@ -172,3 +172,15 @@ input:not(:checked):hover {
         display: none; /* Hides the element */
     }
 }
+
+
+.sort-indicator {
+    display: inline-block;
+    width: 1.2em;
+    height: 1.2em;
+    text-align: center;
+    vertical-align: middle;
+    line-height: 1.2em;
+    font-size: 1em;
+    transition: none;
+}
