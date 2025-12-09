@@ -235,16 +235,17 @@ class Config:
             os.makedirs(self.get("video_download_path"), exist_ok=True)
         # Set FFMPEG Path
         self.app_root = os.path.dirname(os.path.realpath(__file__))
-        if os.path.exists(os.environ.get('FFMPEG_PATH', '')):
-            ffmpeg_path = os.environ['FFMPEG_PATH']
-        elif os.name != 'nt' and os.path.exists('/usr/bin/ffmpeg'):
-            ffmpeg_path = '/usr/bin/ffmpeg'
-        #elif os.path.exists(which('ffmpeg')):
-        #    ffmpeg_path = which('ffmpeg')
-        elif os.path.isfile(os.path.join(self.app_root, 'bin', 'ffmpeg', 'ffmpeg' + self.ext_)):
-            print('Failed to find system ffmpeg binary, falling back to bundled binary !')
-            ffmpeg_path = os.path.abspath(os.path.join(self.app_root, 'bin', 'ffmpeg', 'ffmpeg' + self.ext_))
-        else:
+        ffmpeg_path_candidates = [
+            os.environ.get('FFMPEG_PATH', ''), # ENV
+            '/usr/bin/ffmpeg', #UNIX
+            '/opt/homebrew/bin/ffmpeg', #MACOS
+            os.path.join(self.app_root, 'bin', 'ffmpeg', 'ffmpeg' + self.ext_) #BUNDLED
+        ]
+        for path in ffmpeg_path_candidates:
+            if os.path.exists(path):
+                ffmpeg_path = path
+                break
+        if not ffmpeg_path:
             print('Failed to find ffmpeg binary, please consider installing ffmpeg or defining its path.')
             ffmpeg_path = ''
         print(f"FFMPEG Binary: {ffmpeg_path}")
