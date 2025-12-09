@@ -236,8 +236,9 @@ class Config:
             os.makedirs(self.get("video_download_path"), exist_ok=True)
         # Set FFMPEG Path
         self.app_root = os.path.dirname(os.path.realpath(__file__))
-        if os.path.exists(os.environ.get('FFMPEG_PATH', '')):
-            ffmpeg_path = os.environ['FFMPEG_PATH']
+        env_ffmpeg = os.environ.get('FFMPEG_PATH')
+        if env_ffmpeg and os.path.exists(env_ffmpeg):
+            ffmpeg_path = env_ffmpeg
         elif os.name != 'nt' and os.path.exists('/usr/bin/ffmpeg'):
             ffmpeg_path = '/usr/bin/ffmpeg'
         elif platform.system() == 'Darwin' and platform.processor() == 'arm':
