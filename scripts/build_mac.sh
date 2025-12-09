@@ -7,6 +7,7 @@ echo " => Cleaning up previous builds and preparing the environment..."
 rm -f ./dist/OnTheSpot.tar.gz
 mkdir build
 mkdir dist
+mkdir builder
 python3 -m venv venv
 source ./venv/bin/activate
 
@@ -17,11 +18,8 @@ venv/bin/pip install -r requirements.txt
 
 
 echo " => Build FFMPEG (Optional)"
-# Only building with ffmpeg binary for x86_64 macs, this
-# script will likely need to be revised to compile ffmpeg
-# from src to support both.
+
 if uname -m | grep -q x86_64; then
-	FFBIN="--add-binary=dist/ffmpeg:onthespot/bin/ffmpeg"
 	if ! [ -f "dist/ffmpeg" ]; then
     	curl -L -o build/ffmpeg.zip https://evermeet.cx/ffmpeg/ffmpeg-7.1.zip
     	unzip build/ffmpeg.zip -d dist
@@ -34,7 +32,21 @@ if uname -m | grep -q x86_64; then
 	#    cp ffmpeg ../../dist
 	#    cd ../..
 	fi
+else
+    curl -L -o build/ffmpeg.zip https://github.com/markus-perl/ffmpeg-build-script/archive/refs/heads/master.zip
+    unzip build/ffmpeg.zip -d builder
+    cd builder/ffmpeg-build-script-master
+    ./build-ffmpeg --build --skip-install
+    
+    cp workspace/bin/ffmpeg ../../dist/ffmpeg
+
+    cd ../..
 fi
+
+
+FFBIN="--add-binary=dist/ffmpeg:onthespot/bin/ffmpeg"
+
+
 
 echo " => Running PyInstaller to create .app package..."
 pyinstaller --windowed \
@@ -80,7 +92,7 @@ hdiutil create -srcfolder dist/dmg -format UDZO -o dist/OnTheSpot.dmg
 
 
 echo " => Cleaning up temporary files..."
-rm -rf __pycache__ build venv *.spec
+rm -rf __pycache__ build builder venv *.spec
 
 
 echo " => Done! .dmg available in 'dist/OnTheSpot.dmg'."
