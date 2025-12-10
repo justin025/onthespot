@@ -240,7 +240,7 @@ class Config:
             "/usr/bin/ffmpeg",                                             # Linux/macOS
             "/opt/homebrew/bin/ffmpeg",                                    # macOS ARM
             "/usr/local/bin/ffmpeg",                                       # macOS x86
-            shutil.which("ffmpeg"),                                        # Fallback: search in PATH
+            which("ffmpeg"),                                        # Fallback: search in PATH
             os.path.join(self.app_root, "bin", "ffmpeg", "ffmpeg" + self.ext_),  # Bundled
         ]
         
