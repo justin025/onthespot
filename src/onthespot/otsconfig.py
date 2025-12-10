@@ -238,7 +238,8 @@ class Config:
         ffmpeg_path_candidates = [
             os.environ.get('FFMPEG_PATH', ''), # ENV
             '/usr/bin/ffmpeg', #UNIX
-            '/opt/homebrew/bin/ffmpeg', #MACOS
+            '/opt/homebrew/bin/ffmpeg', #MACOS ARM
+            '/usr/local/bin/ffmpeg', #MACOS x86
             os.path.join(self.app_root, 'bin', 'ffmpeg', 'ffmpeg' + self.ext_) #BUNDLED
         ]
         for path in ffmpeg_path_candidates:
