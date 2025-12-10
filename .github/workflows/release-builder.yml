@@ -1,9 +1,14 @@
 name: Release Builder
 
 on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
   release:
     types: [published]
-  workflow_dispatch:
 
 jobs:
   windows-x86_64-build:
@@ -26,6 +31,7 @@ jobs:
         with:
           name: OnTheSpot-x86_64.exe
           path: dist/OnTheSpot.exe
+
 
       - name: Upload to Release (Windows)
         if: github.event_name == 'release'
@@ -66,7 +72,7 @@ jobs:
           asset_content_type: application/x-apple-diskimage
 
   macos-arm64-build:
-    runs-on: macos-15
+    runs-on: macos-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
