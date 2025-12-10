@@ -2,85 +2,58 @@
 
 echo "========= OnTheSpot macOS Build Script =========="
 
+set -e  # Stop on error
 
-echo " => Cleaning up previous builds and preparing the environment..."
+echo " => Cleaning previous builds..."
 rm -f ./dist/OnTheSpot.tar.gz
-mkdir build
-mkdir dist
+rm -rf build dist venv
+mkdir -p build dist
+
+echo " => Creating virtual environment..."
 python3 -m venv venv
-source ./venv/bin/activate
+source venv/bin/activate
 
+echo " => Installing dependencies..."
+pip install --upgrade pip wheel pyinstaller
+pip install -r requirements.txt
 
-echo " => Upgrading pip and installing necessary dependencies..."
-venv/bin/pip install --upgrade pip wheel pyinstaller
-venv/bin/pip install -r requirements.txt
-
-
-echo " => Build FFMPEG (Optional)"
-# Only building with ffmpeg binary for x86_64 macs, this
-# script will likely need to be revised to compile ffmpeg
-# from src to support both.
-if uname -m | grep -q x86_64; then
-	FFBIN="--add-binary=dist/ffmpeg:onthespot/bin/ffmpeg"
-	if ! [ -f "dist/ffmpeg" ]; then
-    	curl -L -o build/ffmpeg.zip https://evermeet.cx/ffmpeg/ffmpeg-7.1.zip
-    	unzip build/ffmpeg.zip -d dist
-	#    cd build
-	#    curl https://ffmpeg.org/releases/ffmpeg-7.1.1.tar.xz -o ffmpeg.tar.xz
-	#    tar xf ffmpeg.tar.xz
-	#    cd ffmpeg-*
-	#    ./configure --enable-small --disable-ffplay --disable-ffprobe --disable-doc --disable-htmlpages --disable-manpages --disable-podpages --disable-txtpages
-	#    make
-	#    cp ffmpeg ../../dist
-	#    cd ../..
-	fi
-fi
-
-echo " => Running PyInstaller to create .app package..."
+echo " => Running PyInstaller (NO FFMPEG)..."
 pyinstaller --windowed \
     --hidden-import="zeroconf._utils.ipaddress" \
     --hidden-import="zeroconf._handlers.answers" \
     --add-data="src/onthespot/qt/qtui/*.ui:onthespot/qt/qtui" \
     --add-data="src/onthespot/resources/icons/*.png:onthespot/resources/icons" \
     --add-data="src/onthespot/resources/translations/*.qm:onthespot/resources/translations" \
-    $FFBIN \
     --paths="src/onthespot" \
     --name="OnTheSpot" \
     --icon="src/onthespot/resources/icons/onthespot.png" \
     src/portable.py
 
-
-echo " => Setting executable permissions..."
+echo " => Setting permissions..."
 chmod +x dist/OnTheSpot.app
 
-
-echo " => Creating dmg..."
+echo " => Preparing DMG structure..."
 mkdir -p dist/dmg
 mv dist/OnTheSpot.app dist/dmg/OnTheSpot.app
-ln -s /Applications dist/dmg
+ln -s /Applications dist/dmg/Applications
 
-echo "# Login Issues
-Newer versions of macOS have restricted networking features
-for apps inside the 'Applications' folder. To login to your
-account you will need to:
+cat > dist/dmg/readme.txt << 'EOF'
+# Login Issues
+Newer versions of macOS restrict networking for apps inside the 'Applications' folder.
+To login:
 
-1. Run the following command in terminal, 'echo \"127.0.0.1 \$HOST\" | sudo tee -a /etc/hosts'
-
-2. Launch the app and click add account before dragging into the applications folder.
-
-3. After successfully logging in you can drag the app into the folder.
-
+1. Run: echo "127.0.0.1 $HOST" | sudo tee -a /etc/hosts
+2. Launch the app and add the account before moving it to Applications.
+3. After login, move the app to the Applications folder.
 
 # Security Issues
-After all this, if you experience an error while trying to launch
-the app you will need to open the 'Applications' folder, right-click
-the app, and click open anyway." > dist/dmg/readme.txt
+If blocked, right-click the app and choose "Open anyway".
+EOF
 
+echo " => Creating DMG..."
 hdiutil create -srcfolder dist/dmg -format UDZO -o dist/OnTheSpot.dmg
 
+echo " => Cleaning temporary files..."
+rm -rf build venv *.spec dist/dmg
 
-echo " => Cleaning up temporary files..."
-rm -rf __pycache__ build venv *.spec
-
-
-echo " => Done! .dmg available in 'dist/OnTheSpot.dmg'."
+echo " => Done! .dmg created at 'dist/OnTheSpot.dmg'."
