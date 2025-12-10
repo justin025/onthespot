@@ -236,19 +236,35 @@ class Config:
         # Set FFMPEG Path
         self.app_root = os.path.dirname(os.path.realpath(__file__))
         ffmpeg_path_candidates = [
-            os.environ.get('FFMPEG_PATH', ''), # ENV
-            '/usr/bin/ffmpeg', #UNIX
-            '/opt/homebrew/bin/ffmpeg', #MACOS ARM
-            '/usr/local/bin/ffmpeg', #MACOS x86
-            os.path.join(self.app_root, 'bin', 'ffmpeg', 'ffmpeg' + self.ext_) #BUNDLED
+            os.environ.get("FFMPEG_PATH", "").strip(),                     # ENV variable
+            "/usr/bin/ffmpeg",                                             # Linux/macOS
+            "/opt/homebrew/bin/ffmpeg",                                    # macOS ARM
+            "/usr/local/bin/ffmpeg",                                       # macOS x86
+            shutil.which("ffmpeg"),                                        # Fallback: search in PATH
+            os.path.join(self.app_root, "bin", "ffmpeg", "ffmpeg" + self.ext_),  # Bundled
         ]
+        
+        def is_valid(path: str) -> bool:
+            return (
+                isinstance(path, str) and
+                path != "" and
+                os.path.isfile(path) and
+                os.access(path, os.X_OK)
+            )
+        
+        ffmpeg_path = None
         for path in ffmpeg_path_candidates:
-            if os.path.exists(path):
+            if is_valid(path):
                 ffmpeg_path = path
                 break
+
+
         if not ffmpeg_path:
-            print('Failed to find ffmpeg binary, please consider installing ffmpeg or defining its path.')
-            ffmpeg_path = ''
+            print("Failed to find ffmpeg binary, please install ffmpeg or set FFMPEG_PATH.")
+            ffmpeg_path = ""
+
+        self.ffmpeg_path = ffmpeg_path
+            
         print(f"FFMPEG Binary: {ffmpeg_path}")
         self.set('_ffmpeg_bin_path', ffmpeg_path)
         self.set('_log_file', os.path.join(cache_dir(), "logs", self.session_uuid, "onthespot.log"))
