@@ -16,7 +16,7 @@ from ..runtimedata import get_logger, account_pool
 from ..utils import make_call, conv_list_format
 
 logger = get_logger("api.crunchyroll")
-PUBLIC_TOKEN = "dC1rZGdwMmg4YzNqdWI4Zm4wZnE6eWZMRGZNZnJZdktYaDRKWFMxTEVJMmNDcXUxdjVXYW4="
+PUBLIC_TOKEN = "ZGsxYndzemRyc3lkeTR1N2xvenE6bDl0SU1BdTlzTGc4ZjA4ajlfQkQ4eWZmQmZTSms0R0o="
 APP_VERSION = "3.60.0"
 BASE_URL = "https://beta-api.crunchyroll.com"
 
