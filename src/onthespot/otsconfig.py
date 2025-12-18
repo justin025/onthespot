@@ -1,7 +1,6 @@
 import json
 import os
 import uuid
-from shutil import which
 
 
 def config_dir():
@@ -236,17 +235,18 @@ class Config:
         # Set FFMPEG Path
         self.app_root = os.path.dirname(os.path.realpath(__file__))
         ffmpeg_path_candidates = [
-            os.environ.get('FFMPEG_PATH', ''), # ENV
+            os.environ.get('FFMPEG_PATH', ''), #ENV
             '/usr/bin/ffmpeg', #UNIX
-            '/opt/homebrew/bin/ffmpeg', #MACOS
+            '/opt/homebrew/bin/ffmpeg', #MACOS ARM
+            '/usr/local/bin/ffmpeg', #MACOS INTEL
             os.path.join(self.app_root, 'bin', 'ffmpeg', 'ffmpeg' + self.ext_) #BUNDLED
         ]
         for path in ffmpeg_path_candidates:
-            if os.path.exists(path):
+            if os.path.isfile(path) and os.access(path, os.X_OK):
                 ffmpeg_path = path
                 break
         if not ffmpeg_path:
-            print('Failed to find ffmpeg binary, please consider installing ffmpeg or defining its path.')
+            print('Failed to find ffmpeg binary, please consider installing ffmpeg or defining its path by setting FFMPEG_PATH.')
             ffmpeg_path = ''
         print(f"FFMPEG Binary: {ffmpeg_path}")
         self.set('_ffmpeg_bin_path', ffmpeg_path)

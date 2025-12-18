@@ -314,11 +314,23 @@ def soundcloud_get_track_metadata(token, item_id):
             copyright_list = [item.strip() for item in publisher_metadata.get('c_line').split(',')]
     except (Exception):
         pass
-
     copyright_data = conv_list_format(copyright_list)
+    # Image Url
+    # TODO: Incorporate header checks into the make_call function for caching
+    try:
+        image_url = track_data.get('artwork_url')
+        if not image_url:
+            image_url = track_data.get('user', {}).get('avatar_url')
+        # It seems 't500x500' is more accessible than 'original'
+        image_url = image_url.replace('large', 't500x500')
+        resp = requests.head(image_url)
+        resp.raise_for_status()
+    except Exception as e:
+        logger.info(f'Failed to fetch artwork url, neither album or artist image exists. image_url: {image_url} Error: {e}')
+        image_url = ''
 
     info = {}
-    info['image_url'] = track_data.get("artwork_url").replace('large', 'original')
+    info['image_url'] = image_url
     info['description'] = str(track_data.get("description"))
     info['genre'] = track_data.get('genre')
 
