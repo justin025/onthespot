@@ -238,7 +238,7 @@ class DownloadWorker(QObject):
                                     item['item_status'] = 'Adding To M3U'
                                     if self.gui:
                                         self.progress.emit(item, self.tr("Adding To M3U"), 1)
-                                        add_to_m3u_file(item, item_metadata)
+                                    add_to_m3u_file(item, item_metadata)
 
                             if self.gui and item['item_status'] in ('Downloading', 'Setting Thumbnail', 'Adding To M3U'):
                                 self.progress.emit(item, self.tr("Already Exists"), 100)
@@ -743,7 +743,7 @@ class DownloadWorker(QObject):
                             item['item_status'] = 'Adding To M3U'
                             if self.gui:
                                 self.progress.emit(item, self.tr("Adding To M3U"), 1)
-                                add_to_m3u_file(item, item_metadata)
+                            add_to_m3u_file(item, item_metadata)
 
                     # Video Formatting
                     elif item_type in ('movie', 'episode'):
