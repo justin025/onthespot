@@ -50,7 +50,7 @@ def crunchyroll_login_user(account):
             payload['device_type'] = 'OnTheSpot'
 
         token_data = requests.post(f"{BASE_URL}/auth/v1/token", headers=headers, data=payload).json()
-        logger.debug("token-data  is: %s", token_data)
+        
         token = token_data.get('access_token')
         refresh_token = token_data.get('refresh_token')
         token_expiry = time.time() + token_data.get('expires_in')
@@ -94,7 +94,7 @@ def crunchyroll_login_user(account):
                 }
             })
         
-        logger.debug("token is: %s", token)
+        
         return True
     except Exception as e:
         logger.error(f"Unknown Exception: {str(e)}")
