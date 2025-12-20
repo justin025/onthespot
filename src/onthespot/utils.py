@@ -351,6 +351,8 @@ def embed_metadata(item, metadata):
             elif key in ['album_artists'] and config.get("embed_albumartist"):
                 if filetype == '.mp3':
                     command += ['-metadata', 'TPE2={}'.format(value)]
+                elif filetype in ['.flac', '.ogg', '.opus']:
+                    command += ['-metadata', 'albumartist={}'.format(value)]
                 else:
                     command += ['-metadata', 'album_artist={}'.format(value)]
 
@@ -363,11 +365,18 @@ def embed_metadata(item, metadata):
             elif key in ['discnumber', 'disc_number', 'disknumber', 'disk_number'] and config.get("embed_discnumber"):
                 if filetype == '.mp3':
                     command += ['-metadata', 'TPOS={}/{}'.format(value, metadata['total_discs'])]
+                elif filetype in ['.flac', '.ogg', '.opus']:
+                    command += ['-metadata', 'disc={}'.format(value)]
+                    command += ['-metadata', 'totaldisc={}'.format(metadata['total_discs'])]
                 else:
                     command += ['-metadata', 'disc={}/{}'.format(value, metadata['total_discs'])]
 
             elif key in ['track_number', 'tracknumber'] and config.get("embed_tracknumber"):
-                command += ['-metadata', 'track={}/{}'.format(value, metadata.get('total_tracks'))]
+                 if filetype in ['.flac', '.ogg', '.opus']:
+                    command += ['-metadata', 'track={}'.format(value)]
+                    command += ['-metadata', 'totaltrack={}'.format(metadata.get('total_tracks'))]
+                 else:
+                    command += ['-metadata', 'track={}/{}'.format(value, metadata.get('total_tracks'))]
 
             elif key == 'genre' and config.get("embed_genre"):
                 command += ['-metadata', 'genre={}'.format(value)]
@@ -393,6 +402,9 @@ def embed_metadata(item, metadata):
             elif key == 'label' and config.get("embed_label"):
                 if filetype == '.mp3':
                     command += ['-metadata', 'publisher={}'.format(value)]
+                elif filetype in ['.flac', '.ogg', '.opus']:
+                    command += ['-metadata', 'publisher={}'.format(value)]
+                    command += ['-metadata', 'label={}'.format(value)]
 
             elif key == 'copyright' and config.get("embed_copyright"):
                 command += ['-metadata', 'copyright={}'.format(value)]
@@ -401,6 +413,8 @@ def embed_metadata(item, metadata):
                 if filetype == '.mp3':
                     # Incorrectly embedded to TXXX:COMM, patch sent upstream
                     command += ['-metadata', 'COMM={}'.format(value)]
+                elif filetype in ['.flac', '.ogg', '.opus']:
+                    command += ['-metadata', 'description={}'.format(value)]
                 else:
                     command += ['-metadata', 'comment={}'.format(value)]
 
