@@ -328,6 +328,10 @@ def embed_metadata(item, metadata):
         command += ['-c:a', 'copy']
 
         # Append metadata
+        #
+        # https://www.jthink.net/jaudiotagger/tagmapping.html
+        # https://wiki.multimedia.cx/index.php?title=FFmpeg_Metadata
+
         if config.get("embed_branding"):
             branding = "Downloaded by OnTheSpot, https://github.com/justin025/onthespot"
             if filetype == '.mp3':
@@ -349,8 +353,8 @@ def embed_metadata(item, metadata):
                 command += ['-metadata', 'album={}'.format(value)]
 
             elif key in ['album_artists'] and config.get("embed_albumartist"):
-                if filetype == '.mp3':
-                    command += ['-metadata', 'TPE2={}'.format(value)]
+                if filetype in ['.flac', '.ogg', '.opus']:
+                    command += ['-metadata', 'albumartist={}'.format(value)]
                 else:
                     command += ['-metadata', 'album_artist={}'.format(value)]
 
@@ -361,13 +365,20 @@ def embed_metadata(item, metadata):
                 command += ['-metadata', 'date={}'.format(value)]
 
             elif key in ['discnumber', 'disc_number', 'disknumber', 'disk_number'] and config.get("embed_discnumber"):
-                if filetype == '.mp3':
-                    command += ['-metadata', 'TPOS={}/{}'.format(value, metadata['total_discs'])]
+                if filetype in ['m4a', 'mp4', 'mov']:
+                    command += ['-metadata', 'disk={}/{}'.format(value, metadata['total_discs'])]
+                elif filetype in ['.flac', '.ogg', '.opus']:
+                    command += ['-metadata', 'discnumber={}'.format(value)]
+                    command += ['-metadata', 'disctotal={}'.format(metadata['total_discs'])]
                 else:
                     command += ['-metadata', 'disc={}/{}'.format(value, metadata['total_discs'])]
 
             elif key in ['track_number', 'tracknumber'] and config.get("embed_tracknumber"):
-                command += ['-metadata', 'track={}/{}'.format(value, metadata.get('total_tracks'))]
+                if filetype in ['.flac', '.ogg', '.opus']:
+                    command += ['-metadata', 'tracknumber={}'.format(value)]
+                    command += ['-metadata', 'tracktotal={}'.format(metadata.get('total_tracks'))]
+                else:
+                    command += ['-metadata', 'track={}/{}'.format(value, metadata.get('total_tracks'))]
 
             elif key == 'genre' and config.get("embed_genre"):
                 command += ['-metadata', 'genre={}'.format(value)]
@@ -391,7 +402,9 @@ def embed_metadata(item, metadata):
                     command += ['-metadata', 'author={}'.format(value)]
 
             elif key == 'label' and config.get("embed_label"):
-                if filetype == '.mp3':
+                if filetype in ['.flac', '.ogg', '.opus']:
+                    command += ['-metadata', 'label={}'.format(value)]
+                else:
                     command += ['-metadata', 'publisher={}'.format(value)]
 
             elif key == 'copyright' and config.get("embed_copyright"):
@@ -425,7 +438,7 @@ def embed_metadata(item, metadata):
             elif key == 'bpm' and config.get("embed_bpm"):
                 if filetype == '.mp3':
                     command += ['-metadata', 'TBPM={}'.format(value)]
-                elif filetype == '.m4a':
+                elif filetype in ['m4a', 'mp4', 'mov']:
                     command += ['-metadata', 'tmpo={}'.format(value)]
                 else:
                     command += ['-metadata', 'bpm={}'.format(value)]
