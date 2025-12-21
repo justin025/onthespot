@@ -15,6 +15,34 @@ body:
     validations:
       required: true
 
+  - type: dropdown
+    id: account_type
+    attributes:
+      label: Account Type
+      description: Select your account type, if applicable.
+      options:
+        - Free
+        - Premium
+        - Public (Included)
+    validations:
+      required: false
+
+  - type: dropdown
+    id: service
+    attributes:
+      label: Service
+      description: Select the service used, if applicable.
+      options:
+        - Spotify
+        - Apple Music
+        - Tidal/Deezer
+        - Soundcloud
+        - YouTube
+        - Crunchyroll
+        - Other
+    validations:
+      required: false
+
   - type: textarea
     id: description
     attributes:

@@ -154,7 +154,6 @@ def bandcamp_get_track_metadata(_, url):
     info['item_id'] = track_data.get('tralbum', {}).get('current', {}).get('id')
     lyrics = track_data.get('tralbum', {}).get('current', {}).get('lyrics')
     info['lyrics'] = lyrics if lyrics and not config.get('only_download_synced_lyrics') else ''
-    info['genre'] = conv_list_format(album_data.get('keywords', []))
     info['image_url'] = thumbnail_url
 
     try:
@@ -167,6 +166,7 @@ def bandcamp_get_track_metadata(_, url):
         info['total_tracks'] = album_data.get('numTracks')
         info['description'] = album_data.get('description')
         info['copyright'] = album_data.get('creditText')
+        info['genre'] = conv_list_format(album_data.get('keywords', []))
     except Exception:
         info['track_number'] = 1
         info['total_tracks'] = 1
