@@ -250,8 +250,11 @@ def tidal_get_track_metadata(token, item_id):
     info['album_name'] = track_data.get('album').get('title')
     info['total_tracks'] = album_data.get('data', {}).get('attributes', {}).get('numberOfItems')
     info['total_discs'] = album_data.get('data', {}).get('attributes', {}).get('numberOfVolumes')
-    info['release_year'] = album_data.get('data', {}).get('attributes', {}).get('releaseDate').split("-")[0]
     info['upc'] = album_data.get('data', {}).get('attributes', {}).get('barcodeId')
+    try:
+        info['release_year'] = album_data.get('data', {}).get('attributes', {}).get('releaseDate').split('-')[0]
+    except AttributeError:
+        pass
     try:
         info['image_url'] = album_data.get('included', [])[0].get('attributes', {}).get('files', [])[0].get('href', '')
     except IndexError:
