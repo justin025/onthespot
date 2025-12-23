@@ -536,11 +536,20 @@ def spotify_get_track_metadata(token, item_id):
     headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
 
     track_data = make_call(f'{BASE_URL}/tracks?ids={item_id}&market=from_token', headers=headers)
+    time.sleep(config.get('api_request_delay', 0.1))
+
     album_data = make_call(f"{BASE_URL}/albums/{track_data.get('tracks', [])[0].get('album', {}).get('id')}", headers=headers)
+    time.sleep(config.get('api_request_delay', 0.1))
+
     artist_data = make_call(f"{BASE_URL}/artists/{track_data.get('tracks', [])[0].get('artists', [])[0].get('id')}", headers=headers)
+    time.sleep(config.get('api_request_delay', 0.1))
+
     album_track_ids = spotify_get_album_track_ids(token, track_data.get('tracks', [])[0].get('album', {}).get('id'))
+    time.sleep(config.get('api_request_delay', 0.1))
+
     try:
         track_audio_data = make_call(f'{BASE_URL}/audio-features/{item_id}', headers=headers)
+        time.sleep(config.get('api_request_delay', 0.1))
     except Exception:
         track_audio_data = ''
     try:

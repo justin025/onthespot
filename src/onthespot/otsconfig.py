@@ -114,6 +114,10 @@ class Config:
             "maximum_download_workers": 1, # Maximum number of download workers
             "enable_retry_worker": False, # Enable retry worker, automatically retries failed downloads after a set time
             "retry_worker_delay": 10, # Amount of time to wait before retrying failed downloads, in minutes
+            "api_retry_max_attempts": 3, # Max retries on rate limit (429)
+            "api_retry_base_delay": 2, # Base delay for exponential backoff (seconds)
+            "api_retry_max_delay": 60, # Max delay between retries (seconds)
+            "api_request_delay": 0.1, # Delay between consecutive API calls (seconds)
 
             # Search Settings
             "enable_search_tracks": True, # Enable listed category in search

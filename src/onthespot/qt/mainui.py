@@ -31,6 +31,41 @@ from ..search import get_search_results
 logger = get_logger('gui.main_ui')
 
 
+def is_permanent_failure(exception):
+    """Check if exception represents a permanent failure (don't retry)"""
+    error_str = str(exception)
+    if "Max retries" in error_str or "exhausted" in error_str:
+        return True
+    if "not found" in error_str.lower() or "404" in error_str:
+        return True
+    return False
+
+
+def create_failed_metadata(item, error_msg):
+    """Create minimal metadata for items that failed metadata fetch"""
+    return {
+        'title': f"[FAILED] {item.get('item_id', 'Unknown')}",
+        'artists': 'Metadata Fetch Failed',
+        'album_name': error_msg[:100],  # Truncate long errors
+        'show_name': 'Metadata Fetch Failed',
+        'image_url': None,
+        'is_playable': False,
+        'explicit': False,
+        'release_year': '',
+        'track_number': 0,
+        'disc_number': 0,
+        'total_tracks': 0,
+        'total_discs': 0,
+        'genre': '',
+        'label': '',
+        'isrc': '',
+        'album_artists': '',
+        'album_type': 'unknown',
+        'item_id': item.get('item_id', ''),
+        'item_url': '',
+    }
+
+
 class QueueWorker(QObject):
     add_item_to_download_list = pyqtSignal(dict, dict)
 
@@ -61,9 +96,21 @@ class QueueWorker(QObject):
                             time.sleep(0.1)
                     continue
                 except Exception as e:
-                    logger.error(f"Unknown Exception for {item}: {str(e)}\nTraceback: {traceback.format_exc()}")
-                    with pending_lock:
-                        pending[local_id] = item
+                    error_msg = f"Unknown Exception for {item}: {str(e)}"
+                    logger.error(f"{error_msg}\nTraceback: {traceback.format_exc()}")
+
+                    # Check if this is a permanent failure (e.g., max retries exhausted)
+                    if is_permanent_failure(e):
+                        logger.warning(f"Permanent failure detected for {item['item_id']}, will not retry. Adding to download list as Failed.")
+                        # Create minimal metadata so item can be added to UI with "Failed" status
+                        failed_metadata = create_failed_metadata(item, str(e))
+                        self.add_item_to_download_list.emit(item, failed_metadata)
+                    else:
+                        # Transient error - retry by re-adding to pending queue
+                        logger.info(f"Transient error for {item['item_id']}, re-adding to pending queue for retry.")
+                        with pending_lock:
+                            pending[local_id] = item
+                    continue
             else:
                 time.sleep(0.2)
 
@@ -343,6 +390,9 @@ class MainWindow(QMainWindow):
 
 
     def add_item_to_download_list(self, item, item_metadata):
+        # Check if this is a failed metadata fetch
+        is_metadata_fetch_failure = not item_metadata.get('is_playable', True) and '[FAILED]' in item_metadata.get('title', '')
+
         # Skip rendering QButtons if they are not in use
         copy_btn = None
         open_btn = None
@@ -487,6 +537,16 @@ class MainWindow(QMainWindow):
                         }
                     }
                 }
+
+            # If this was a metadata fetch failure, immediately set status to Failed
+            if is_metadata_fetch_failure:
+                download_queue[item['local_id']]['item_status'] = 'Failed'
+                status_label.setText(self.tr("Failed"))
+                pbar.setValue(0)
+                cancel_btn.hide()
+                retry_btn.show()
+                if copy_btn:
+                    copy_btn.show()
 
 
     def update_item_in_download_list(self, item, status, progress):

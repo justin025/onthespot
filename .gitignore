@@ -140,3 +140,6 @@ dmypy.json
 .markdownlintignore
 .markdownlint.json
 .vscode
+
+# Mac OSX
+.DS_Store
