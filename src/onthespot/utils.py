@@ -39,7 +39,7 @@ def make_call(url, params=None, headers=None, session=None, skip_cache=False, te
         req_cache_file = os.path.join(config.get('_cache_dir'), 'reqcache', request_key + '.json')
         os.makedirs(os.path.dirname(req_cache_file), exist_ok=True)
         if os.path.isfile(req_cache_file):
-            logger.debug(f'URL "{url}" cache found! HASH: {request_key}')
+            logger.info(f'[CACHE HIT] Retrieved from cache | URL: {url} | MD5: {request_key} | File: {req_cache_file}')
             try:
                 with open(req_cache_file, 'r', encoding='utf-8') as cf:
                     if text:
@@ -47,9 +47,9 @@ def make_call(url, params=None, headers=None, session=None, skip_cache=False, te
                     json_data = json.load(cf)
                 return json_data
             except json.JSONDecodeError:
-                logger.error(f'URL "{url}" cache has invalid data')
+                logger.error(f'[CACHE ERROR] Invalid JSON data | URL: {url} | MD5: {request_key} | File: {req_cache_file}')
                 return None
-        logger.debug(f'URL "{url}" has cache miss! HASH: {request_key}; Fetching data')
+        logger.info(f'[CACHE MISS] Not found in cache, fetching from API | URL: {url} | MD5: {request_key} | File: {req_cache_file}')
 
     if session is None:
         session = requests.Session()
@@ -98,6 +98,7 @@ def make_call(url, params=None, headers=None, session=None, skip_cache=False, te
                     if not skip_cache:
                         with open(req_cache_file, 'w', encoding='utf-8') as cf:
                             cf.write(response.text)
+                        logger.info(f'[CACHE WRITE] Stored to cache | URL: {url} | MD5: {request_key} | File: {req_cache_file}')
                     if text:
                         return response.text
                     return json.loads(response.text)

@@ -1,3 +1,4 @@
+import base64
 import json
 import os
 import re
@@ -16,6 +17,107 @@ from ..utils import make_call, conv_list_format
 
 logger = get_logger("api.spotify")
 BASE_URL = "https://api.spotify.com/v1"
+
+# OAuth token cache (for Client Credentials flow)
+_oauth_token_cache = {
+    'access_token': None,
+    'expires_at': 0
+}
+
+
+def spotify_get_oauth_token():
+    """
+    Get OAuth access token using Client Credentials flow.
+    Uses your own Spotify app credentials instead of librespot tokens.
+    Recommended for Web API calls to avoid 429 rate limiting.
+
+    Returns OAuth access token string, or None if not configured/failed.
+    """
+    # Return cached token if still valid
+    if _oauth_token_cache['access_token'] and time.time() < _oauth_token_cache['expires_at']:
+        logger.debug("Using cached OAuth token")
+        return _oauth_token_cache['access_token']
+
+    # Get credentials from config
+    client_id = config.get('spotify_webapi_override_client_id', '').strip()
+    client_secret = config.get('spotify_webapi_override_client_secret', '').strip()
+
+    if not client_id or not client_secret:
+        logger.debug("Web API override credentials not configured, will use librespot token instead")
+        return None
+
+    # Encode credentials for Basic Auth
+    credentials = f"{client_id}:{client_secret}"
+    credentials_b64 = base64.b64encode(credentials.encode()).decode()
+
+    # Request token using Client Credentials flow
+    token_url = "https://accounts.spotify.com/api/token"
+    headers = {
+        "Authorization": f"Basic {credentials_b64}",
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
+    data = {"grant_type": "client_credentials"}
+
+    try:
+        logger.info("[OAUTH] Requesting new access token from Spotify")
+        response = requests.post(token_url, headers=headers, data=data, timeout=10)
+
+        if response.status_code == 200:
+            token_data = response.json()
+            access_token = token_data['access_token']
+            expires_in = token_data['expires_in']  # Seconds until expiration (usually 3600)
+
+            # Cache token with 5 minute buffer before expiration
+            _oauth_token_cache['access_token'] = access_token
+            _oauth_token_cache['expires_at'] = time.time() + expires_in - 300
+
+            logger.info(f"[OAUTH] Successfully obtained access token (expires in {expires_in}s)")
+            logger.info("[AUTH] Using Web API override credentials (OAuth) for metadata authentication")
+            return access_token
+        else:
+            logger.error(f"[OAUTH] Failed to get access token: {response.status_code} - {response.text}")
+            return None
+
+    except Exception as e:
+        logger.error(f"[OAUTH] Exception while getting access token: {str(e)}")
+        return None
+
+
+def spotify_get_auth_header():
+    """
+    Get Authorization header for Spotify Web API calls.
+
+    Auto-detects authentication method:
+    - If override credentials configured: Use OAuth token
+    - Otherwise: Use librespot session token
+
+    Returns dict with Authorization header, or None if authentication unavailable.
+    """
+    # Try OAuth first if override credentials are configured
+    oauth_token = spotify_get_oauth_token()
+    if oauth_token:
+        # Success message already logged in spotify_get_oauth_token()
+        return {'Authorization': f'Bearer {oauth_token}'}
+
+    # Fall back to librespot session tokens
+    logger.info("[AUTH] Using librespot session token for Web API authentication (default behavior)")
+    try:
+        from ..accounts import get_account_token
+        token = get_account_token('spotify')
+        if token:
+            # This is a librespot Session object
+            oauth_token = token.tokens().get('user-read-email')
+            if oauth_token:
+                return {'Authorization': f'Bearer {oauth_token}'}
+            else:
+                logger.error("[AUTH] Failed to extract OAuth token from librespot session")
+        else:
+            logger.error("[AUTH] Failed to get librespot session token")
+    except Exception as e:
+        logger.error(f"[AUTH] Error accessing librespot token: {str(e)}")
+
+    logger.error("[AUTH] All authentication methods failed - no valid token available")
+    return None
 
 
 class MirrorSpotifyPlayback(QObject):
@@ -257,8 +359,12 @@ def spotify_get_artist_album_ids(token, artist_id):
     offset = 0
     limit = 50
     while True:
-        headers = {}
-        headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+        # Use new auth method (OAuth or librespot)
+        auth_header = spotify_get_auth_header()
+        if not auth_header:
+            logger.error("Failed to get authentication header")
+            return []
+        headers = auth_header
 
         url = f'{BASE_URL}/artists/{artist_id}/albums?include_groups=album%2Csingle&limit={limit}&offset={offset}' #%2Cappears_on%2Ccompilation
         artist_data = make_call(url, headers=headers)
@@ -277,8 +383,12 @@ def spotify_get_artist_album_ids(token, artist_id):
 
 def spotify_get_playlist_data(token, playlist_id):
     logger.info(f"Get playlist data for playlist: {playlist_id}")
-    headers = {}
-    headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+    # Use new auth method (OAuth or librespot)
+    auth_header = spotify_get_auth_header()
+    if not auth_header:
+        logger.error("Failed to get authentication header")
+        return "Unknown", "Unknown"
+    headers = auth_header
     resp = make_call(f'{BASE_URL}/playlists/{playlist_id}', headers=headers, skip_cache=True)
     return resp['name'], resp['owner']['display_name']
 
@@ -387,8 +497,12 @@ def spotify_get_playlist_items(token, playlist_id):
 
     while True:
         url = f'{BASE_URL}/playlists/{playlist_id}/tracks?additional_types=track%2Cepisode&offset={offset}&limit={limit}'
-        headers = {}
-        headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+        # Use new auth method (OAuth or librespot)
+        auth_header = spotify_get_auth_header()
+        if not auth_header:
+            logger.error("Failed to get authentication header")
+            return []
+        headers = auth_header
 
         resp = make_call(url, headers=headers, skip_cache=True)
 
@@ -450,8 +564,13 @@ def spotify_get_album_track_ids(token, album_id):
 
     while True:
         url=f'{BASE_URL}/albums/{album_id}/tracks?offset={offset}&limit={limit}'
-        headers = {}
-        headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+        logger.info(f"  [Sub-API Call] Fetching album tracks: offset={offset}, limit={limit}")
+        # Use new auth method (OAuth or librespot)
+        auth_header = spotify_get_auth_header()
+        if not auth_header:
+            logger.error("Failed to get authentication header")
+            return []
+        headers = auth_header
         resp = make_call(url, headers=headers)
 
         offset += limit
@@ -470,8 +589,12 @@ def spotify_get_album_track_ids(token, album_id):
 def spotify_get_search_results(token, search_term, content_types):
     logger.info(f"Get search result for term '{search_term}'")
 
-    headers = {}
-    headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+    # Use new auth method (OAuth or librespot)
+    auth_header = spotify_get_auth_header()
+    if not auth_header:
+        logger.error("Failed to get authentication header")
+        return []
+    headers = auth_header
 
     params = {}
     params['limit'] = config.get("max_search_results")
@@ -532,30 +655,58 @@ def spotify_get_search_results(token, search_term, content_types):
 
 
 def spotify_get_track_metadata(token, item_id):
-    headers = {}
-    headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+    if item_id is None:
+        error_msg = f"Item ID is None, cannot fetch track metadata"
+        logger.error(error_msg)
+        raise Exception(error_msg)
+    # Use new auth method (OAuth or librespot)
+    auth_header = spotify_get_auth_header()
+    if not auth_header:
+        logger.error("Failed to get authentication header")
+        return None
 
-    track_data = make_call(f'{BASE_URL}/tracks?ids={item_id}&market=from_token', headers=headers)
+    headers = auth_header
+    logger.info(f"[API Call 1/6] Fetching track data for track_id={item_id}")
+    track_data = make_call(f'{BASE_URL}/tracks?ids={item_id}', headers=headers)
     time.sleep(config.get('api_request_delay', 0.1))
 
-    album_data = make_call(f"{BASE_URL}/albums/{track_data.get('tracks', [])[0].get('album', {}).get('id')}", headers=headers)
-    time.sleep(config.get('api_request_delay', 0.1))
+    # Use embedded album data (album_type, name, images, total_tracks already available)
+    album_data = track_data.get('tracks', [])[0].get('album', {})
 
-    artist_data = make_call(f"{BASE_URL}/artists/{track_data.get('tracks', [])[0].get('artists', [])[0].get('id')}", headers=headers)
-    time.sleep(config.get('api_request_delay', 0.1))
-
-    album_track_ids = spotify_get_album_track_ids(token, track_data.get('tracks', [])[0].get('album', {}).get('id'))
-    time.sleep(config.get('api_request_delay', 0.1))
-
-    try:
-        track_audio_data = make_call(f'{BASE_URL}/audio-features/{item_id}', headers=headers)
+    # Only fetch full album if we need label/copyright (optional fields)
+    if config.get('fetch_extended_album_metadata', True):
+        album_id = track_data.get('tracks', [])[0].get('album', {}).get('id')
+        logger.info(f"[API Call 2/6] Fetching extended album metadata for album_id={album_id}")
+        full_album = make_call(f"{BASE_URL}/albums/{album_id}", headers=headers)
         time.sleep(config.get('api_request_delay', 0.1))
-    except Exception:
-        track_audio_data = ''
-    try:
-        credits_data = make_call(f'https://spclient.wg.spotify.com/track-credits-view/v0/experimental/{item_id}/credits', headers=headers)
-    except Exception:
-        credits_data = ''
+        album_data = full_album  # Use full data if fetched
+
+    # Fetch artist data only if genre metadata is enabled
+    artist_data = {}
+    if config.get('fetch_genre_metadata', True):
+        artist_id = track_data.get('tracks', [])[0].get('artists', [])[0].get('id')
+        logger.info(f"[API Call 3/6] Fetching artist data for artist_id={artist_id}")
+        artist_data = make_call(f"{BASE_URL}/artists/{artist_id}", headers=headers)
+        time.sleep(config.get('api_request_delay', 0.1))
+
+    # Fetch audio features only if enabled
+    track_audio_data = ''
+    if config.get('fetch_audio_features', True):
+        try:
+            logger.info(f"[API Call 5/6] Fetching audio features for track_id={item_id}")
+            track_audio_data = make_call(f'{BASE_URL}/audio-features/{item_id}', headers=headers)
+            time.sleep(config.get('api_request_delay', 0.1))
+        except Exception:
+            track_audio_data = ''
+
+    # Fetch credits only if enabled
+    credits_data = ''
+    if config.get('fetch_track_credits', True):
+        try:
+            logger.info(f"[API Call 6/6] Fetching track credits for track_id={item_id}")
+            credits_data = make_call(f'https://spclient.wg.spotify.com/track-credits-view/v0/experimental/{item_id}/credits', headers=headers)
+        except Exception:
+            credits_data = ''
 
     # Artists
     artists = []
@@ -563,21 +714,22 @@ def spotify_get_track_metadata(token, item_id):
         artists.append(data.get('name'))
     artists = conv_list_format(artists)
 
-    # Track Number
-    track_number = None
-    if album_track_ids:
-        for i, track_id in enumerate(album_track_ids):
-            if track_id == str(item_id):
-                track_number = i + 1
-                break
-    if not track_number:
-        track_number = track_data.get('tracks', [{}])[0].get('track_number')
+    # Track Number - use direct value from track data
+    track_number = track_data.get('tracks', [{}])[0].get('track_number')
 
     info = {}
     info['artists'] = artists
     info['album_name'] = track_data.get('tracks', [{}])[0].get('album', {}).get("name", '')
     info['album_type'] = album_data.get('album_type')
-    info['album_artists'] = album_data.get('artists', [{}])[0].get('name')
+
+    # Album artists - available in both embedded and full album data
+    album_artists_data = album_data.get('artists', [])
+    if album_artists_data:
+        info['album_artists'] = album_artists_data[0].get('name')
+    else:
+        # Fallback to track's first artist if album artists not available
+        info['album_artists'] = track_data.get('tracks', [{}])[0].get('artists', [{}])[0].get('name', '')
+
     info['title'] = track_data.get('tracks', [{}])[0].get('name')
 
     try:
@@ -587,13 +739,21 @@ def spotify_get_track_metadata(token, item_id):
         logger.info('Invalid thumbnail')
 
     info['release_year'] = track_data.get('tracks', [{}])[0].get('album', {}).get('release_date').split("-")[0]
-    #info['track_number'] = track_data.get('tracks', [{}])[0].get('track_number')
     info['track_number'] = track_number
     info['total_tracks'] = track_data.get('tracks', [{}])[0].get('album', {}).get('total_tracks')
     info['disc_number'] = track_data.get('tracks', [{}])[0].get('disc_number')
-    info['total_discs'] = sorted([trk.get('disc_number', 0) for trk in album_data.get('tracks', {}).get('items', [])])[-1] if 'tracks' in album_data else 1
-    info['genre'] = conv_list_format(artist_data.get('genres', []))
-    info['label'] = album_data.get('label')
+
+    # Total discs - only available from full album data
+    if config.get('fetch_extended_album_metadata', True) and 'tracks' in album_data:
+        info['total_discs'] = sorted([trk.get('disc_number', 0) for trk in album_data.get('tracks', {}).get('items', [])])[-1]
+    else:
+        info['total_discs'] = 1  # Default to 1 disc if not fetching extended album data
+
+    # Genre - only available if artist metadata was fetched
+    info['genre'] = conv_list_format(artist_data.get('genres', [])) if artist_data else ''
+
+    # Label and copyright - only available from full album data
+    info['label'] = album_data.get('label', '')
     info['copyright'] = conv_list_format([holder.get('text') for holder in album_data.get('copyrights', [])])
     info['explicit'] = track_data.get('tracks', [{}])[0].get('explicit', False)
     info['isrc'] = track_data.get('tracks', [{}])[0].get('external_ids', {}).get('isrc')
@@ -601,7 +761,7 @@ def spotify_get_track_metadata(token, item_id):
     info['item_url'] = track_data.get('tracks', [{}])[0].get('external_urls', {}).get('spotify')
     #info['popularity'] = track_data.get('tracks', [{}])[0].get('popularity')
     info['item_id'] = track_data.get('tracks', [{}])[0].get('id')
-    info['is_playable'] = track_data.get('tracks', [{}])[0].get('is_playable', False)
+    info['is_playable'] = track_data.get('tracks', [{}])[0].get('is_playable', True)
 
     if credits_data:
         credits = {}
@@ -645,8 +805,12 @@ def spotify_get_track_metadata(token, item_id):
 
 def spotify_get_podcast_episode_metadata(token, episode_id):
     logger.info(f"Get episode info for episode by id '{episode_id}'")
-    headers = {}
-    headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+    # Use new auth method (OAuth or librespot)
+    auth_header = spotify_get_auth_header()
+    if not auth_header:
+        logger.error("Failed to get authentication header")
+        return None
+    headers = auth_header
     episode_data = make_call(f"{BASE_URL}/episodes/{episode_id}", headers=headers)
     show_episode_ids = spotify_get_podcast_episode_ids(token, episode_data.get('show', {}).get('id'))
     # I believe audiobook ids start with a 7 but to verify you can use https://api.spotify.com/v1/audiobooks/{id}
@@ -696,8 +860,12 @@ def spotify_get_podcast_episode_ids(token, show_id):
 
     while True:
         url = f'{BASE_URL}/shows/{show_id}/episodes?offset={offset}&limit={limit}'
-        headers = {}
-        headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+        # Use new auth method (OAuth or librespot)
+        auth_header = spotify_get_auth_header()
+        if not auth_header:
+            logger.error("Failed to get authentication header")
+            return []
+        headers = auth_header
         resp = make_call(url, headers=headers)
 
         offset += limit

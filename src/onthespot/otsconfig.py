@@ -119,6 +119,20 @@ class Config:
             "api_retry_max_delay": 60, # Max delay between retries (seconds)
             "api_request_delay": 0.1, # Delay between consecutive API calls (seconds)
 
+            # Spotify Web API Override Credentials (for debugging only)
+            # These credentials override the default librespot token authentication for Web API calls.
+            # Use when debugging metadata retrieval issues. Create personal tokens for yourself only.
+            # WARNING: Overuse can result in Spotify banning your account!
+            "spotify_webapi_override_client_id": "", # Your personal Spotify app client ID
+            "spotify_webapi_override_client_secret": "", # Your personal Spotify app client secret
+
+            # API Call Reduction - Metadata Fetching Options
+            "cache_metadata_in_queue": True, # Pass metadata from QueueWorker to DownloadWorker (50% reduction)
+            "fetch_genre_metadata": True, # Fetch genre from artist endpoint (adds 1 API call per track)
+            "fetch_extended_album_metadata": True, # Fetch label, copyright (adds 1 API call per track)
+            "fetch_audio_features": True, # Fetch BPM, key, danceability (adds 1 API call per track)
+            "fetch_track_credits": True, # Fetch producers, writers (adds 1 API call per track)
+
             # Search Settings
             "enable_search_tracks": True, # Enable listed category in search
             "enable_search_albums": True, # Enable listed category in search

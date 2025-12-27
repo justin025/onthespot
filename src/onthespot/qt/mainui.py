@@ -7,7 +7,7 @@ from urllib3.exceptions import MaxRetryError, NewConnectionError
 from PyQt6 import uic, QtGui
 from PyQt6.QtCore import QThread, QDir, Qt, pyqtSignal, QObject, QTimer
 from PyQt6.QtGui import QIcon, QColor
-from PyQt6.QtWidgets import QApplication, QMainWindow, QHeaderView, QLabel, QPushButton, QProgressBar, QTableWidgetItem, QFileDialog, QRadioButton, QHBoxLayout, QWidget, QColorDialog
+from PyQt6.QtWidgets import QApplication, QMainWindow, QHeaderView, QLabel, QPushButton, QProgressBar, QTableWidgetItem, QFileDialog, QRadioButton, QHBoxLayout, QWidget, QColorDialog, QCheckBox, QVBoxLayout, QGroupBox, QLineEdit
 from ..accounts import get_account_token, FillAccountPool
 from ..api.apple_music import apple_music_add_account, apple_music_get_track_metadata
 from ..api.bandcamp import bandcamp_add_account, bandcamp_get_track_metadata
@@ -37,6 +37,8 @@ def is_permanent_failure(exception):
     if "Max retries" in error_str or "exhausted" in error_str:
         return True
     if "not found" in error_str.lower() or "404" in error_str:
+        return True
+    if "Item ID is None" in error_str:
         return True
     return False
 
@@ -105,11 +107,6 @@ class QueueWorker(QObject):
                         # Create minimal metadata so item can be added to UI with "Failed" status
                         failed_metadata = create_failed_metadata(item, str(e))
                         self.add_item_to_download_list.emit(item, failed_metadata)
-                    else:
-                        # Transient error - retry by re-adding to pending queue
-                        logger.info(f"Transient error for {item['item_id']}, re-adding to pending queue for retry.")
-                        with pending_lock:
-                            pending[local_id] = item
                     continue
             else:
                 time.sleep(0.2)
@@ -143,6 +140,11 @@ class MainWindow(QMainWindow):
         # Fill the value from configs
         logger.info("Loading configurations..")
         load_config(self)
+
+        # Setup spotify web api oauth override controls
+        self.setup_spotify_oauth_override()
+        # Setup metadata toggle controls
+        self.setup_metadata_toggles()
 
         self.__splash_dialog = _dialog
 
@@ -301,6 +303,146 @@ class MainWindow(QMainWindow):
             self.tbl_dl_progress.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeMode.Interactive)
 
         return True
+
+    def setup_spotify_oauth_override(self):
+        """Add Spotify Web API OAuth overrides to settings page"""
+        # Find the parent layout of gb2 (Audio Metadata group box)
+        # gb2 is the Audio Metadata section in the settings
+        if hasattr(self, 'gb2'):
+            parent_layout = self.gb2.parent().layout()
+
+            # Find the index of gb2 in the parent layout
+            gb2_index = None
+            for i in range(parent_layout.count()):
+                item = parent_layout.itemAt(i)
+                if item and item.widget() == self.gb2:
+                    gb2_index = i
+                    break
+
+            if gb2_index is not None:
+                # Create the Metadata Options group box
+                spotify_oauth_override_gb = QGroupBox(self.tr("Spotify Web API Override Credentials"))
+                spotify_oauth_override_gb.setStyleSheet("QGroupBox { font-weight: bold; }")
+                spotify_oauth_override_layout = QVBoxLayout()
+
+                override_explanation = QLabel(self.tr(
+                    "These settings override the default librespot authentication for Spotify Web API metadata calls. "
+                    "Use this for debugging issues that arise when using librespot tokens for metadata retrieval. "
+                    "\n\nIMPORTANT:\n"
+                    "• Create personal API tokens for yourself only\n"
+                    "• Do NOT share tokens with others\n"
+                    "• ⚠️ WARNING: Overuse can result in Spotify banning your account!"
+                ))
+                override_explanation.setWordWrap(True)
+                override_explanation.setStyleSheet("color: #666; margin-bottom: 10px; font-weight: normal;")
+                spotify_oauth_override_layout.addWidget(override_explanation)
+
+                # Override Client ID
+                client_id_layout = QHBoxLayout()
+                client_id_label = QLabel(self.tr("Override Client ID:"))
+                client_id_label.setMinimumWidth(120)
+                self.spotify_webapi_override_client_id = QLineEdit()
+                self.spotify_webapi_override_client_id.setText(config.get('spotify_webapi_override_client_id', ''))
+                self.spotify_webapi_override_client_id.setPlaceholderText(self.tr("Leave empty to use default librespot authentication"))
+                client_id_layout.addWidget(client_id_label)
+                client_id_layout.addWidget(self.spotify_webapi_override_client_id)
+                spotify_oauth_override_layout.addLayout(client_id_layout)
+
+                # Override Client Secret
+                client_secret_layout = QHBoxLayout()
+                client_secret_label = QLabel(self.tr("Override Client Secret:"))
+                client_secret_label.setMinimumWidth(120)
+                self.spotify_webapi_override_client_secret = QLineEdit()
+                self.spotify_webapi_override_client_secret.setText(config.get('spotify_webapi_override_client_secret', ''))
+                self.spotify_webapi_override_client_secret.setPlaceholderText(self.tr("Leave empty to use default librespot authentication"))
+                self.spotify_webapi_override_client_secret.setEchoMode(QLineEdit.EchoMode.Password)
+                client_secret_layout.addWidget(client_secret_label)
+                client_secret_layout.addWidget(self.spotify_webapi_override_client_secret)
+                spotify_oauth_override_layout.addLayout(client_secret_layout)
+                spotify_oauth_override_gb.setLayout(spotify_oauth_override_layout)
+
+                # Insert the new group box before the Audio Metadata section
+                parent_layout.insertWidget(gb2_index, spotify_oauth_override_gb)
+                logger.info("Added metadata toggle controls to settings page")
+
+    def setup_metadata_toggles(self):
+        """Add metadata fetching toggle controls to settings page"""
+        # Find the parent layout of gb2 (Audio Metadata group box)
+        # gb2 is the Audio Metadata section in the settings
+        if hasattr(self, 'gb2'):
+            parent_layout = self.gb2.parent().layout()
+
+            # Find the index of gb2 in the parent layout
+            gb2_index = None
+            for i in range(parent_layout.count()):
+                item = parent_layout.itemAt(i)
+                if item and item.widget() == self.gb2:
+                    gb2_index = i
+                    break
+
+            if gb2_index is not None:
+                # Create the Metadata Options group box
+                metadata_options_gb = QGroupBox(self.tr("Spotify Metadata Fetching Options"))
+                metadata_options_gb.setStyleSheet("QGroupBox { font-weight: bold; }")
+                metadata_options_layout = QVBoxLayout()
+
+                # Separator
+                # Add explanatory paragraph
+                explanation_label = QLabel(self.tr(
+                    "These settings control how much metadata OnTheSpot fetches from Spotify. "
+                    "Disabling options reduces API calls, which helps avoid rate limiting (HTTP 429 errors) "
+                    "and speeds up downloads. However, some metadata fields will be empty in your downloaded files. "
+                    "If you're experiencing rate limit errors, try disabling Audio Metadata and Credits Metadata first."
+                ))
+                explanation_label.setWordWrap(True)
+                explanation_label.setStyleSheet("color: #666; margin-bottom: 10px; font-weight: normal;")
+                metadata_options_layout.addWidget(explanation_label)
+                # Create checkboxes for metadata options
+                self.fetch_artist_metadata = QCheckBox(self.tr("Fetch Full Artist Metadata"))
+                self.fetch_artist_metadata.setChecked(config.get('fetch_genre_metadata', True))
+                self.fetch_artist_metadata.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
+                metadata_options_layout.addWidget(self.fetch_artist_metadata)
+
+                artist_desc = QLabel(self.tr("Retrieves genre data. Adds 1 API call per track."))
+                artist_desc.setStyleSheet("color: #666; font-size: 10pt; margin-left: 17px; margin-bottom: 5px;")
+                artist_desc.setWordWrap(True)
+                metadata_options_layout.addWidget(artist_desc)
+
+                self.fetch_album_metadata = QCheckBox(self.tr("Fetch Full Album Metadata"))
+                self.fetch_album_metadata.setChecked(config.get('fetch_extended_album_metadata', True))
+                self.fetch_album_metadata.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
+                metadata_options_layout.addWidget(self.fetch_album_metadata)
+
+                album_desc = QLabel(self.tr("Retrieves label & copyright information. Adds 1 API call per track."))
+                album_desc.setStyleSheet("color: #666; font-size: 10pt; margin-left: 17px; margin-bottom: 5px;")
+                album_desc.setWordWrap(True)
+                metadata_options_layout.addWidget(album_desc)
+
+                self.fetch_audio_metadata = QCheckBox(self.tr("Fetch Audio Metadata"))
+                self.fetch_audio_metadata.setChecked(config.get('fetch_audio_features', True))
+                self.fetch_audio_metadata.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
+                metadata_options_layout.addWidget(self.fetch_audio_metadata)
+
+                audio_desc = QLabel(self.tr("Retrieves BPM, key, danceability. Adds 1 API call per track."))
+                audio_desc.setStyleSheet("color: #666; font-size: 10pt; margin-left: 17px; margin-bottom: 5px;")
+                audio_desc.setWordWrap(True)
+                metadata_options_layout.addWidget(audio_desc)
+
+                self.fetch_credits_metadata = QCheckBox(self.tr("Fetch Credits Metadata"))
+                self.fetch_credits_metadata.setChecked(config.get('fetch_track_credits', True))
+                self.fetch_credits_metadata.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
+                metadata_options_layout.addWidget(self.fetch_credits_metadata)
+
+                credits_desc = QLabel(self.tr("Retrieves producers & writers. Adds 1 API call per track."))
+                credits_desc.setStyleSheet("color: #666; font-size: 10pt; margin-left: 17px; margin-bottom: 5px;")
+                credits_desc.setWordWrap(True)
+                metadata_options_layout.addWidget(credits_desc)
+
+                metadata_options_gb.setLayout(metadata_options_layout)
+
+                # Insert the new group box before the Audio Metadata section
+                parent_layout.insertWidget(gb2_index, metadata_options_gb)
+                logger.info("Added metadata toggle controls to settings page")
 
 
     def language_change(self):

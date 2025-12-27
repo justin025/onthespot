@@ -172,6 +172,22 @@ def load_config(self):
     self.save_lrc_file.setChecked(config.get("save_lrc_file"))
     self.translate_file_path.setChecked(config.get("translate_file_path"))
 
+    # Spotify Web API Override Settings
+    if hasattr(self, 'spotify_webapi_override_client_id'):
+        self.spotify_webapi_override_client_id.setText(config.get('spotify_webapi_override_client_id', ''))
+    if hasattr(self, 'spotify_webapi_override_client_secret'):
+        self.spotify_webapi_override_client_secret.setText(config.get('spotify_webapi_override_client_secret', ''))
+
+    # Metadata Fetching Options (API Call Reduction)
+    if hasattr(self, 'fetch_artist_metadata'):
+        self.fetch_artist_metadata.setChecked(config.get('fetch_genre_metadata', True))
+    if hasattr(self, 'fetch_album_metadata'):
+        self.fetch_album_metadata.setChecked(config.get('fetch_extended_album_metadata', True))
+    if hasattr(self, 'fetch_audio_metadata'):
+        self.fetch_audio_metadata.setChecked(config.get('fetch_audio_features', True))
+    if hasattr(self, 'fetch_credits_metadata'):
+        self.fetch_credits_metadata.setChecked(config.get('fetch_track_credits', True))
+
     # Audio Metadata Settings
     self.metadata_separator.setText(config.get("metadata_separator"))
     self.overwrite_existing_metadata.setChecked(config.get("overwrite_existing_metadata"))
@@ -291,6 +307,22 @@ def save_config(self):
     config.set('only_download_plain_lyrics', self.only_download_plain_lyrics.isChecked())
     config.set('save_lrc_file', self.save_lrc_file.isChecked())
     config.set('translate_file_path', self.translate_file_path.isChecked())
+
+    # Spotify Web API Override Settings
+    if hasattr(self, 'spotify_webapi_override_client_id'):
+        config.set('spotify_webapi_override_client_id', self.spotify_webapi_override_client_id.text())
+    if hasattr(self, 'spotify_webapi_override_client_secret'):
+        config.set('spotify_webapi_override_client_secret', self.spotify_webapi_override_client_secret.text())
+
+    # Metadata Fetching Options (API Call Reduction)
+    if hasattr(self, 'fetch_artist_metadata'):
+        config.set('fetch_genre_metadata', self.fetch_artist_metadata.isChecked())
+    if hasattr(self, 'fetch_album_metadata'):
+        config.set('fetch_extended_album_metadata', self.fetch_album_metadata.isChecked())
+    if hasattr(self, 'fetch_audio_metadata'):
+        config.set('fetch_audio_features', self.fetch_audio_metadata.isChecked())
+    if hasattr(self, 'fetch_credits_metadata'):
+        config.set('fetch_track_credits', self.fetch_credits_metadata.isChecked())
 
     # Audio Metadata Settings
     config.set('metadata_separator', self.metadata_separator.text())
