@@ -70,6 +70,7 @@ def create_failed_metadata(item, error_msg):
 
 class QueueWorker(QObject):
     add_item_to_download_list = pyqtSignal(dict, dict)
+    error = pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
@@ -104,6 +105,22 @@ class QueueWorker(QObject):
                     # Check if this is a permanent failure (e.g., max retries exhausted)
                     if is_permanent_failure(e):
                         logger.warning(f"Permanent failure detected for {item['item_id']}, will not retry. Adding to download list as Failed.")
+
+                        # Create user-friendly error message
+                        error_str = str(e)
+                        service = item['item_service'].replace('_', ' ').title()
+                        item_type = item['item_type']
+
+                        if "404" in error_str or "not found" in error_str.lower():
+                            user_msg = f"Track not found: Could not load {item_type} from {service}. The item may have been removed or is unavailable in your region."
+                        elif "Max retries" in error_str or "exhausted" in error_str:
+                            user_msg = f"Failed to load {item_type} from {service} after multiple retries. The service may be experiencing issues."
+                        else:
+                            user_msg = f"Failed to load {item_type} from {service}: {error_str}"
+
+                        # Emit error to UI
+                        self.error.emit(user_msg)
+
                         # Create minimal metadata so item can be added to UI with "Failed" status
                         failed_metadata = create_failed_metadata(item, str(e))
                         self.add_item_to_download_list.emit(item, failed_metadata)
@@ -125,7 +142,7 @@ class MainWindow(QMainWindow):
             self.hide()
 
 
-    def __init__(self, _dialog, start_url=''):
+    def __init__(self, _dialog, start_url='', parsingworker=None):
         super(MainWindow, self).__init__()
         self.path = os.path.dirname(os.path.realpath(__file__))
         self.icon_cache = {}
@@ -154,9 +171,14 @@ class MainWindow(QMainWindow):
         fillaccountpool.progress.connect(self.show_popup_dialog)
         fillaccountpool.start()
 
+        # Connect parsing worker error signal to popup dialog
+        if parsingworker:
+            parsingworker.error.connect(self.show_popup_dialog, Qt.ConnectionType.QueuedConnection)
+
         for i in range(config.get('maximum_queue_workers')):
             queueworker = QueueWorker()
             queueworker.add_item_to_download_list.connect(self.add_item_to_download_list)
+            queueworker.error.connect(self.show_popup_dialog, Qt.ConnectionType.QueuedConnection)
             queueworker.start()
 
         for i in range(config.get('maximum_download_workers')):

@@ -92,6 +92,11 @@ def make_call(url, params=None, headers=None, session=None, skip_cache=False, te
                     logger.warning(f"Server error ({response.status_code}) on {url}. Retrying in {delay}s (attempt {attempt + 1}/{max_retries})")
                     time.sleep(delay)
                     continue
+                # Handle not found (404) - don't retry
+                elif response.status_code == 404:
+                    error_msg = f"Not found (404) for {url}"
+                    logger.error(error_msg)
+                    raise requests.exceptions.RequestException(error_msg)
 
                 # Success - cache and return
                 elif response.status_code == 200:
@@ -115,7 +120,7 @@ def make_call(url, params=None, headers=None, session=None, skip_cache=False, te
                 continue
             except requests.exceptions.RequestException as e:
                 logger.error(f"Request exception on {url}: {str(e)}")
-                return None
+                raise e
 
         # All retries exhausted - raise exception so it's properly handled
         error_msg = f"Max retries ({max_retries}) exhausted for {url}"

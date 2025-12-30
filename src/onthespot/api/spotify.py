@@ -503,8 +503,10 @@ def spotify_get_playlist_items(token, playlist_id):
             logger.error("Failed to get authentication header")
             return []
         headers = auth_header
-
-        resp = make_call(url, headers=headers, skip_cache=True)
+        try:
+            resp = make_call(url, headers=headers, skip_cache=True)
+        except Exception as e:
+            raise e
 
         offset += limit
         items.extend(resp['items'])
