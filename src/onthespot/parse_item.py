@@ -15,6 +15,8 @@ from .api.crunchyroll import crunchyroll_get_show_episode_ids
 from .runtimedata import account_pool, get_logger, parsing, download_queue, pending, parsing_lock, pending_lock
 from .utils import format_local_id
 from .otsconfig import config
+from PyQt6.QtCore import QObject, pyqtSignal
+import threading
 
 logger = get_logger('parse_item')
 # Audio
@@ -160,175 +162,250 @@ def parse_url(url):
         }
 
 
-def parsingworker():
-    while True:
-        if parsing:
-            try:
-                item_id = next(iter(parsing))
-                with parsing_lock:
-                    item = parsing.pop(item_id)
-                logger.info(f"Parsing: {item}")
+class ParsingWorker(QObject):
+    # Signal to emit errors to UI
+    error = pyqtSignal(str)
 
-                current_service = item['item_service']
-                current_type = item['item_type']
-                current_id = item['item_id']
-                current_url = item['item_url']
-                token = get_account_token(current_service)
+    def __init__(self):
+        super().__init__()
+        self.is_running = True
+        self.thread = threading.Thread(target=self.run)
 
-                if current_service == "spotify":
-                    if current_type == "playlist":
-                        items = spotify_get_playlist_items(token, current_id)
-                        playlist_name, playlist_by = spotify_get_playlist_data(token, current_id)
-                        for index, item in enumerate(items):
+    def start(self):
+        self.thread.start()
+
+    def run(self):
+        while self.is_running:
+            if parsing:
+                try:
+                    item_id = next(iter(parsing))
+                    with parsing_lock:
+                        item = parsing.pop(item_id)
+                    logger.info(f"Parsing: {item}")
+
+                    current_service = item['item_service']
+                    current_type = item['item_type']
+                    current_id = item['item_id']
+                    current_url = item['item_url']
+                    token = get_account_token(current_service)
+
+                    if current_service == "spotify":
+                        if current_type == "playlist":
                             try:
-                                item_id = item['track']['id']
-                                item_type = item['track']['type']
+                                items = spotify_get_playlist_items(token, current_id)
+                                playlist_name, playlist_by = spotify_get_playlist_data(token, current_id)
+                            except Exception as playlist_error:
+                                error_str = str(playlist_error)
+                                if "404" in error_str or "not found" in error_str.lower():
+                                    error_msg = f"Playlist not found: The Spotify playlist was not found, was created by Spotify (unavailable in the Web API) or is private.\n\nPlaylist ID: {current_id}\n\nPlease verify:\n• The playlist URL is correct\n• The playlist was NOT created by Spotify\n• The playlist is public or you have access\n• You're logged into the correct Spotify account"
+                                else:
+                                    error_msg = f"Failed to load Spotify playlist: {error_str}\n\nPlaylist ID: {current_id}"
+
+                                self.error.emit(error_msg)
+                                logger.error(f"Playlist fetch failed: {traceback.format_exc()}")
+                                continue  # Skip to next item in parsing queue
+
+                            for index, item in enumerate(items):
+                                try:
+                                    item_id = item['track']['id']
+                                    item_type = item['track']['type']
+                                    local_id = format_local_id(item_id)
+                                    with pending_lock:
+                                        pending[local_id] = {
+                                            'local_id': local_id,
+                                            'item_service': 'spotify',
+                                            'item_type': item_type,
+                                            'item_id': item_id,
+                                            'parent_category': 'playlist',
+                                            'playlist_name': playlist_name,
+                                            'playlist_by': playlist_by,
+                                            'playlist_number': str(index + 1)
+                                            }
+                                except TypeError:
+                                    logger.error(f'TypeError for {item}')
+                            continue
+                        elif current_type == "liked_songs":
+                            tracks = spotify_get_liked_songs(token)
+                            for index, track in enumerate(tracks):
+                                item_id = track['track']['id']
                                 local_id = format_local_id(item_id)
                                 with pending_lock:
                                     pending[local_id] = {
                                         'local_id': local_id,
                                         'item_service': 'spotify',
-                                        'item_type': item_type,
+                                        'item_type': 'track',
                                         'item_id': item_id,
                                         'parent_category': 'playlist',
-                                        'playlist_name': playlist_name,
-                                        'playlist_by': playlist_by,
+                                        'playlist_name': 'Liked Songs',
+                                        'playlist_by': 'me',
                                         'playlist_number': str(index + 1)
                                         }
-                            except TypeError:
-                                logger.error(f'TypeError for {item}')
+                            continue
+                        elif current_type == "your_episodes":
+                            tracks = spotify_get_your_episodes(token)
+                            for index, track in enumerate(tracks):
+                                item_id = track['episode']['id']
+                                if item_id:
+                                    local_id = format_local_id(item_id)
+                                    with pending_lock:
+                                        pending[local_id] = {
+                                            'local_id': local_id,
+                                            'item_service': 'spotify',
+                                            'item_type': 'podcast_episode',
+                                            'item_id': item_id,
+                                            'parent_category': 'playlist',
+                                            'playlist_name': 'Your Episodes',
+                                            'playlist_by': 'me',
+                                            'playlist_number': str(index + 1)
+                                            }
+                            continue
+
+                    if current_service == 'youtube_music' and current_type == 'artist':
+                        track_ids = youtube_get_channel_track_ids(token, current_id)
+                        for track_id in track_ids:
+                            local_id = format_local_id(track_id)
+                            with pending_lock:
+                                pending[local_id] = {
+                                    'local_id': local_id,
+                                    'item_service': current_service,
+                                    'item_type': 'track',
+                                    'item_id': track_id,
+                                    'parent_category': 'album'
+                                    }
+                            continue
                         continue
-                    elif current_type == "liked_songs":
-                        tracks = spotify_get_liked_songs(token)
-                        for index, track in enumerate(tracks):
-                            item_id = track['track']['id']
+
+                    if current_type in ["track", "podcast_episode", "movie", "episode"]:
+                        local_id = format_local_id(item_id)
+                        with pending_lock:
+                            pending[local_id] = {
+                                'local_id': local_id,
+                                'item_service': current_service,
+                                'item_type': current_type,
+                                'item_id': item_id,
+                                'parent_category': current_type
+                                }
+                        continue
+
+                    elif current_type in ["podcast", "audiobook"]:
+                        item_ids = globals()[f"{current_service}_get_{current_type}_episode_ids"](token, current_id)
+                        for item_id in item_ids:
                             local_id = format_local_id(item_id)
                             with pending_lock:
                                 pending[local_id] = {
                                     'local_id': local_id,
-                                    'item_service': 'spotify',
-                                    'item_type': 'track',
+                                    'item_service': current_service,
+                                    'item_type': 'podcast_episode',
                                     'item_id': item_id,
-                                    'parent_category': 'playlist',
-                                    'playlist_name': 'Liked Songs',
-                                    'playlist_by': 'me',
+                                    'parent_category': current_type
+                                    }
+                        continue
+
+                    elif current_type in ["album", "playlist", "mix"]:
+                        playlist_name = ''
+                        playlist_by = ''
+                        try:
+                            if current_type == "album":
+                                track_ids = globals()[f"{current_service}_get_{current_type}_track_ids"](token, current_id)
+                            else:
+                                playlist_name, playlist_by, track_ids = globals()[f"{current_service}_get_{current_type}_data"](token, current_id)
+                        except Exception as collection_error:
+                            error_str = str(collection_error)
+                            service_name = current_service.replace('_', ' ').title()
+                            if "404" in error_str or "not found" in error_str.lower():
+                                if current_type == "playlist" or current_type == "mix":
+                                    error_msg = f"{current_type.title()} not found: The {service_name} {current_type} was not found or is private.\n\n{current_type.title()} ID: {current_id}\n\nPlease verify:\n• The {current_type} URL is correct\n• The {current_type} is public or you have access\n• You're logged into the correct {service_name} account"
+                                elif current_type == "album":
+                                    error_msg = f"Album not found: The {service_name} album was not found or is unavailable.\n\nAlbum ID: {current_id}"
+                            else:
+                                error_msg = f"Failed to load {service_name} {current_type}: {error_str}\n\n{current_type.title()} ID: {current_id}"
+
+                            self.error.emit(error_msg)
+                            logger.error(f"{current_type.title()} fetch failed for {current_service}: {traceback.format_exc()}")
+                            continue  # Skip to next item in parsing queue
+
+                        if current_type == 'mix':
+                            current_type = 'playlist'
+                        if current_service == 'youtube' and not playlist_by:
+                            current_type = 'album'
+
+                        for index, track_id in enumerate(track_ids):
+                            local_id = format_local_id(track_id)
+                            with pending_lock:
+                                pending[local_id] = {
+                                    'local_id': local_id,
+                                    'item_service': current_service,
+                                    'item_type': 'track',
+                                    'item_id': track_id,
+                                    'parent_category': current_type,
+                                    'playlist_name': playlist_name,
+                                    'playlist_by': playlist_by,
                                     'playlist_number': str(index + 1)
                                     }
                         continue
-                    elif current_type == "your_episodes":
-                        tracks = spotify_get_your_episodes(token)
-                        for index, track in enumerate(tracks):
-                            item_id = track['episode']['id']
-                            if item_id:
-                                local_id = format_local_id(item_id)
-                                with pending_lock:
-                                    pending[local_id] = {
-                                        'local_id': local_id,
-                                        'item_service': 'spotify',
-                                        'item_type': 'podcast_episode',
-                                        'item_id': item_id,
-                                        'parent_category': 'playlist',
-                                        'playlist_name': 'Your Episodes',
-                                        'playlist_by': 'me',
-                                        'playlist_number': str(index + 1)
-                                        }
-                        continue
 
-                if current_service == 'youtube_music' and current_type == 'artist':
-                    track_ids = youtube_get_channel_track_ids(token, current_id)
-                    for track_id in track_ids:
-                        local_id = format_local_id(track_id)
-                        with pending_lock:
-                            pending[local_id] = {
-                                'local_id': local_id,
-                                'item_service': current_service,
-                                'item_type': 'track',
-                                'item_id': track_id,
-                                'parent_category': 'album'
+                    elif current_type in ["artist", "label"]:
+                        item_ids = globals()[f"{current_service}_get_{current_type}_album_ids"](token, current_id)
+                        for item_id in item_ids:
+                            local_id = format_local_id(item_id)
+                            with parsing_lock:
+                                parsing[item_id] = {
+                                    'item_url': '',
+                                    'item_service': current_service,
+                                    'item_type': 'album',
+                                    'item_id': item_id
                                 }
+
+                    elif current_type in ['show', 'season']:
+                        item_ids = globals()[f"{current_service}_get_{current_type}_episode_ids"](token, current_id)
+                        for item_id in item_ids:
+                            local_id = format_local_id(item_id)
+                            with pending_lock:
+                                pending[local_id] = {
+                                    'local_id': local_id,
+                                    'item_service': current_service,
+                                    'item_type': 'episode',
+                                    'item_id': item_id,
+                                    'parent_category': current_type
+                                    }
                         continue
-                    continue
+                except Exception as e:
+                    error_str = str(e)
+                    error_msg = None
 
-                if current_type in ["track", "podcast_episode", "movie", "episode"]:
-                    local_id = format_local_id(item_id)
-                    with pending_lock:
-                        pending[local_id] = {
-                            'local_id': local_id,
-                            'item_service': current_service,
-                            'item_type': current_type,
-                            'item_id': item_id,
-                            'parent_category': current_type
-                            }
-                    continue
+                    # Check for 404 errors (playlist/album not found)
+                    if "404" in error_str or "not found" in error_str.lower():
+                        if current_type == "playlist":
+                            error_msg = f"Failed to load playlist: The playlist was not found or is private.\n\nPlaylist ID: {current_id}\n\nPlease verify:\n• The playlist URL is correct\n• The playlist is public or you have access\n• You're logged into the correct {current_service.replace('_', ' ').title()} account"
+                        elif current_type == "album":
+                            error_msg = f"Failed to load album: The album was not found or is unavailable.\n\nDetails: {current_url}"
+                        elif current_type == "artist":
+                            error_msg = f"Failed to load artist: The artist was not found.\n\nDetails: {current_url}"
+                        else:
+                            error_msg = f"Failed to load {current_type}: Item was not found.\n\nDetails: {current_url}"
 
-                elif current_type in ["podcast", "audiobook"]:
-                    item_ids = globals()[f"{current_service}_get_{current_type}_episode_ids"](token, current_id)
-                    for item_id in item_ids:
-                        local_id = format_local_id(item_id)
-                        with pending_lock:
-                            pending[local_id] = {
-                                'local_id': local_id,
-                                'item_service': current_service,
-                                'item_type': 'podcast_episode',
-                                'item_id': item_id,
-                                'parent_category': current_type
-                                }
-                    continue
+                    # Check for rate limiting
+                    elif "429" in error_str or "rate limit" in error_str.lower():
+                        error_msg = f"Rate limit exceeded for {current_service.replace('_', ' ').title()}. Too many requests - please wait before adding more items.\n\nTip: Try disabling metadata options in Settings to reduce API calls."
 
-                elif current_type in ["album", "playlist", "mix"]:
-                    playlist_name = ''
-                    playlist_by = ''
-                    if current_type == "album":
-                        track_ids = globals()[f"{current_service}_get_{current_type}_track_ids"](token, current_id)
+                    # Check for max retries exhausted
+                    elif "Max retries" in error_str or "exhausted" in error_str:
+                        error_msg = f"Failed to load {current_type} after multiple retries. The service may be unavailable.\n\nDetails: {error_str}"
+
+                    # Generic error
                     else:
-                        playlist_name, playlist_by, track_ids = globals()[f"{current_service}_get_{current_type}_data"](token, current_id)
-                    if current_type == 'mix':
-                        current_type = 'playlist'
-                    if current_service == 'youtube' and not playlist_by:
-                        current_type = 'album'
+                        error_msg = f"Error parsing {current_type}: {error_str}\n\nURL: {current_url}"
 
-                    for index, track_id in enumerate(track_ids):
-                        local_id = format_local_id(track_id)
-                        with pending_lock:
-                            pending[local_id] = {
-                                'local_id': local_id,
-                                'item_service': current_service,
-                                'item_type': 'track',
-                                'item_id': track_id,
-                                'parent_category': current_type,
-                                'playlist_name': playlist_name,
-                                'playlist_by': playlist_by,
-                                'playlist_number': str(index + 1)
-                                }
+                    # Emit error to UI
+                    if error_msg:
+                        self.error.emit(error_msg)
+
+                    logger.error(f"Unknown Exception: {str(e)}\nTraceback: {traceback.format_exc()}")
                     continue
+            else:
+                time.sleep(0.2)
 
-                elif current_type in ["artist", "label"]:
-                    item_ids = globals()[f"{current_service}_get_{current_type}_album_ids"](token, current_id)
-                    for item_id in item_ids:
-                        local_id = format_local_id(item_id)
-                        with parsing_lock:
-                            parsing[item_id] = {
-                                'item_url': '',
-                                'item_service': current_service,
-                                'item_type': 'album',
-                                'item_id': item_id
-                            }
-
-                elif current_type in ['show', 'season']:
-                    item_ids = globals()[f"{current_service}_get_{current_type}_episode_ids"](token, current_id)
-                    for item_id in item_ids:
-                        local_id = format_local_id(item_id)
-                        with pending_lock:
-                            pending[local_id] = {
-                                'local_id': local_id,
-                                'item_service': current_service,
-                                'item_type': 'episode',
-                                'item_id': item_id,
-                                'parent_category': current_type
-                                }
-                    continue
-            except Exception as e:
-                logger.error(f"Unknown Exception: {str(e)}\nTraceback: {traceback.format_exc()}")
-                continue
-        else:
-            time.sleep(0.2)
+    def stop(self):
+        logger.info('Stopping Parsing Worker')
+        self.is_running = False
+        self.thread.join()

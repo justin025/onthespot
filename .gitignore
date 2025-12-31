@@ -10,6 +10,7 @@ __pycache__/
 ffbin_*/
 .Python
 build/
+builder/
 develop-eggs/
 dist/
 downloads/
@@ -140,3 +141,6 @@ dmypy.json
 .markdownlintignore
 .markdownlint.json
 .vscode
+
+# Mac OSX
+.DS_Store

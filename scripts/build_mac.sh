@@ -2,19 +2,43 @@
 
 echo "========= OnTheSpot macOS Build Script =========="
 
+# Parse command line arguments
+# --keep-build-dirs: Preserve build, builder, and venv directories for faster incremental builds
+#                    Useful for local development to avoid re-downloading/re-building ffmpeg
+#                    and re-installing Python dependencies on each build
+#                    Default behavior (without flag) is to clean these directories
+KEEP_BUILD_DIRS=false
+if [[ "$*" == *--keep-build-dirs* ]]; then
+    KEEP_BUILD_DIRS=true
+    echo " => Running in incremental build mode (build/builder/venv directories will be preserved)"
+fi
+
 
 echo " => Cleaning up previous builds and preparing the environment..."
 rm -f ./dist/OnTheSpot.tar.gz
-mkdir build
-mkdir dist
-mkdir builder
-python3 -m venv venv
-source ./venv/bin/activate
+mkdir -p build
+mkdir -p dist
+mkdir -p builder
 
+# Create and populate virtual environment only in clean build mode
+# In incremental mode, reuse existing venv to skip dependency reinstallation
+# If venv doesn't exist even in incremental mode, create it
+if [ "$KEEP_BUILD_DIRS" = false ] || [ ! -d "venv" ]; then
+    if [ "$KEEP_BUILD_DIRS" = true ] && [ ! -d "venv" ]; then
+        echo " => Virtual environment not found, creating it..."
+    else
+        echo " => Creating virtual environment..."
+    fi
+    python3 -m venv venv
+    source ./venv/bin/activate
 
-echo " => Upgrading pip and installing necessary dependencies..."
-venv/bin/pip install --upgrade pip wheel pyinstaller
-venv/bin/pip install -r requirements.txt
+    echo " => Upgrading pip and installing necessary dependencies..."
+    venv/bin/pip install --upgrade pip wheel pyinstaller
+    venv/bin/pip install -r requirements.txt
+else
+    echo " => Reusing existing virtual environment..."
+    source ./venv/bin/activate
+fi
 
 
 echo " => Build FFMPEG (Optional)"
@@ -33,14 +57,14 @@ if uname -m | grep -q x86_64; then
 	#    cd ../..
 	fi
 else
-    curl -L -o build/ffmpeg.zip https://github.com/markus-perl/ffmpeg-build-script/archive/refs/heads/master.zip
-    unzip build/ffmpeg.zip -d builder
-    cd builder/ffmpeg-build-script-master
-    ./build-ffmpeg --build --skip-install
-    
-    cp workspace/bin/ffmpeg ../../dist/ffmpeg
-
-    cd ../..
+    if ! [ -f "builder/ffmpeg-build-script-master" ]; then
+        curl -L -o build/ffmpeg.zip https://github.com/markus-perl/ffmpeg-build-script/archive/refs/heads/master.zip
+        unzip build/ffmpeg.zip -d builder
+        cd builder/ffmpeg-build-script-master
+        ./build-ffmpeg --build --skip-install
+        cd ../..
+    fi
+    cp builder/ffmpeg-build-script-master/workspace/bin/ffmpeg dist/ffmpeg
 fi
 
 
@@ -92,7 +116,17 @@ hdiutil create -srcfolder dist/dmg -format UDZO -o dist/OnTheSpot.dmg
 
 
 echo " => Cleaning up temporary files..."
-rm -rf __pycache__ build builder venv *.spec
+rm -rf __pycache__ *.spec
+
+# Clean build directories and venv unless --keep-build-dirs flag is set
+# This removes downloaded ffmpeg sources, build artifacts, and Python dependencies
+# Skip cleanup in development mode to speed up subsequent builds
+if [ "$KEEP_BUILD_DIRS" = false ]; then
+    echo " => Removing build, builder, and venv directories..."
+    rm -rf build builder venv
+else
+    echo " => Preserving build, builder, and venv directories for incremental builds"
+fi
 
 
 echo " => Done! .dmg available in 'dist/OnTheSpot.dmg'."
