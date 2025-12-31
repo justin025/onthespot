@@ -12,7 +12,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          ref: dev
+          ref: api-feature
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -46,7 +46,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          ref: dev
+          ref: api-feature
 
       - name: Run macOS Build Script
         run: scripts/build_mac.sh
@@ -75,7 +75,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          ref: dev
+          ref: api-feature
 
       - name: Run macOS Build Script
         run: scripts/build_mac.sh
@@ -104,7 +104,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          ref: dev
+          ref: api-feature
 
       - name: Install Dependencies
         run: |
@@ -138,7 +138,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          ref: dev
+          ref: api-feature
 
       - name: Install Dependencies
         run: |
