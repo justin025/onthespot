@@ -591,70 +591,149 @@ def spotify_get_album_track_ids(token, album_id):
 def spotify_get_search_results(token, search_term, content_types):
     logger.info(f"Get search result for term '{search_term}'")
 
-    # Use new auth method (OAuth or librespot)
     auth_header = spotify_get_auth_header()
     if not auth_header:
         logger.error("Failed to get authentication header")
         return []
     headers = auth_header
 
-    params = {}
-    params['limit'] = config.get("max_search_results")
-    params['offset'] = '0'
-    params['q'] = search_term
-    params['type'] = ",".join(c_type for c_type in content_types)
+    params = {
+        "limit": config.get("max_search_results"),
+        "offset": "0",
+        "q": search_term,
+        "type": ",".join(content_types),
+    }
 
-    data = requests.get(f"{BASE_URL}/search", params=params, headers=headers).json()
+    r = requests.get(f"{BASE_URL}/search", params=params, headers=headers)
+
+    # Important: ne pars pas du principe que c'est OK
+    if r.status_code != 200:
+        logger.error("Spotify search HTTP %s: %s", r.status_code, r.text[:300])
+        return []
+
+    try:
+        data = r.json()
+    except Exception as e:
+        logger.exception("Spotify search: failed to decode JSON: %s", e)
+        logger.error("Body (first 300): %r", r.text[:300])
+        return []
+
+    if not isinstance(data, dict):
+        logger.error("Spotify search: unexpected JSON type %r: %r", type(data), data)
+        return []
+
+    # Spotify renvoie parfois {"error": {...}}
+    if "error" in data:
+        logger.error("Spotify search error payload: %r", data.get("error"))
+        return []
 
     search_results = []
-    for key in data.keys():
-        for item in data[key]["items"]:
-            item_type = item['type']
+
+    # Ne boucle PAS sur data.keys() (trop dangereux). Boucle sur les types demandés.
+    # Spotify renvoie des clés au pluriel: tracks/albums/artists/playlists/shows/episodes/audiobooks
+    key_map = {
+        "track": "tracks",
+        "album": "albums",
+        "artist": "artists",
+        "playlist": "playlists",
+        "show": "shows",
+        "episode": "episodes",
+        "audiobook": "audiobooks",
+    }
+
+    for c_type in content_types:
+        key = key_map.get(c_type, c_type)
+        block = data.get(key)
+
+        if not isinstance(block, dict):
+            # si block est None -> c'est exactement ton crash actuel
+            logger.error("Spotify search: missing/invalid block for key=%r, got=%r", key, block)
+            continue
+
+        items = block.get("items") or []
+        if not isinstance(items, list):
+            logger.error("Spotify search: invalid items for key=%r, got=%r", key, type(items))
+            continue
+
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+
+            item_type = item.get("type") or c_type
+
+            # champs communs "safe"
+            external = item.get("external_urls") or {}
+            item_url = external.get("spotify", "")
+
+            item_id = item.get("id", "")
+            item_name = item.get("name", "")
+            item_by = ""
+            item_thumbnail_url = ""
+
             if item_type == "track":
-                item_name = f"{config.get('explicit_label') if item['explicit'] else ''} {item['name']}"
-                item_by = f"{config.get('metadata_separator').join([artist['name'] for artist in item['artists']])}"
-                item_thumbnail_url = item['album']['images'][-1]["url"] if len(item['album']['images']) > 0 else ""
+                item_name = f"{config.get('explicit_label') if item.get('explicit') else ''} {item.get('name','')}"
+                artists = item.get("artists") or []
+                item_by = config.get('metadata_separator').join([a.get("name","") for a in artists if isinstance(a, dict)])
+
+                album = item.get("album") or {}
+                images = album.get("images") or []
+                item_thumbnail_url = images[-1].get("url","") if images else ""
+
             elif item_type == "album":
-                rel_year = re.search(r'(\d{4})', item['release_date']).group(1)
-                item_name = f"[Y:{rel_year}] [T:{item['total_tracks']}] {item['name']}"
-                item_by = f"{config.get('metadata_separator').join([artist['name'] for artist in item['artists']])}"
-                item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
+                rel = item.get("release_date", "")
+                m = re.search(r'(\d{4})', rel)
+                rel_year = m.group(1) if m else "????"
+                item_name = f"[Y:{rel_year}] [T:{item.get('total_tracks','?')}] {item.get('name','')}"
+                artists = item.get("artists") or []
+                item_by = config.get('metadata_separator').join([a.get("name","") for a in artists if isinstance(a, dict)])
+
+                images = item.get("images") or []
+                item_thumbnail_url = images[-1].get("url","") if images else ""
+
             elif item_type == "playlist":
-                item_name = f"{item['name']}"
-                item_by = f"{item['owner']['display_name']}"
-                item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
+                owner = item.get("owner") or {}
+                item_by = owner.get("display_name", "") or owner.get("id", "")
+                images = item.get("images") or []
+                item_thumbnail_url = images[-1].get("url","") if images else ""
+
             elif item_type == "artist":
-                item_name = item['name']
-                if f"{'/'.join(item['genres'])}" != "":
-                    item_name = item['name'] + f"  |  GENERES: {'/'.join(item['genres'])}"
-                item_by = f"{item['name']}"
-                item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
+                genres = item.get("genres") or []
+                if genres:
+                    item_name = item.get("name","") + f"  |  GENERES: {'/'.join(genres)}"
+                item_by = item.get("name","")
+                images = item.get("images") or []
+                item_thumbnail_url = images[-1].get("url","") if images else ""
+
             elif item_type == "show":
-                item_name = f"{config.get('explicit_label') if item['explicit'] else ''} {item['name']}"
-                item_by = f"{item['publisher']}"
-                item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
+                item_name = f"{config.get('explicit_label') if item.get('explicit') else ''} {item.get('name','')}"
+                item_by = item.get("publisher","")
+                images = item.get("images") or []
+                item_thumbnail_url = images[-1].get("url","") if images else ""
                 item_type = "podcast"
+
             elif item_type == "episode":
-                item_name = f"{config.get('explicit_label') if item['explicit'] else ''} {item['name']}"
-                item_by = ""
-                item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
+                item_name = f"{config.get('explicit_label') if item.get('explicit') else ''} {item.get('name','')}"
+                images = item.get("images") or []
+                item_thumbnail_url = images[-1].get("url","") if images else ""
                 item_type = "podcast_episode"
+
             elif item_type == "audiobook":
-                item_name = f"{config.get('explicit_label') if item['explicit'] else ''} {item['name']}"
-                item_by = f"{item['publisher']}"
-                item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
+                item_name = f"{config.get('explicit_label') if item.get('explicit') else ''} {item.get('name','')}"
+                item_by = item.get("publisher","")
+                images = item.get("images") or []
+                item_thumbnail_url = images[-1].get("url","") if images else ""
 
             search_results.append({
-                'item_id': item['id'],
-                'item_name': item_name,
-                'item_by': item_by,
-                'item_type': item_type,
-                'item_service': "spotify",
-                'item_url': item['external_urls']['spotify'],
-                'item_thumbnail_url': item_thumbnail_url
+                "item_id": item_id,
+                "item_name": item_name.strip(),
+                "item_by": item_by,
+                "item_type": item_type,
+                "item_service": "spotify",
+                "item_url": item_url,
+                "item_thumbnail_url": item_thumbnail_url,
             })
-    return search_results
 
+    return search_results
 
 def spotify_get_track_metadata(token, item_id):
     if item_id is None:
