@@ -590,7 +590,7 @@ def spotify_get_album_track_ids(token, album_id):
 
 def spotify_get_search_results(token, search_term, content_types):
     logger.info(f"Get search result for term '{search_term}'")
-
+    logger.info(f"Searching for '{content_types}'")
     # Use new auth method (OAuth or librespot)
     auth_header = spotify_get_auth_header()
     if not auth_header:
@@ -602,43 +602,76 @@ def spotify_get_search_results(token, search_term, content_types):
     params['limit'] = config.get("max_search_results")
     params['offset'] = '0'
     params['q'] = search_term
-    params['type'] = ",".join(c_type for c_type in content_types)
+#    The params[] expression below does not need transform! 
+#    params['type'] = ",".join(c_type for c_type in content_types)
+    params['type'] = ",".join(content_types)
 
-    data = requests.get(f"{BASE_URL}/search", params=params, headers=headers).json()
-
+    data = requests.get(f"{BASE_URL}/search", params=params, headers=headers).json()   
     search_results = []
-    for key in data.keys():
-        for item in data[key]["items"]:
-            item_type = item['type']
+    for key, section in (data or {}).items():
+        items = (section or {}).get("items", []) or []
+        for item in items:
+            if not item:
+                continue
+            item_type = item.get('type')
+            if not item_type:
+                continue
+#TRACKS               
             if item_type == "track":
                 item_name = f"{config.get('explicit_label') if item['explicit'] else ''} {item['name']}"
                 item_by = f"{config.get('metadata_separator').join([artist['name'] for artist in item['artists']])}"
                 item_thumbnail_url = item['album']['images'][-1]["url"] if len(item['album']['images']) > 0 else ""
+#ALBUMS                
             elif item_type == "album":
+                # Continue if artist does not match search term with / without 'the'
+                artist_name = next((artist.get('name', '').lower() for artist in item.get('artists', [])), '')
+                term = search_term.lower()
+                
+                # Check against artist_name and artist_name without "the"
+                if artist_name.removeprefix("the ").strip() != term and artist_name != term:
+                    logger.info(f"Album rejected - artist_name was: '{artist_name}'")
+                    continue              
                 rel_year = re.search(r'(\d{4})', item['release_date']).group(1)
                 item_name = f"[Y:{rel_year}] [T:{item['total_tracks']}] {item['name']}"
                 item_by = f"{config.get('metadata_separator').join([artist['name'] for artist in item['artists']])}"
                 item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
+#PLAYLISTS                
             elif item_type == "playlist":
-                item_name = f"{item['name']}"
-                item_by = f"{item['owner']['display_name']}"
+                item_tracks = f"{item['tracks']['total']}"
+            # Add number of tracks in playlist
+                item_name = f"[T:{item_tracks}] {item['name']}"
+                item_by = f"{item['owner']['display_name']}"       
                 item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
+#ARTISTS                
             elif item_type == "artist":
+            # Continue if artist name does not start with search term (with / without 'the')
+                name = item['name'].lower()
+                term = search_term.lower()
+                name_without_the = name.removeprefix("the ").strip()
+    
+            # Check if name starts with the term (allowing additional text after)
+                if not (name_without_the.startswith(term) or name.startswith(term)):
+                    logger.info(f"Artist rejected - artist_name was : '{name}'")
+                continue
+                logger.info(f"Artist OK - artist_name : '{name}'")
                 item_name = item['name']
                 if f"{'/'.join(item['genres'])}" != "":
                     item_name = item['name'] + f"  |  GENERES: {'/'.join(item['genres'])}"
                 item_by = f"{item['name']}"
-                item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
+                item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""                             
+#SHOWS                
             elif item_type == "show":
                 item_name = f"{config.get('explicit_label') if item['explicit'] else ''} {item['name']}"
                 item_by = f"{item['publisher']}"
                 item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
                 item_type = "podcast"
+#EPISODES
             elif item_type == "episode":
                 item_name = f"{config.get('explicit_label') if item['explicit'] else ''} {item['name']}"
                 item_by = ""
                 item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
                 item_type = "podcast_episode"
+#AUDIOBOOKS
             elif item_type == "audiobook":
                 item_name = f"{config.get('explicit_label') if item['explicit'] else ''} {item['name']}"
                 item_by = f"{item['publisher']}"
@@ -693,6 +726,7 @@ def spotify_get_track_metadata(token, item_id):
 
     # Fetch audio features only if enabled
     track_audio_data = ''
+    '''
     if config.get('fetch_audio_features', True):
         try:
             logger.info(f"[API Call 5/6] Fetching audio features for track_id={item_id}")
@@ -700,16 +734,17 @@ def spotify_get_track_metadata(token, item_id):
             time.sleep(config.get('api_request_delay', 0.1))
         except Exception:
             track_audio_data = ''
-
+    '''
     # Fetch credits only if enabled
     credits_data = ''
+    '''
     if config.get('fetch_track_credits', True):
         try:
             logger.info(f"[API Call 6/6] Fetching track credits for track_id={item_id}")
             credits_data = make_call(f'https://spclient.wg.spotify.com/track-credits-view/v0/experimental/{item_id}/credits', headers=headers)
         except Exception:
             credits_data = ''
-
+    '''
     # Artists
     artists = []
     for data in track_data.get('tracks', [{}])[0].get('artists', []):
