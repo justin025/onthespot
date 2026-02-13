@@ -30,7 +30,6 @@ from ..search import get_search_results
 
 logger = get_logger('gui.main_ui')
 
-
 def is_permanent_failure(exception):
     """Check if exception represents a permanent failure (don't retry)"""
     error_str = str(exception)
@@ -385,7 +384,7 @@ class MainWindow(QMainWindow):
 
                 # Insert the new group box before the Audio Metadata section
                 parent_layout.insertWidget(gb2_index, spotify_oauth_override_gb)
-                logger.info("Added metadata toggle controls to settings page")
+                logger.info("Adding metadata toggle controls to settings page")
 
     def setup_metadata_toggles(self):
         """Add metadata fetching toggle controls to settings page"""
@@ -1080,7 +1079,15 @@ class MainWindow(QMainWindow):
         if self.enable_search_audiobooks.isChecked():
             content_types.append('audiobook')
 
-        results = get_search_results(search_term, content_types)
+        # ADD THESE LINES to Read the filter checkbox states
+        results = get_search_results(
+            search_term, 
+            content_types,
+            filter_tracks=self.f_search_tracks.isChecked(),
+            filter_albums=self.f_search_albums.isChecked(),
+            filter_artists=self.f_search_artists.isChecked(),
+            filter_playlists=self.f_search_playlists.isChecked()
+        )
         if results is None:
             self.show_popup_dialog(self.tr("You need to login to at least one account to use this feature."))
             self.search_term.setText('')

@@ -1,5 +1,19 @@
 @echo off
 
+rem Capture start time as ticks
+for /f %%i in ('powershell -Command "(Get-Date).Ticks"') do set start_ticks=%%i
+
+rem Check if OnTheSpot.exe is Running
+SET "processName=OnTheSpot.exe"
+tasklist /FI "IMAGENAME eq %processName%" | findstr /I "%processName%" >nul
+if %errorlevel% equ 0 (
+    echo %processName% is running. Close the program before building this script.
+	pause
+	exit /b
+) else (
+    echo %processName% is not running.
+)
+
 set FOLDER_NAME=%cd%
 for %%F in ("%cd%") do set FOLDER_NAME=%%~nxF
 if /i "%FOLDER_NAME%"=="scripts" (
@@ -11,7 +25,7 @@ echo ========= OnTheSpot Windows Build Script =========
 
 
 echo =^> Cleaning up previous builds...
-del /F /Q /A dist\onthespot_win_executable.exe
+del /F /Q /A dist\OnTheSpot.exe
 
 
 echo =^> Creating virtual environment...
@@ -46,10 +60,16 @@ pyinstaller --onefile --noconsole --noconfirm ^
     --icon="src/onthespot/resources/icons/onthespot.png" ^
     src\portable.py
 
-
 echo =^> Cleaning up temporary files...
 del /F /Q *.spec
 rmdir /s /q build __pycache__ ffbin_win venvwin
 
+echo =^> Done! Executable available as 'dist/OnTheSpot.exe'
 
-echo =^> Done! Executable available as 'dist/OnTheSpot.exe'.
+rem Calculate elapsed time
+echo.
+echo =^> Calculating compile time...
+for /f %%i in ('powershell -Command "(Get-Date).Ticks"') do set end_ticks=%%i
+powershell -Command "$span = New-Object TimeSpan(%end_ticks% - %start_ticks%); Write-Host ('Script compiled in: {0}h {1}m {2}s' -f [int]$span.Hours, [int]$span.Minutes, [int]$span.Seconds)"
+echo.
+pause

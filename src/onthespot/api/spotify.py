@@ -588,9 +588,9 @@ def spotify_get_album_track_ids(token, album_id):
     return item_ids
 
 
-def spotify_get_search_results(token, search_term, content_types):
+def spotify_get_search_results(token, search_term, content_types, filter_tracks=True, filter_albums=True, filter_artists=True, filter_playlists=True):
     logger.info(f"Get search result for term '{search_term}'")
-
+    logger.info(f"Searching for '{content_types}'")
     # Use new auth method (OAuth or librespot)
     auth_header = spotify_get_auth_header()
     if not auth_header:
@@ -602,43 +602,129 @@ def spotify_get_search_results(token, search_term, content_types):
     params['limit'] = config.get("max_search_results")
     params['offset'] = '0'
     params['q'] = search_term
-    params['type'] = ",".join(c_type for c_type in content_types)
+    # Changed params[] expression below - it does not need transform! 
+    params['type'] = ",".join(content_types)
+    
+    rejected_albums = 0
+    rejected_artists = 0
+    rejected_tracks = 0
+    rejected_playlists = 0
 
-    data = requests.get(f"{BASE_URL}/search", params=params, headers=headers).json()
-
+    data = requests.get(f"{BASE_URL}/search", params=params, headers=headers).json()   
     search_results = []
-    for key in data.keys():
-        for item in data[key]["items"]:
-            item_type = item['type']
+    for key, section in (data or {}).items():
+        items = (section or {}).get("items", []) or []
+        for item in items:
+            if not item:
+                continue
+            item_type = item.get('type')
+            if not item_type:
+                continue
+#TRACKS               
             if item_type == "track":
+                '''
+                Keep only tracks where either title or artist contains the search term (with or without "the ")
+                '''
+                if filter_tracks:
+                    item_title = item['name']
+                    artist_name = item['artists'][0]['name']
+                    # Normalize search term and item values for comparison
+                    term = search_term.lower()
+                    term_without_the = term.removeprefix("the ")
+                    title_lower = item_title.lower()
+                    artist_lower = artist_name.lower()
+                    # Remove "the " prefix if present for comparison
+                    title_without_the = title_lower.removeprefix("the ")
+                    artist_without_the = artist_lower.removeprefix("the ")
+                    # Check if either title or artist matches the search term (with or without "the ")
+                    if not (term in title_lower or term_without_the in title_without_the or term in artist_lower or term_without_the in artist_without_the):
+                        # logger.info(f"REJECTED > Track Names : '{item_title}' - Artist : '{artist_name}'")
+                        rejected_tracks += 1
+                        continue  # Skip this item
+                # logger.info(f"Track Names : '{item_title}' - Artist : '{artist_name}'")
                 item_name = f"{config.get('explicit_label') if item['explicit'] else ''} {item['name']}"
                 item_by = f"{config.get('metadata_separator').join([artist['name'] for artist in item['artists']])}"
                 item_thumbnail_url = item['album']['images'][-1]["url"] if len(item['album']['images']) > 0 else ""
+#ALBUMS                
             elif item_type == "album":
+                '''
+                Keep only Albums where either artist name or album name starts with search term (with / without 'the')
+                '''
+                if filter_albums:
+                    artist_name = next((artist.get('name', '').lower() for artist in item.get('artists', [])), '')
+                    term = search_term.lower()
+                    # Remove "the" prefix from artist and album names
+                    artist_name_without_the = artist_name.removeprefix("the ").strip()
+                    album_name = item['name'].lower()
+                    album_name_without_the = album_name.removeprefix("the ").strip()
+                    # Check if artist name or album name starts with the term (allowing additional text after)
+                    artist_matches = artist_name_without_the.startswith(term) or artist_name.startswith(term)
+                    album_matches = album_name_without_the.startswith(term) or album_name.startswith(term)
+                    if not (artist_matches or album_matches):
+                        # logger.info(f"Album rejected - artist_name was : '{artist_name}' Album name was {item['name']}")
+                        rejected_albums += 1
+                        continue
+                    # logger.info(f"Album OK - artist_name is : '{artist_name}' Album name is {item['name']} ")
+                
                 rel_year = re.search(r'(\d{4})', item['release_date']).group(1)
                 item_name = f"[Y:{rel_year}] [T:{item['total_tracks']}] {item['name']}"
                 item_by = f"{config.get('metadata_separator').join([artist['name'] for artist in item['artists']])}"
                 item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
+#PLAYLISTS                
             elif item_type == "playlist":
-                item_name = f"{item['name']}"
-                item_by = f"{item['owner']['display_name']}"
+                '''
+                Keep only Playlists where name contains search term (with / without 'the')
+                '''
+                item_by = f"{item['owner']['display_name']}" 
+                playlist_name = item['name'] 
+                if filter_playlists:                                    
+                    # Normalize search term and playlist name for comparison
+                    term = search_term.lower()
+                    term_without_the = term[4:] if term.startswith("the ") else term                
+                    playlist_lower = playlist_name.lower()
+                    playlist_without_the = playlist_lower[4:] if playlist_lower.startswith("the ") else playlist_lower              
+                    # Check if playlist name matches the search term (with or without "the ")
+                    if not (term in playlist_lower or term_without_the in playlist_without_the):
+                        rejected_playlists += 1
+                        # logger.info(f"Playlist rejected : '{playlist_name}' by '{item_by}'")
+                        continue
+                item_tracks = f"{item['tracks']['total']}"
+                # Add number of tracks in playlist
+                item_name = f"[T:{item_tracks}] {item['name']}"      
                 item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
+                logger.info(f"Playlist found : '{playlist_name}' - Tracks: {item_tracks}")
+#ARTISTS                
             elif item_type == "artist":
+                '''
+                Keep only artists where name matches search term (with / without 'the')
+                '''
+                if filter_artists:
+                    name = item['name'].lower()
+                    term = search_term.lower()
+                    name_without_the = name.removeprefix("the ").strip()
+                    if name_without_the != term and name != term:
+                        # logger.info(f"Artist rejected - artist_name was : '{name}'")
+                        rejected_artists += 1
+                        continue
                 item_name = item['name']
+                logger.info(f"Artist OK - artist_name is : '{item_name}'")
                 if f"{'/'.join(item['genres'])}" != "":
                     item_name = item['name'] + f"  |  GENERES: {'/'.join(item['genres'])}"
                 item_by = f"{item['name']}"
-                item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
+                item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""                             
+#SHOWS                
             elif item_type == "show":
                 item_name = f"{config.get('explicit_label') if item['explicit'] else ''} {item['name']}"
                 item_by = f"{item['publisher']}"
                 item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
                 item_type = "podcast"
+#EPISODES
             elif item_type == "episode":
                 item_name = f"{config.get('explicit_label') if item['explicit'] else ''} {item['name']}"
                 item_by = ""
                 item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
                 item_type = "podcast_episode"
+#AUDIOBOOKS
             elif item_type == "audiobook":
                 item_name = f"{config.get('explicit_label') if item['explicit'] else ''} {item['name']}"
                 item_by = f"{item['publisher']}"
@@ -653,6 +739,21 @@ def spotify_get_search_results(token, search_term, content_types):
                 'item_url': item['external_urls']['spotify'],
                 'item_thumbnail_url': item_thumbnail_url
             })
+#REJECTION LOGGING
+    rejection_msg = ' '.join([
+        f"{label}:{count}" 
+        for label, count in [
+            ("Tracks", rejected_tracks),
+            ("Artists", rejected_artists),
+            ("Albums", rejected_albums),
+            ("Playlists", rejected_playlists)
+        ] if count > 0
+    ])
+    if rejection_msg:
+        logger.info(f"REJECTED - {rejection_msg}")
+    else:
+        logger.info("REJECTED - None")
+        
     return search_results
 
 
@@ -693,6 +794,7 @@ def spotify_get_track_metadata(token, item_id):
 
     # Fetch audio features only if enabled
     track_audio_data = ''
+    '''
     if config.get('fetch_audio_features', True):
         try:
             logger.info(f"[API Call 5/6] Fetching audio features for track_id={item_id}")
@@ -700,16 +802,17 @@ def spotify_get_track_metadata(token, item_id):
             time.sleep(config.get('api_request_delay', 0.1))
         except Exception:
             track_audio_data = ''
-
+    '''
     # Fetch credits only if enabled
     credits_data = ''
+    '''
     if config.get('fetch_track_credits', True):
         try:
             logger.info(f"[API Call 6/6] Fetching track credits for track_id={item_id}")
             credits_data = make_call(f'https://spclient.wg.spotify.com/track-credits-view/v0/experimental/{item_id}/credits', headers=headers)
         except Exception:
             credits_data = ''
-
+    '''
     # Artists
     artists = []
     for data in track_data.get('tracks', [{}])[0].get('artists', []):

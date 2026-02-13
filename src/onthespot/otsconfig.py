@@ -36,7 +36,7 @@ class Config:
         self.session_uuid = str(uuid.uuid4())
         self.__template_data = {
             # System Variables
-            "version": "v1.1.4", # Application version
+            "version": "v1.2.0", # Application version
             "debug_mode": False, # Enable debug mode
             "language_index": 0, # Language Index
             "total_downloaded_items": 0, # Total downloaded items
@@ -141,6 +141,11 @@ class Config:
             "enable_search_episodes": True, # Enable listed category in search
             "enable_search_podcasts": True, # Enable listed category in search
             "enable_search_audiobooks": True, # Enable listed category in search
+            "f_search_tracks": False, # Enable filtered Tracks search
+            "f_search_albums": False, # Enable filtered Albums search
+            "f_search_artists": False, # Enable filtered Artists search
+            "f_search_playlists": False, # Enable filtered Playlists search
+
 
             # Download Queue Filter Settings
             "download_queue_show_waiting": True, # Enable listed filter in download queue
