@@ -692,7 +692,7 @@ def spotify_get_search_results(token, search_term, content_types, filter_tracks=
                 # Add number of tracks in playlist
                 item_name = f"[T:{item_tracks}] {item['name']}"      
                 item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
-                logger.info(f"Playlist found : '{playlist_name}' - Tracks: {item_tracks}")
+                # logger.info(f"Playlist found : '{playlist_name}' - Tracks: {item_tracks}")
 #ARTISTS                
             elif item_type == "artist":
                 '''
