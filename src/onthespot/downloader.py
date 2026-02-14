@@ -153,7 +153,10 @@ class DownloadWorker(QObject):
 
                     item_path = format_item_path(item, item_metadata)
                 except (Exception, KeyError) as e:
-                    logger.error(f"Failed to fetch metadata for '{item_id}', Error: {str(e)}\nTraceback: {traceback.format_exc()}")
+                    error_msg = f"Failed to fetch metadata for '{item_id}', Error: {str(e)}"
+                    if "Max retries" in str(e) or "exhausted" in str(e):
+                        error_msg += " (Rate limit exceeded - please try again later or reduce concurrent downloads)"
+                    logger.error(error_msg + f"\nTraceback: {traceback.format_exc()}")
                     item['item_status'] = "Failed"
                     self.tr("Failed")
                     if self.gui:

@@ -163,117 +163,210 @@
            <bool>true</bool>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_37">
-           <item>
-            <widget class="QGroupBox" name="search_categories">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="title">
-              <string/>
-             </property>
-             <property name="flat">
-              <bool>false</bool>
-             </property>
-             <layout class="QHBoxLayout" name="horizontalLayout_233">
-              <item>
-               <widget class="QLabel" name="label_3">
-                <property name="text">
-                 <string>Search for: </string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="enable_search_tracks">
-                <property name="text">
-                 <string>Tracks</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="enable_search_albums">
-                <property name="text">
-                 <string>Albums</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="enable_search_artists">
-                <property name="text">
-                 <string>Artists</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="enable_search_playlists">
-                <property name="text">
-                 <string>Playlist</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="enable_search_episodes">
-                <property name="text">
-                 <string>Episodes</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="enable_search_podcasts">
-                <property name="text">
-                 <string>Podcasts</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="enable_search_audiobooks">
-                <property name="text">
-                 <string>Audiobooks</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <spacer name="horizontalSpacer_8">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeType">
-                 <enum>QSizePolicy::Fixed</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>10</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-             </layout>
-            </widget>
-           </item>
+			<item>
+			 <widget class="QGroupBox" name="search_categories">
+			  <property name="minimumSize">
+			   <size>
+				<width>0</width>
+				<height>0</height>
+			   </size>
+			  </property>
+			  <property name="title">
+			   <string/>
+			  </property>
+			  <property name="flat">
+			   <bool>false</bool>
+			  </property>
+			  <layout class="QVBoxLayout" name="verticalLayout_search_categories">
+			   <item>
+				<widget class="QGroupBox" name="search_for_group">
+				 <property name="title">
+				  <string/>
+				 </property>
+				 <property name="flat">
+				  <bool>true</bool>
+				 </property>
+				 <layout class="QHBoxLayout" name="horizontalLayout_search_for">
+				  <item>
+				   <widget class="QLabel" name="label_3">
+					<property name="minimumSize">
+					 <size>
+				      <width>100</width>
+				      <height>0</height>
+				     </size>
+                    </property>
+					<property name="text">
+					 <string>Search for: </string>
+					</property>
+				   </widget>
+				  </item>
+				  <item>
+				   <widget class="QCheckBox" name="enable_search_tracks">
+					<property name="text">
+					 <string>Tracks</string>
+					</property>
+					<property name="checked">
+					 <bool>true</bool>
+					</property>
+				   </widget>
+				  </item>
+				  <item>
+				   <widget class="QCheckBox" name="enable_search_albums">
+					<property name="text">
+					 <string>Albums</string>
+					</property>
+					<property name="checked">
+					 <bool>true</bool>
+					</property>
+				   </widget>
+				  </item>
+				  <item>
+				   <widget class="QCheckBox" name="enable_search_artists">
+					<property name="text">
+					 <string>Artists</string>
+					</property>
+					<property name="checked">
+					 <bool>true</bool>
+					</property>
+				   </widget>
+				  </item>
+				  <item>
+				   <widget class="QCheckBox" name="enable_search_playlists">
+					<property name="text">
+					 <string>Playlist</string>
+					</property>
+					<property name="checked">
+					 <bool>true</bool>
+					</property>
+				   </widget>
+				  </item>
+				  <item>
+				   <widget class="QCheckBox" name="enable_search_episodes">
+					<property name="text">
+					 <string>Episodes</string>
+					</property>
+					<property name="checked">
+					 <bool>true</bool>
+					</property>
+				   </widget>
+				  </item>
+				  <item>
+				   <widget class="QCheckBox" name="enable_search_podcasts">
+					<property name="text">
+					 <string>Podcasts</string>
+					</property>
+					<property name="checked">
+					 <bool>true</bool>
+					</property>
+				   </widget>
+				  </item>
+				  <item>
+				   <widget class="QCheckBox" name="enable_search_audiobooks">
+					<property name="text">
+					 <string>Audiobooks</string>
+					</property>
+					<property name="checked">
+					 <bool>true</bool>
+					</property>
+				   </widget>
+				  </item>
+				  <item>
+				   <spacer name="horizontalSpacer_search_for">
+					<property name="orientation">
+					 <enum>Qt::Horizontal</enum>
+					</property>
+					<property name="sizeHint" stdset="0">
+					 <size>
+					  <width>40</width>
+					  <height>20</height>
+					 </size>
+					</property>
+				   </spacer>
+				  </item>
+				 </layout>
+				</widget>
+			   </item>
+			   <item>
+				<widget class="QGroupBox" name="search_filters_group">
+				 <property name="title">
+				  <string/>
+				 </property>
+				 <property name="flat">
+				  <bool>true</bool>
+				 </property>
+				 <layout class="QHBoxLayout" name="horizontalLayout_search_filters">
+				  <item>
+				   <widget class="QLabel" name="label_search_filters">
+				    <property name="minimumSize">
+					 <size>
+					  <width>100</width>
+					  <height>0</height>
+					 </size>
+					</property>
+					<property name="text">
+					 <string>Search filters: </string>
+					</property>
+				   </widget>
+				  </item>
+				  <item>
+				   <widget class="QCheckBox" name="f_search_tracks">
+					<property name="text">
+					 <string>Tracks</string>
+					</property>
+					<property name="checked">
+					 <bool>false</bool>
+					</property>
+				   </widget>
+				  </item>
+				  <item>
+				   <widget class="QCheckBox" name="f_search_albums">
+					<property name="text">
+					 <string>Albums</string>
+					</property>
+					<property name="checked">
+					 <bool>false</bool>
+					</property>
+				   </widget>
+				  </item>
+				  <item>
+				   <widget class="QCheckBox" name="f_search_artists">
+					<property name="text">
+					 <string>Artists</string>
+					</property>
+					<property name="checked">
+					 <bool>false</bool>
+					</property>
+				   </widget>
+				  </item>
+				  <item>
+				   <widget class="QCheckBox" name="f_search_playlists">
+					<property name="text">
+					 <string>Playlist</string>
+					</property>
+					<property name="checked">
+					 <bool>false</bool>
+					</property>
+				   </widget>
+				  </item>
+				  <item>
+				   <spacer name="horizontalSpacer_search_filters">
+					<property name="orientation">
+					 <enum>Qt::Horizontal</enum>
+					</property>
+					<property name="sizeHint" stdset="0">
+					 <size>
+					  <width>40</width>
+					  <height>20</height>
+					 </size>
+					</property>
+				   </spacer>
+				  </item>
+				 </layout>
+				</widget>
+			   </item>
+			  </layout>
+			 </widget>
+			</item>
            <item>
             <widget class="QGroupBox" name="group_login_form_6">
              <property name="minimumSize">

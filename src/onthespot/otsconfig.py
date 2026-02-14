@@ -36,7 +36,7 @@ class Config:
         self.session_uuid = str(uuid.uuid4())
         self.__template_data = {
             # System Variables
-            "version": "v1.1.4", # Application version
+            "version": "v1.2.0", # Application version
             "debug_mode": False, # Enable debug mode
             "language_index": 0, # Language Index
             "total_downloaded_items": 0, # Total downloaded items
@@ -114,6 +114,24 @@ class Config:
             "maximum_download_workers": 1, # Maximum number of download workers
             "enable_retry_worker": False, # Enable retry worker, automatically retries failed downloads after a set time
             "retry_worker_delay": 10, # Amount of time to wait before retrying failed downloads, in minutes
+            "api_retry_max_attempts": 3, # Max retries on rate limit (429)
+            "api_retry_base_delay": 2, # Base delay for exponential backoff (seconds)
+            "api_retry_max_delay": 60, # Max delay between retries (seconds)
+            "api_request_delay": 0.1, # Delay between consecutive API calls (seconds)
+
+            # Spotify Web API Override Credentials (for debugging only)
+            # These credentials override the default librespot token authentication for Web API calls.
+            # Use when debugging metadata retrieval issues. Create personal tokens for yourself only.
+            # WARNING: Overuse can result in Spotify banning your account!
+            "spotify_webapi_override_client_id": "", # Your personal Spotify app client ID
+            "spotify_webapi_override_client_secret": "", # Your personal Spotify app client secret
+
+            # API Call Reduction - Metadata Fetching Options
+            "cache_metadata_in_queue": True, # Pass metadata from QueueWorker to DownloadWorker (50% reduction)
+            "fetch_genre_metadata": True, # Fetch genre from artist endpoint (adds 1 API call per track)
+            "fetch_extended_album_metadata": True, # Fetch label, copyright (adds 1 API call per track)
+            "fetch_audio_features": True, # Fetch BPM, key, danceability (adds 1 API call per track)
+            "fetch_track_credits": True, # Fetch producers, writers (adds 1 API call per track)
 
             # Search Settings
             "enable_search_tracks": True, # Enable listed category in search
@@ -123,6 +141,11 @@ class Config:
             "enable_search_episodes": True, # Enable listed category in search
             "enable_search_podcasts": True, # Enable listed category in search
             "enable_search_audiobooks": True, # Enable listed category in search
+            "f_search_tracks": False, # Enable filtered Tracks search
+            "f_search_albums": False, # Enable filtered Albums search
+            "f_search_artists": False, # Enable filtered Artists search
+            "f_search_playlists": False, # Enable filtered Playlists search
+
 
             # Download Queue Filter Settings
             "download_queue_show_waiting": True, # Enable listed filter in download queue

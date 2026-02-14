@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QStyle
 from .qt.mainui import MainWindow
 from .qt.minidialog import MiniDialog
 from .otsconfig import config
-from .parse_item import parsingworker
+from .parse_item import ParsingWorker
 from .runtimedata import get_logger, set_init_tray
 
 logger = get_logger('gui')
@@ -55,10 +55,9 @@ def main():
     translator.load(path)
     app.installTranslator(translator)
 
-    # Start Item Parser
-    thread = threading.Thread(target=parsingworker)
-    thread.daemon = True
-    thread.start()
+    # Start Item Parser with error handling
+    parsingworker = ParsingWorker()
+    parsingworker.start()
 
     # Check for start URL
     try:
@@ -70,7 +69,7 @@ def main():
         start_url = ""
 
     _dialog = MiniDialog()
-    window = MainWindow(_dialog, start_url)
+    window = MainWindow(_dialog, start_url, parsingworker)
 
     if config.get('close_to_tray'):
         set_init_tray(True)
