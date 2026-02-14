@@ -739,7 +739,7 @@ def spotify_get_search_results(token, search_term, content_types, filter_tracks=
                 'item_url': item['external_urls']['spotify'],
                 'item_thumbnail_url': item_thumbnail_url
             })
-#REJECTION LOGGING
+#REJECTION LOGGING - logs number of items rejected by filters
     rejection_msg = ' '.join([
         f"{label}:{count}" 
         for label, count in [
