@@ -16,7 +16,7 @@ from .runtimedata import account_pool, get_logger
 logger = get_logger("search")
 
 
-def get_search_results(search_term, content_types=None):
+def get_search_results(search_term, content_types=None, filter_tracks=True, filter_albums=True, filter_artists=True, filter_playlists=True):
     if len(account_pool) <= 0:
         return None
 
@@ -45,6 +45,14 @@ def get_search_results(search_term, content_types=None):
         service = account_pool[config.get('active_account_number')]['service']
         if search_term and service != 'generic':
             token = get_account_token(service)
-            return globals()[f"{service}_get_search_results"](token, search_term, content_types)
+            return globals()[f"{service}_get_search_results"](
+                token, 
+                search_term, 
+                content_types,
+                filter_tracks,
+                filter_albums,
+                filter_artists,
+                filter_playlists
+            )
         else:
             return False

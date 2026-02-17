@@ -1,3 +1,4 @@
+import base64
 import json
 import os
 import re
@@ -16,6 +17,107 @@ from ..utils import make_call, conv_list_format
 
 logger = get_logger("api.spotify")
 BASE_URL = "https://api.spotify.com/v1"
+
+# OAuth token cache (for Client Credentials flow)
+_oauth_token_cache = {
+    'access_token': None,
+    'expires_at': 0
+}
+
+
+def spotify_get_oauth_token():
+    """
+    Get OAuth access token using Client Credentials flow.
+    Uses your own Spotify app credentials instead of librespot tokens.
+    Recommended for Web API calls to avoid 429 rate limiting.
+
+    Returns OAuth access token string, or None if not configured/failed.
+    """
+    # Return cached token if still valid
+    if _oauth_token_cache['access_token'] and time.time() < _oauth_token_cache['expires_at']:
+        logger.debug("Using cached OAuth token")
+        return _oauth_token_cache['access_token']
+
+    # Get credentials from config
+    client_id = config.get('spotify_webapi_override_client_id', '').strip()
+    client_secret = config.get('spotify_webapi_override_client_secret', '').strip()
+
+    if not client_id or not client_secret:
+        logger.debug("Web API override credentials not configured, will use librespot token instead")
+        return None
+
+    # Encode credentials for Basic Auth
+    credentials = f"{client_id}:{client_secret}"
+    credentials_b64 = base64.b64encode(credentials.encode()).decode()
+
+    # Request token using Client Credentials flow
+    token_url = "https://accounts.spotify.com/api/token"
+    headers = {
+        "Authorization": f"Basic {credentials_b64}",
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
+    data = {"grant_type": "client_credentials"}
+
+    try:
+        logger.info("[OAUTH] Requesting new access token from Spotify")
+        response = requests.post(token_url, headers=headers, data=data, timeout=10)
+
+        if response.status_code == 200:
+            token_data = response.json()
+            access_token = token_data['access_token']
+            expires_in = token_data['expires_in']  # Seconds until expiration (usually 3600)
+
+            # Cache token with 5 minute buffer before expiration
+            _oauth_token_cache['access_token'] = access_token
+            _oauth_token_cache['expires_at'] = time.time() + expires_in - 300
+
+            logger.info(f"[OAUTH] Successfully obtained access token (expires in {expires_in}s)")
+            logger.info("[AUTH] Using Web API override credentials (OAuth) for metadata authentication")
+            return access_token
+        else:
+            logger.error(f"[OAUTH] Failed to get access token: {response.status_code} - {response.text}")
+            return None
+
+    except Exception as e:
+        logger.error(f"[OAUTH] Exception while getting access token: {str(e)}")
+        return None
+
+
+def spotify_get_auth_header():
+    """
+    Get Authorization header for Spotify Web API calls.
+
+    Auto-detects authentication method:
+    - If override credentials configured: Use OAuth token
+    - Otherwise: Use librespot session token
+
+    Returns dict with Authorization header, or None if authentication unavailable.
+    """
+    # Try OAuth first if override credentials are configured
+    oauth_token = spotify_get_oauth_token()
+    if oauth_token:
+        # Success message already logged in spotify_get_oauth_token()
+        return {'Authorization': f'Bearer {oauth_token}'}
+
+    # Fall back to librespot session tokens
+    logger.info("[AUTH] Using librespot session token for Web API authentication (default behavior)")
+    try:
+        from ..accounts import get_account_token
+        token = get_account_token('spotify')
+        if token:
+            # This is a librespot Session object
+            oauth_token = token.tokens().get('user-read-email')
+            if oauth_token:
+                return {'Authorization': f'Bearer {oauth_token}'}
+            else:
+                logger.error("[AUTH] Failed to extract OAuth token from librespot session")
+        else:
+            logger.error("[AUTH] Failed to get librespot session token")
+    except Exception as e:
+        logger.error(f"[AUTH] Error accessing librespot token: {str(e)}")
+
+    logger.error("[AUTH] All authentication methods failed - no valid token available")
+    return None
 
 
 class MirrorSpotifyPlayback(QObject):
@@ -257,8 +359,12 @@ def spotify_get_artist_album_ids(token, artist_id):
     offset = 0
     limit = 50
     while True:
-        headers = {}
-        headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+        # Use new auth method (OAuth or librespot)
+        auth_header = spotify_get_auth_header()
+        if not auth_header:
+            logger.error("Failed to get authentication header")
+            return []
+        headers = auth_header
 
         url = f'{BASE_URL}/artists/{artist_id}/albums?include_groups=album%2Csingle&limit={limit}&offset={offset}' #%2Cappears_on%2Ccompilation
         artist_data = make_call(url, headers=headers)
@@ -277,8 +383,12 @@ def spotify_get_artist_album_ids(token, artist_id):
 
 def spotify_get_playlist_data(token, playlist_id):
     logger.info(f"Get playlist data for playlist: {playlist_id}")
-    headers = {}
-    headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+    # Use new auth method (OAuth or librespot)
+    auth_header = spotify_get_auth_header()
+    if not auth_header:
+        logger.error("Failed to get authentication header")
+        return "Unknown", "Unknown"
+    headers = auth_header
     resp = make_call(f'{BASE_URL}/playlists/{playlist_id}', headers=headers, skip_cache=True)
     return resp['name'], resp['owner']['display_name']
 
@@ -387,10 +497,16 @@ def spotify_get_playlist_items(token, playlist_id):
 
     while True:
         url = f'{BASE_URL}/playlists/{playlist_id}/tracks?additional_types=track%2Cepisode&offset={offset}&limit={limit}'
-        headers = {}
-        headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
-
-        resp = make_call(url, headers=headers, skip_cache=True)
+        # Use new auth method (OAuth or librespot)
+        auth_header = spotify_get_auth_header()
+        if not auth_header:
+            logger.error("Failed to get authentication header")
+            return []
+        headers = auth_header
+        try:
+            resp = make_call(url, headers=headers, skip_cache=True)
+        except Exception as e:
+            raise e
 
         offset += limit
         items.extend(resp['items'])
@@ -450,8 +566,13 @@ def spotify_get_album_track_ids(token, album_id):
 
     while True:
         url=f'{BASE_URL}/albums/{album_id}/tracks?offset={offset}&limit={limit}'
-        headers = {}
-        headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+        logger.info(f"  [Sub-API Call] Fetching album tracks: offset={offset}, limit={limit}")
+        # Use new auth method (OAuth or librespot)
+        auth_header = spotify_get_auth_header()
+        if not auth_header:
+            logger.error("Failed to get authentication header")
+            return []
+        headers = auth_header
         resp = make_call(url, headers=headers)
 
         offset += limit
@@ -467,53 +588,143 @@ def spotify_get_album_track_ids(token, album_id):
     return item_ids
 
 
-def spotify_get_search_results(token, search_term, content_types):
+def spotify_get_search_results(token, search_term, content_types, filter_tracks=True, filter_albums=True, filter_artists=True, filter_playlists=True):
     logger.info(f"Get search result for term '{search_term}'")
-
-    headers = {}
-    headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+    logger.info(f"Searching for '{content_types}'")
+    # Use new auth method (OAuth or librespot)
+    auth_header = spotify_get_auth_header()
+    if not auth_header:
+        logger.error("Failed to get authentication header")
+        return []
+    headers = auth_header
 
     params = {}
     params['limit'] = config.get("max_search_results")
     params['offset'] = '0'
     params['q'] = search_term
-    params['type'] = ",".join(c_type for c_type in content_types)
+    # Changed params[] expression below - it does not need transform! 
+    params['type'] = ",".join(content_types)
+    
+    rejected_albums = 0
+    rejected_artists = 0
+    rejected_tracks = 0
+    rejected_playlists = 0
 
-    data = requests.get(f"{BASE_URL}/search", params=params, headers=headers).json()
-
+    data = requests.get(f"{BASE_URL}/search", params=params, headers=headers).json()   
     search_results = []
-    for key in data.keys():
-        for item in data[key]["items"]:
-            item_type = item['type']
+    for key, section in (data or {}).items():
+        items = (section or {}).get("items", []) or []
+        for item in items:
+            if not item:
+                continue
+            item_type = item.get('type')
+            if not item_type:
+                continue
+#TRACKS               
             if item_type == "track":
+                '''
+                Keep only tracks where either title or artist contains the search term (with or without "the ")
+                '''
+                if filter_tracks:
+                    item_title = item['name']
+                    artist_name = item['artists'][0]['name']
+                    # Normalize search term and item values for comparison
+                    term = search_term.lower()
+                    term_without_the = term.removeprefix("the ")
+                    title_lower = item_title.lower()
+                    artist_lower = artist_name.lower()
+                    # Remove "the " prefix if present for comparison
+                    title_without_the = title_lower.removeprefix("the ")
+                    artist_without_the = artist_lower.removeprefix("the ")
+                    # Check if either title or artist matches the search term (with or without "the ")
+                    if not (term in title_lower or term_without_the in title_without_the or term in artist_lower or term_without_the in artist_without_the):
+                        # logger.info(f"REJECTED > Track Names : '{item_title}' - Artist : '{artist_name}'")
+                        rejected_tracks += 1
+                        continue  # Skip this item
+                # logger.info(f"Track Names : '{item_title}' - Artist : '{artist_name}'")
                 item_name = f"{config.get('explicit_label') if item['explicit'] else ''} {item['name']}"
                 item_by = f"{config.get('metadata_separator').join([artist['name'] for artist in item['artists']])}"
                 item_thumbnail_url = item['album']['images'][-1]["url"] if len(item['album']['images']) > 0 else ""
+#ALBUMS                
             elif item_type == "album":
+                '''
+                Keep only Albums where either artist name or album name starts with search term (with / without 'the')
+                '''
+                if filter_albums:
+                    artist_name = next((artist.get('name', '').lower() for artist in item.get('artists', [])), '')
+                    term = search_term.lower()
+                    # Remove "the" prefix from artist and album names
+                    artist_name_without_the = artist_name.removeprefix("the ").strip()
+                    album_name = item['name'].lower()
+                    album_name_without_the = album_name.removeprefix("the ").strip()
+                    # Check if artist name or album name starts with the term (allowing additional text after)
+                    artist_matches = artist_name_without_the.startswith(term) or artist_name.startswith(term)
+                    album_matches = album_name_without_the.startswith(term) or album_name.startswith(term)
+                    if not (artist_matches or album_matches):
+                        # logger.info(f"Album rejected - artist_name was : '{artist_name}' Album name was {item['name']}")
+                        rejected_albums += 1
+                        continue
+                    # logger.info(f"Album OK - artist_name is : '{artist_name}' Album name is {item['name']} ")
+                
                 rel_year = re.search(r'(\d{4})', item['release_date']).group(1)
                 item_name = f"[Y:{rel_year}] [T:{item['total_tracks']}] {item['name']}"
                 item_by = f"{config.get('metadata_separator').join([artist['name'] for artist in item['artists']])}"
                 item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
+#PLAYLISTS                
             elif item_type == "playlist":
-                item_name = f"{item['name']}"
-                item_by = f"{item['owner']['display_name']}"
+                '''
+                Keep only Playlists where name contains search term (with / without 'the')
+                '''
+                item_by = f"{item['owner']['display_name']}" 
+                playlist_name = item['name'] 
+                if filter_playlists:                                    
+                    # Normalize search term and playlist name for comparison
+                    term = search_term.lower()
+                    term_without_the = term[4:] if term.startswith("the ") else term                
+                    playlist_lower = playlist_name.lower()
+                    playlist_without_the = playlist_lower[4:] if playlist_lower.startswith("the ") else playlist_lower              
+                    # Check if playlist name matches the search term (with or without "the ")
+                    if not (term in playlist_lower or term_without_the in playlist_without_the):
+                        rejected_playlists += 1
+                        # logger.info(f"Playlist rejected : '{playlist_name}' by '{item_by}'")
+                        continue
+                item_tracks = f"{item['tracks']['total']}"
+                # Add number of tracks in playlist
+                item_name = f"[T:{item_tracks}] {item['name']}"      
                 item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
+                # logger.info(f"Playlist found : '{playlist_name}' - Tracks: {item_tracks}")
+#ARTISTS                
             elif item_type == "artist":
+                '''
+                Keep only artists where name matches search term (with / without 'the')
+                '''
+                if filter_artists:
+                    name = item['name'].lower()
+                    term = search_term.lower()
+                    name_without_the = name.removeprefix("the ").strip()
+                    if name_without_the != term and name != term:
+                        # logger.info(f"Artist rejected - artist_name was : '{name}'")
+                        rejected_artists += 1
+                        continue
                 item_name = item['name']
+                logger.info(f"Artist OK - artist_name is : '{item_name}'")
                 if f"{'/'.join(item['genres'])}" != "":
                     item_name = item['name'] + f"  |  GENERES: {'/'.join(item['genres'])}"
                 item_by = f"{item['name']}"
-                item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
+                item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""                             
+#SHOWS                
             elif item_type == "show":
                 item_name = f"{config.get('explicit_label') if item['explicit'] else ''} {item['name']}"
                 item_by = f"{item['publisher']}"
                 item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
                 item_type = "podcast"
+#EPISODES
             elif item_type == "episode":
                 item_name = f"{config.get('explicit_label') if item['explicit'] else ''} {item['name']}"
                 item_by = ""
                 item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
                 item_type = "podcast_episode"
+#AUDIOBOOKS
             elif item_type == "audiobook":
                 item_name = f"{config.get('explicit_label') if item['explicit'] else ''} {item['name']}"
                 item_by = f"{item['publisher']}"
@@ -528,47 +739,102 @@ def spotify_get_search_results(token, search_term, content_types):
                 'item_url': item['external_urls']['spotify'],
                 'item_thumbnail_url': item_thumbnail_url
             })
+#REJECTION LOGGING - logs number of items rejected by filters
+    rejection_msg = ' '.join([
+        f"{label}:{count}" 
+        for label, count in [
+            ("Tracks", rejected_tracks),
+            ("Artists", rejected_artists),
+            ("Albums", rejected_albums),
+            ("Playlists", rejected_playlists)
+        ] if count > 0
+    ])
+    if rejection_msg:
+        logger.info(f"REJECTED - {rejection_msg}")
+    else:
+        logger.info("REJECTED - None")
+        
     return search_results
 
 
 def spotify_get_track_metadata(token, item_id):
-    headers = {}
-    headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+    if item_id is None:
+        error_msg = f"Item ID is None, cannot fetch track metadata"
+        logger.error(error_msg)
+        raise Exception(error_msg)
+    # Use new auth method (OAuth or librespot)
+    auth_header = spotify_get_auth_header()
+    if not auth_header:
+        logger.error("Failed to get authentication header")
+        return None
 
-    track_data = make_call(f'{BASE_URL}/tracks?ids={item_id}&market=from_token', headers=headers)
-    album_data = make_call(f"{BASE_URL}/albums/{track_data.get('tracks', [])[0].get('album', {}).get('id')}", headers=headers)
-    artist_data = make_call(f"{BASE_URL}/artists/{track_data.get('tracks', [])[0].get('artists', [])[0].get('id')}", headers=headers)
-    album_track_ids = spotify_get_album_track_ids(token, track_data.get('tracks', [])[0].get('album', {}).get('id'))
-    try:
-        track_audio_data = make_call(f'{BASE_URL}/audio-features/{item_id}', headers=headers)
-    except Exception:
-        track_audio_data = ''
-    try:
-        credits_data = make_call(f'https://spclient.wg.spotify.com/track-credits-view/v0/experimental/{item_id}/credits', headers=headers)
-    except Exception:
-        credits_data = ''
+    headers = auth_header
+    logger.info(f"[API Call 1/6] Fetching track data for track_id={item_id}")
+    track_data = make_call(f'{BASE_URL}/tracks?ids={item_id}', headers=headers)
+    time.sleep(config.get('api_request_delay', 0.1))
 
+    # Use embedded album data (album_type, name, images, total_tracks already available)
+    album_data = track_data.get('tracks', [])[0].get('album', {})
+
+    # Only fetch full album if we need label/copyright (optional fields)
+    if config.get('fetch_extended_album_metadata', True):
+        album_id = track_data.get('tracks', [])[0].get('album', {}).get('id')
+        logger.info(f"[API Call 2/6] Fetching extended album metadata for album_id={album_id}")
+        full_album = make_call(f"{BASE_URL}/albums/{album_id}", headers=headers)
+        time.sleep(config.get('api_request_delay', 0.1))
+        album_data = full_album  # Use full data if fetched
+
+    # Fetch artist data only if genre metadata is enabled
+    artist_data = {}
+    if config.get('fetch_genre_metadata', True):
+        artist_id = track_data.get('tracks', [])[0].get('artists', [])[0].get('id')
+        logger.info(f"[API Call 3/6] Fetching artist data for artist_id={artist_id}")
+        artist_data = make_call(f"{BASE_URL}/artists/{artist_id}", headers=headers)
+        time.sleep(config.get('api_request_delay', 0.1))
+
+    # Fetch audio features only if enabled
+    track_audio_data = ''
+    '''
+    if config.get('fetch_audio_features', True):
+        try:
+            logger.info(f"[API Call 5/6] Fetching audio features for track_id={item_id}")
+            track_audio_data = make_call(f'{BASE_URL}/audio-features/{item_id}', headers=headers)
+            time.sleep(config.get('api_request_delay', 0.1))
+        except Exception:
+            track_audio_data = ''
+    '''
+    # Fetch credits only if enabled
+    credits_data = ''
+    '''
+    if config.get('fetch_track_credits', True):
+        try:
+            logger.info(f"[API Call 6/6] Fetching track credits for track_id={item_id}")
+            credits_data = make_call(f'https://spclient.wg.spotify.com/track-credits-view/v0/experimental/{item_id}/credits', headers=headers)
+        except Exception:
+            credits_data = ''
+    '''
     # Artists
     artists = []
     for data in track_data.get('tracks', [{}])[0].get('artists', []):
         artists.append(data.get('name'))
     artists = conv_list_format(artists)
 
-    # Track Number
-    track_number = None
-    if album_track_ids:
-        for i, track_id in enumerate(album_track_ids):
-            if track_id == str(item_id):
-                track_number = i + 1
-                break
-    if not track_number:
-        track_number = track_data.get('tracks', [{}])[0].get('track_number')
+    # Track Number - use direct value from track data
+    track_number = track_data.get('tracks', [{}])[0].get('track_number')
 
     info = {}
     info['artists'] = artists
     info['album_name'] = track_data.get('tracks', [{}])[0].get('album', {}).get("name", '')
     info['album_type'] = album_data.get('album_type')
-    info['album_artists'] = album_data.get('artists', [{}])[0].get('name')
+
+    # Album artists - available in both embedded and full album data
+    album_artists_data = album_data.get('artists', [])
+    if album_artists_data:
+        info['album_artists'] = album_artists_data[0].get('name')
+    else:
+        # Fallback to track's first artist if album artists not available
+        info['album_artists'] = track_data.get('tracks', [{}])[0].get('artists', [{}])[0].get('name', '')
+
     info['title'] = track_data.get('tracks', [{}])[0].get('name')
 
     try:
@@ -578,13 +844,21 @@ def spotify_get_track_metadata(token, item_id):
         logger.info('Invalid thumbnail')
 
     info['release_year'] = track_data.get('tracks', [{}])[0].get('album', {}).get('release_date').split("-")[0]
-    #info['track_number'] = track_data.get('tracks', [{}])[0].get('track_number')
     info['track_number'] = track_number
     info['total_tracks'] = track_data.get('tracks', [{}])[0].get('album', {}).get('total_tracks')
     info['disc_number'] = track_data.get('tracks', [{}])[0].get('disc_number')
-    info['total_discs'] = sorted([trk.get('disc_number', 0) for trk in album_data.get('tracks', {}).get('items', [])])[-1] if 'tracks' in album_data else 1
-    info['genre'] = conv_list_format(artist_data.get('genres', []))
-    info['label'] = album_data.get('label')
+
+    # Total discs - only available from full album data
+    if config.get('fetch_extended_album_metadata', True) and 'tracks' in album_data:
+        info['total_discs'] = sorted([trk.get('disc_number', 0) for trk in album_data.get('tracks', {}).get('items', [])])[-1]
+    else:
+        info['total_discs'] = 1  # Default to 1 disc if not fetching extended album data
+
+    # Genre - only available if artist metadata was fetched
+    info['genre'] = conv_list_format(artist_data.get('genres', [])) if artist_data else ''
+
+    # Label and copyright - only available from full album data
+    info['label'] = album_data.get('label', '')
     info['copyright'] = conv_list_format([holder.get('text') for holder in album_data.get('copyrights', [])])
     info['explicit'] = track_data.get('tracks', [{}])[0].get('explicit', False)
     info['isrc'] = track_data.get('tracks', [{}])[0].get('external_ids', {}).get('isrc')
@@ -592,7 +866,7 @@ def spotify_get_track_metadata(token, item_id):
     info['item_url'] = track_data.get('tracks', [{}])[0].get('external_urls', {}).get('spotify')
     #info['popularity'] = track_data.get('tracks', [{}])[0].get('popularity')
     info['item_id'] = track_data.get('tracks', [{}])[0].get('id')
-    info['is_playable'] = track_data.get('tracks', [{}])[0].get('is_playable', False)
+    info['is_playable'] = track_data.get('tracks', [{}])[0].get('is_playable', True)
 
     if credits_data:
         credits = {}
@@ -636,8 +910,12 @@ def spotify_get_track_metadata(token, item_id):
 
 def spotify_get_podcast_episode_metadata(token, episode_id):
     logger.info(f"Get episode info for episode by id '{episode_id}'")
-    headers = {}
-    headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+    # Use new auth method (OAuth or librespot)
+    auth_header = spotify_get_auth_header()
+    if not auth_header:
+        logger.error("Failed to get authentication header")
+        return None
+    headers = auth_header
     episode_data = make_call(f"{BASE_URL}/episodes/{episode_id}", headers=headers)
     show_episode_ids = spotify_get_podcast_episode_ids(token, episode_data.get('show', {}).get('id'))
     # I believe audiobook ids start with a 7 but to verify you can use https://api.spotify.com/v1/audiobooks/{id}
@@ -687,8 +965,12 @@ def spotify_get_podcast_episode_ids(token, show_id):
 
     while True:
         url = f'{BASE_URL}/shows/{show_id}/episodes?offset={offset}&limit={limit}'
-        headers = {}
-        headers['Authorization'] = f"Bearer {token.tokens().get('user-read-email')}"
+        # Use new auth method (OAuth or librespot)
+        auth_header = spotify_get_auth_header()
+        if not auth_header:
+            logger.error("Failed to get authentication header")
+            return []
+        headers = auth_header
         resp = make_call(url, headers=headers)
 
         offset += limit
