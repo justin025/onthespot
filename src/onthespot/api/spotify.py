@@ -625,9 +625,9 @@ def spotify_get_search_results(token, search_term, content_types, filter_tracks=
                 '''
                 Keep only tracks where either title or artist contains the search term (with or without "the ")
                 '''
-                if filter_tracks:
-                    item_title = item['name']
-                    artist_name = item['artists'][0]['name']
+                item_title = item['name']
+                artist_name = item['artists'][0]['name']
+                if filter_tracks:                                     
                     # Normalize search term and item values for comparison
                     term = search_term.lower()
                     term_without_the = term.removeprefix("the ")
@@ -641,7 +641,7 @@ def spotify_get_search_results(token, search_term, content_types, filter_tracks=
                         # logger.info(f"REJECTED > Track Names : '{item_title}' - Artist : '{artist_name}'")
                         rejected_tracks += 1
                         continue  # Skip this item
-                # logger.info(f"Track Names : '{item_title}' - Artist : '{artist_name}'")
+                # logger.info(f"Track OK - Track Name is '{item_title}' Artist Name is '{artist_name}'")
                 item_name = f"{config.get('explicit_label') if item['explicit'] else ''} {item['name']}"
                 item_by = f"{config.get('metadata_separator').join([artist['name'] for artist in item['artists']])}"
                 item_thumbnail_url = item['album']['images'][-1]["url"] if len(item['album']['images']) > 0 else ""
@@ -653,12 +653,14 @@ def spotify_get_search_results(token, search_term, content_types, filter_tracks=
                 if filter_albums:
                     artist_name = next((artist.get('name', '').lower() for artist in item.get('artists', [])), '')
                     term = search_term.lower()
+                    prefix = "the "
+                    term_artist_only = term.removeprefix(prefix)
                     # Remove "the" prefix from artist and album names
                     artist_name_without_the = artist_name.removeprefix("the ").strip()
                     album_name = item['name'].lower()
                     album_name_without_the = album_name.removeprefix("the ").strip()
                     # Check if artist name or album name starts with the term (allowing additional text after)
-                    artist_matches = artist_name_without_the.startswith(term) or artist_name.startswith(term)
+                    artist_matches = artist_name_without_the.startswith(term_artist_only) or artist_name.startswith(term_artist_only)
                     album_matches = album_name_without_the.startswith(term) or album_name.startswith(term)
                     if not (artist_matches or album_matches):
                         # logger.info(f"Album rejected - artist_name was : '{artist_name}' Album name was {item['name']}")
@@ -692,7 +694,7 @@ def spotify_get_search_results(token, search_term, content_types, filter_tracks=
                 # Add number of tracks in playlist
                 item_name = f"[T:{item_tracks}] {item['name']}"      
                 item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""
-                # logger.info(f"Playlist found : '{playlist_name}' - Tracks: {item_tracks}")
+                # logger.info(f"Playlist OK : '{playlist_name}' - Tracks: {item_tracks}")
 #ARTISTS                
             elif item_type == "artist":
                 '''
@@ -707,7 +709,7 @@ def spotify_get_search_results(token, search_term, content_types, filter_tracks=
                         rejected_artists += 1
                         continue
                 item_name = item['name']
-                logger.info(f"Artist OK - artist_name is : '{item_name}'")
+                # logger.info(f"Artist OK - artist_name is : '{item_name}'")
                 if f"{'/'.join(item['genres'])}" != "":
                     item_name = item['name'] + f"  |  GENERES: {'/'.join(item['genres'])}"
                 item_by = f"{item['name']}"
