@@ -708,8 +708,11 @@ def spotify_get_search_results(token, search_term, content_types, filter_tracks=
                         continue
                 item_name = item['name']
                 logger.info(f"Artist OK - artist_name is : '{item_name}'")
-                if f"{'/'.join(item['genres'])}" != "":
-                    item_name = item['name'] + f"  |  GENERES: {'/'.join(item['genres'])}"
+                try:
+                    if f"{'/'.join(item['genres'])}" != "":
+                        item_name = item['name'] + f"  |  GENERES: {'/'.join(item['genres'])}"
+                except:
+                    logger.warning("No genre tag found for %s", item['name'])
                 item_by = f"{item['name']}"
                 item_thumbnail_url = item['images'][-1]["url"] if len(item['images']) > 0 else ""                             
 #SHOWS                
