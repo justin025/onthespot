@@ -588,7 +588,7 @@ def spotify_get_album_track_ids(token, album_id):
     return item_ids
 
 
-def spotify_get_search_results(token, search_term, content_types, filter_tracks=True, filter_albums=True, filter_artists=True, filter_playlists=True):
+def spotify_get_search_results(token, search_term, content_types, filter_tracks=True, filter_albums=True, filter_artists=True, filter_playlists=True, search_prefix=""):
     logger.info(f"Get search result for term '{search_term}'")
     logger.info(f"Searching for '{content_types}'")
     # Use new auth method (OAuth or librespot)
@@ -609,8 +609,8 @@ def spotify_get_search_results(token, search_term, content_types, filter_tracks=
     rejected_artists = 0
     rejected_tracks = 0
     rejected_playlists = 0
-    # set article stripped from items for filters
-    prefix = "the "
+    # set article (prefix) removed from items for filters ensuring the last character is a space.
+    prefix = search_prefix.strip().lower() + " "
 
     data = requests.get(f"{BASE_URL}/search", params=params, headers=headers).json()   
     search_results = []
@@ -631,18 +631,17 @@ def spotify_get_search_results(token, search_term, content_types, filter_tracks=
                     artist_normalized = item['artists'][0]['name'].lower().removeprefix(prefix).strip()
                     
                     if term_normalized not in title_normalized and term_normalized not in artist_normalized:
-                        # logger.info(f"REJECTED > Track: '{item['name']}' - Artist: '{item['artists'][0]['name']}'")
+                        logger.info(f"TRACK REJECTED Prefix: {prefix} : Search Term: {term_normalized} : Title: {title_normalized} : Arttist: {artist_normalized}") 
                         rejected_tracks += 1
                         continue
                 
                 item_name = f"{config.get('explicit_label') if item['explicit'] else ''} {item['name']}"
                 item_by = f"{config.get('metadata_separator').join([artist['name'] for artist in item['artists']])}"
                 item_thumbnail_url = item['album']['images'][-1]["url"] if item['album']['images'] else ""
-                # logger.info(f"Track OK - Track Name is '{item['name']}' Artist Name is '{item['artists'][0]['name']}'")
 #ALBUMS                
             elif item_type == "album":                
                 if filter_albums:
-                    # Keep only albums where artist name OR album name starts with search term (ignoring 'the ' prefix)
+                    # Keep only albums where artist name OR album name starts with search term (ignoring prefix)
                     term_normalized = search_term.lower().removeprefix(prefix).strip()
                     artist_normalized = item['artists'][0]['name'].lower().removeprefix(prefix).strip()
                     album_normalized = item['name'].lower().removeprefix(prefix).strip()
@@ -651,7 +650,7 @@ def spotify_get_search_results(token, search_term, content_types, filter_tracks=
                     album_match = album_normalized.startswith(term_normalized)
                     
                     if not artist_match and not album_match:
-                        # logger.info(f"Album rejected - artist: '{item['artists'][0]['name']}', album: '{item['name']}'")
+                        logger.info(f"ALBUM REJECTED Prefix: {prefix} : Search Term: {term_normalized} : Artist: {artist_normalized} : Album: {album_normalized}") 
                         rejected_albums += 1
                         continue
                 
@@ -669,7 +668,7 @@ def spotify_get_search_results(token, search_term, content_types, filter_tracks=
                     
                     if term_normalized not in playlist_normalized:
                         rejected_playlists += 1
-                        # logger.info(f"Playlist rejected: '{item['name']}' by '{item['owner']['display_name']}'")
+                        logger.info(f"PLAYLIST REJECTED Prefix: {prefix} : Search Term: {term_normalized} : Playlist Name: {playlist_normalized} : By: {item['owner']['display_name']}")
                         continue
                 
                 item_name = f"[T:{item['tracks']['total']}] {item['name']}"
@@ -684,7 +683,7 @@ def spotify_get_search_results(token, search_term, content_types, filter_tracks=
                     term_normalized = search_term.lower().removeprefix(prefix).strip()
                     
                     if not name_normalized.startswith(term_normalized):
-                        # logger.info(f"Artist rejected - artist_name was : '{item['name']}'")
+                        logger.info(f"ARTIST REJECTED Prefix: {prefix} : Search Term: {term_normalized} : Artist: {name_normalized}")
                         rejected_artists += 1
                         continue
                 
@@ -735,9 +734,9 @@ def spotify_get_search_results(token, search_term, content_types, filter_tracks=
     }
     rejection_msg = ' '.join([f"{label}:{count}" for label, count in rejections.items() if count > 0])
     if rejection_msg:
-        logger.info(f"REJECTED - {rejection_msg}")
+        logger.info(f"TOTAL REJECTED - {rejection_msg}")
     else:
-        logger.info("REJECTED - None")
+        logger.info("TOTAL REJECTED - None")
         
     return search_results
 

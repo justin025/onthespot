@@ -141,10 +141,15 @@ def load_config(self):
     self.enable_search_episodes.setChecked(config.get("enable_search_episodes"))
     self.enable_search_podcasts.setChecked(config.get("enable_search_podcasts"))
     self.enable_search_audiobooks.setChecked(config.get("enable_search_audiobooks"))
+
+    # Search Filter Settings
     self.f_search_tracks.setChecked(config.get("f_search_tracks"))
     self.f_search_albums.setChecked(config.get("f_search_albums"))
     self.f_search_artists.setChecked(config.get("f_search_artists"))    
     self.f_search_playlists.setChecked(config.get("f_search_playlists"))
+    
+    # Search Filter prefix Settings
+    self.search_prefix.setText(config.get("search_prefix", "the "))
 
     # Download Queue Filter Settings
     self.download_queue_show_waiting.setChecked(config.get("download_queue_show_waiting"))
@@ -281,10 +286,15 @@ def save_config(self):
     config.set('enable_search_episodes', self.enable_search_episodes.isChecked())
     config.set('enable_search_podcasts', self.enable_search_podcasts.isChecked())
     config.set('enable_search_audiobooks', self.enable_search_audiobooks.isChecked())
+    
+    # Search Filter Settings
     config.set('f_search_tracks', self.f_search_tracks.isChecked())
     config.set('f_search_artists', self.f_search_artists.isChecked())
     config.set('f_search_albums', self.f_search_albums.isChecked())
     config.set('f_search_playlists', self.f_search_playlists.isChecked())
+    
+    # Search Filter prefix Settings
+    config.set("search_prefix", self.search_prefix.text())
 
     # Download Queue Filter Settings
     config.set('download_queue_show_waiting', self.download_queue_show_waiting.isChecked())
