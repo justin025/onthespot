@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import uuid
 
 
@@ -284,6 +285,7 @@ class Config:
         self.app_root = os.path.dirname(os.path.realpath(__file__))
         ffmpeg_path_candidates = [
             os.environ.get("FFMPEG_PATH", ""),  # ENV
+            shutil.which("ffmpeg") or "",        # SYSTEM PATH
             "/usr/bin/ffmpeg",  # UNIX
             "/opt/homebrew/bin/ffmpeg",  # MACOS ARM
             "/usr/local/bin/ffmpeg",  # MACOS INTEL
