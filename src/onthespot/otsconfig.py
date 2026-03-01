@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import uuid
 
 
@@ -139,6 +140,8 @@ class Config:
             "f_search_albums": False,  # Enable filtered Albums search
             "f_search_artists": False,  # Enable filtered Artists search
             "f_search_playlists": False,  # Enable filtered Playlists search
+            # Search Prefix Settings
+            "search_prefix": "the" ,
             # Download Queue Filter Settings
             "download_queue_show_waiting": True,  # Enable listed filter in download queue
             "download_queue_show_failed": True,  # Enable listed filter in download queue
@@ -282,6 +285,7 @@ class Config:
         self.app_root = os.path.dirname(os.path.realpath(__file__))
         ffmpeg_path_candidates = [
             os.environ.get("FFMPEG_PATH", ""),  # ENV
+            shutil.which("ffmpeg") or "",        # SYSTEM PATH
             "/usr/bin/ffmpeg",  # UNIX
             "/opt/homebrew/bin/ffmpeg",  # MACOS ARM
             "/usr/local/bin/ffmpeg",  # MACOS INTEL
@@ -289,6 +293,7 @@ class Config:
                 self.app_root, "bin", "ffmpeg", "ffmpeg" + self.ext_
             ),  # BUNDLED
         ]
+        ffmpeg_path = ""
         for path in ffmpeg_path_candidates:
             if os.path.isfile(path) and os.access(path, os.X_OK):
                 ffmpeg_path = path
@@ -297,7 +302,7 @@ class Config:
             print(
                 "Failed to find ffmpeg binary, please consider installing ffmpeg or defining its path by setting FFMPEG_PATH."
             )
-            ffmpeg_path = ""
+        
         print(f"FFMPEG Binary: {ffmpeg_path}")
         self.set("_ffmpeg_bin_path", ffmpeg_path)
         self.set(
