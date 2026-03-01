@@ -631,7 +631,7 @@ def spotify_get_search_results(token, search_term, content_types, filter_tracks=
                     artist_normalized = item['artists'][0]['name'].lower().removeprefix(prefix).strip()
                     
                     if term_normalized not in title_normalized and term_normalized not in artist_normalized:
-                        logger.info(f"TRACK REJECTED Prefix: {prefix} : Search Term: {term_normalized} : Title: {title_normalized} : Arttist: {artist_normalized}") 
+                        logger.info(f"TRACK REJECTED Prefix: {prefix} : Search Term: {term_normalized} : Title: {title_normalized} : Artist: {artist_normalized}") 
                         rejected_tracks += 1
                         continue
                 
