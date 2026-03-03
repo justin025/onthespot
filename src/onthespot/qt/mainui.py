@@ -1086,7 +1086,8 @@ class MainWindow(QMainWindow):
             filter_tracks=self.f_search_tracks.isChecked(),
             filter_albums=self.f_search_albums.isChecked(),
             filter_artists=self.f_search_artists.isChecked(),
-            filter_playlists=self.f_search_playlists.isChecked()
+            filter_playlists=self.f_search_playlists.isChecked(),
+            search_prefix=self.search_prefix.text()
         )
         if results is None:
             self.show_popup_dialog(self.tr("You need to login to at least one account to use this feature."))
