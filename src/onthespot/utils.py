@@ -157,6 +157,24 @@ def open_item(item):
     else:  # For Linux and other Unix-like systems
         subprocess.Popen(['xdg-open', item])
 
+def rename_with_retry(src, dst, retries=5, delay=1):
+    for attempt in range(retries):
+        try:
+            os.rename(src, dst)
+            return True
+        except FileExistsError:
+            # destination already exists
+            logger.info(f"Rename failed... retrying {int(attempt - retries)} more times")
+            if attempt == retries - 1:
+                raise
+            time.sleep(delay)
+        except PermissionError:
+            # file might still be locked
+            logger
+            if attempt == retries - 1:
+                raise
+            time.sleep(delay)
+    return False
 
 def sanitize_data(value):
     if value is None:

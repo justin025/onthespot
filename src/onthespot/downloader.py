@@ -5,6 +5,7 @@ import threading
 import time
 import traceback
 import os
+import uuid
 from PyQt6.QtCore import QObject, pyqtSignal
 from librespot.audio.decoders import AudioQuality, VorbisOnlyAudioQuality
 from librespot.metadata import TrackId, EpisodeId
@@ -22,7 +23,7 @@ from .api.crunchyroll import crunchyroll_get_episode_metadata, crunchyroll_get_d
 from .api.generic import generic_get_track_metadata
 from .otsconfig import config
 from .runtimedata import get_logger, download_queue, download_queue_lock, account_pool, temp_download_path
-from .utils import format_item_path, convert_audio_format, embed_metadata, set_music_thumbnail, fix_mp3_metadata, add_to_m3u_file, strip_metadata, convert_video_format
+from .utils import format_item_path, convert_audio_format, embed_metadata, rename_with_retry, set_music_thumbnail, fix_mp3_metadata, add_to_m3u_file, strip_metadata, convert_video_format
 
 logger = get_logger("downloader")
 
@@ -180,13 +181,26 @@ class DownloadWorker(QObject):
                     # and for UNIX systems it's the same https://serverfault.com/questions/9546/filename-length-limits-on-linux
                     name, ext = os.path.splitext(file_name)
                     MAX_PATH_LENGTH = 260
+                    MIN_PATH_LENGTH = 1
                     available_length = MAX_PATH_LENGTH - len(os.path.join(directory, ''))
                     if len(file_name) > available_length:
                         trim_length = available_length - len(ext)
                         name = name[:trim_length]
                         file_name = name + ext
                         file_path = os.path.join(directory, file_name)
-                    
+                    elif len(file_name) <= MIN_PATH_LENGTH or not name.strip():
+                        # generate random filename
+                        random_name = uuid.uuid4().hex[:12]
+                        file_name = random_name + ext
+                        file_path = os.path.join(directory, file_name)
+
+                    # ensure no collision
+                    while os.path.exists(file_path):
+                        random_name = uuid.uuid4().hex[:12]
+                        file_name = random_name + ext
+                        file_path = os.path.join(directory, file_name)
+                                            
+
                     temp_file_path = os.path.join(directory, '~' + file_name)
 
                     os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -514,7 +528,7 @@ class DownloadWorker(QObject):
 
                         if os.path.exists(temp_file_path):
                             os.remove(temp_file_path)
-                        os.rename(decrypted_temp_file_path, temp_file_path)
+                        rename_with_retry(decrypted_temp_file_path, temp_file_path)
 
                     # Video
                     elif item_service == "crunchyroll":
@@ -710,7 +724,7 @@ class DownloadWorker(QObject):
                         elif item_type == "podcast_episode":
                             file_path += "." + config.get("podcast_file_format")
 
-                        os.rename(temp_file_path, file_path)
+                        rename_with_retry(temp_file_path, file_path )
                         item['file_path'] = file_path
 
                         # Convert file format and embed metadata
