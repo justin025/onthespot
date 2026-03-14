@@ -753,9 +753,18 @@ def spotify_get_track_metadata(token, item_id):
         return None
 
     headers = auth_header
-    logger.info(f"[API Call 1/6] Fetching track data for track_id={item_id}")
+
+    #Calculate number of API calls required
+    api_total_calls = 1   
+    if config.get('fetch_extended_album_metadata', True):
+        api_total_calls += 1
+    if config.get('fetch_genre_metadata', True):
+        api_total_calls += 1    
+    call_num = 1
+    logger.info(f"[API Call {call_num}/{api_total_calls}] Fetching track data for track_id={item_id}")
     track_data = make_call(f'{BASE_URL}/tracks?ids={item_id}', headers=headers)
     time.sleep(config.get('api_request_delay', 0.1))
+    call_num += 1
 
     # Use embedded album data (album_type, name, images, total_tracks already available)
     album_data = track_data.get('tracks', [])[0].get('album', {})
@@ -763,18 +772,20 @@ def spotify_get_track_metadata(token, item_id):
     # Only fetch full album if we need label/copyright (optional fields)
     if config.get('fetch_extended_album_metadata', True):
         album_id = track_data.get('tracks', [])[0].get('album', {}).get('id')
-        logger.info(f"[API Call 2/6] Fetching extended album metadata for album_id={album_id}")
+        logger.info(f"[API Call {call_num}/{api_total_calls}] Fetching extended album metadata for album_id={album_id}")
         full_album = make_call(f"{BASE_URL}/albums/{album_id}", headers=headers)
         time.sleep(config.get('api_request_delay', 0.1))
+        call_num += 1
         album_data = full_album  # Use full data if fetched
 
     # Fetch artist data only if genre metadata is enabled
     artist_data = {}
     if config.get('fetch_genre_metadata', True):
         artist_id = track_data.get('tracks', [])[0].get('artists', [])[0].get('id')
-        logger.info(f"[API Call 3/6] Fetching artist data for artist_id={artist_id}")
+        logger.info(f"[API Call {call_num}/{api_total_calls}] Fetching artist data for artist_id={artist_id}")
         artist_data = make_call(f"{BASE_URL}/artists/{artist_id}", headers=headers)
         time.sleep(config.get('api_request_delay', 0.1))
+        call_num += 1
 
     # Fetch audio features only if enabled
     track_audio_data = ''

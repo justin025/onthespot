@@ -43,7 +43,8 @@ def get_search_results(search_term, content_types=None, filter_tracks=True, filt
 
         logger.info(f"Search clicked with value term {search_term}")
         service = account_pool[config.get('active_account_number')]['service']
-        if search_term and service != 'generic':
+        if search_term and service == 'spotify':
+            logger.info(f"Service requested is {service}")
             token = get_account_token(service)
             return globals()[f"{service}_get_search_results"](
                 token, 
@@ -55,5 +56,13 @@ def get_search_results(search_term, content_types=None, filter_tracks=True, filt
                 filter_playlists,
                 search_prefix
             )
+        elif search_term and service != 'generic':
+            logger.info(f"Service requested is {service}")
+            token = get_account_token(service)
+            return globals()[f"{service}_get_search_results"](
+                token, 
+                search_term, 
+                content_types
+            )                      
         else:
             return False
