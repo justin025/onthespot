@@ -1,8 +1,8 @@
 name: Release Builder clean-spotify
 
 on:
-  release:
-    types: [prereleased]
+#  release:
+#    types: [prereleased]
   workflow_dispatch:
 
 jobs:
