@@ -72,6 +72,7 @@ def load_config(self):
         "retry_worker_delay",
         "file_hertz",
         "download_delay",
+        "download_delay_variance",
         "download_chunk_size",
         "maximum_queue_workers",
         "maximum_download_workers"
@@ -127,6 +128,7 @@ def load_config(self):
     self.raw_media_download.setChecked(config.get("raw_media_download"))
     self.rotate_active_account_number.setChecked(config.get("rotate_active_account_number"))
     self.download_delay.setValue(config.get("download_delay"))
+    self.download_delay_variance.setValue(config.get("download_delay_variance"))
     self.download_chunk_size.setValue(config.get("download_chunk_size"))
     self.maximum_queue_workers.setValue(config.get("maximum_queue_workers"))
     self.maximum_download_workers.setValue(config.get("maximum_download_workers"))
@@ -272,6 +274,7 @@ def save_config(self):
     config.set('raw_media_download', self.raw_media_download.isChecked())
     config.set('rotate_active_account_number', self.rotate_active_account_number.isChecked())
     config.set('download_delay', self.download_delay.value())
+    config.set('download_delay_variance', self.download_delay_variance.value())
     config.set('download_chunk_size', self.download_chunk_size.value())
     config.set('maximum_queue_workers', self.maximum_queue_workers.value())
     config.set('maximum_download_workers', self.maximum_download_workers.value())

@@ -280,6 +280,14 @@
                 </tr>
                 <tr>
                     <td>
+                        <label for="download_delay_variance">Download Delay Variance (±seconds):</label>
+                    </td>
+                    <td>
+                        <input type="number" id="download_delay_variance" value="{{ config.download_delay_variance }}" min="0" placeholder="Enter delay variance">
+                    </td>
+                </tr>
+                <tr>
+                    <td>
                         <label for="download_chunk_size">Download Chunk Size (bytes):</label>
                     </td>
                     <td>
@@ -927,6 +935,7 @@
                     raw_media_download: document.getElementById('raw_media_download').checked,
                     rotate_active_account_number: document.getElementById('rotate_active_account_number').checked,
                     download_delay: document.getElementById('download_delay').value,
+                    download_delay_variance: document.getElementById('download_delay_variance').value,
                     download_chunk_size: document.getElementById('download_chunk_size').value,
                     maximum_queue_workers: document.getElementById('maximum_queue_workers').value,
                     maximum_download_workers: document.getElementById('maximum_download_workers').value,

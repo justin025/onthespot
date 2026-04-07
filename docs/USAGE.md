@@ -73,7 +73,8 @@ If a file path is provided the app will parse each line in the file for urls beg
 | **Illegal Character Replacement** | Replace illegal characters in the filepath with the value specified (e.g., `/`, `\`, `<`, `>`, `*`, etc.). |
 | **Rotate Active Account** | Automatically rotate between added accounts for downloading to minimize the chance of hitting rate limits. |
 | **Raw Media Download** | Downloads an unmodified file from whatever service is selected. With this enabled file conversion and the embedding of any metadata is skipped. Lyrics and cover art will still be downloaded. |
-| **Download Delay (s)** | The time,in seconds, to wait before initiating the next download. Helps prevent rate limits. |
+| **Download Delay (s)** | The time, in seconds, to wait before initiating the next download. Helps prevent rate limits. |
+| **Download Delay Variance (±s)** | Random variance applied to the download delay. For example, with a delay of 60s and variance of 30s, each download will wait between 30–90 seconds. Set to 0 to disable. |
 | **Download Chunk Size (b)** | The chunk size, in bytes, in which to download files. |
 | **Maximum Queue Workers** | Set the maximum number of queue workers. Setting a higher number will queue songs faster, only change this setting if you know what you're doing. Changes to this setting require you to restart the app take effect. |
 | **Maximum Download Workers** | Set the maximum number of download workers. Only change this setting if you know what you're doing. Changes to this setting require you to restart the app to take effect. |
