@@ -107,6 +107,7 @@ class Config:
             "raw_media_download": False,  # Skip media conversion and metadata writing
             "rotate_active_account_number": False,  # Rotate active account for parsing and downloading tracks
             "download_delay": 3,  # Seconds to wait before next download attempt
+            "download_delay_variance": 0,  # Random ± variance in seconds applied to download delay
             "download_chunk_size": 50000,  # Chunk size in bytes to download in
             "maximum_queue_workers": 1,  # Maximum number of queue workers
             "maximum_download_workers": 1,  # Maximum number of download workers

@@ -1,3 +1,4 @@
+import random
 import re
 import requests
 import subprocess
@@ -779,7 +780,10 @@ class DownloadWorker(QObject):
                     config.save()
                 except Exception:
                     pass
-                time.sleep(config.get("download_delay"))
+                variance = config.get("download_delay_variance")
+                delay = max(0, config.get("download_delay") + random.randint(-variance, variance))
+                logger.info(f"Waiting {delay}s before next download")
+                time.sleep(delay)
                 self.readd_item_to_download_queue(item)
                 continue
             except Exception as e:
@@ -792,7 +796,10 @@ class DownloadWorker(QObject):
                     if self.gui:
                         self.progress.emit(item, self.tr("Cancelled"), 0)
 
-                time.sleep(config.get("download_delay"))
+                variance = config.get("download_delay_variance")
+                delay = max(0, config.get("download_delay") + random.randint(-variance, variance))
+                logger.info(f"Waiting {delay}s before next download")
+                time.sleep(delay)
                 self.readd_item_to_download_queue(item)
 
                 if os.path.exists(temp_file_path):
