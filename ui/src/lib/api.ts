@@ -5,6 +5,7 @@ import {
   LogEntry,
   AccountItem,
 } from "../types";
+import { AppSettings } from "./settings";
 
 const config = {
   // Production UI is served by FastAPI, so use the current browser origin.
@@ -708,23 +709,52 @@ export async function fetchOTSConfig(): Promise<OTSConfig | null> {
   }
 }
 
-export async function updateOTSConfigValue(
-  key: string,
-  value: any,
+//export async function updateOTSConfigValue(
+//  key: string,
+//  value: any,
+//): Promise<boolean> {
+//  try {
+//    const strVal =
+//      typeof value === "object" ? JSON.stringify(value) : String(value);
+//    const res = await request(
+//      `/config/set?nkey=${encodeURIComponent(key)}&nvalue=${encodeURIComponent(strVal)}`,
+//      {
+//        method: "POST",
+//      },
+//    );
+//    return res.ok;
+//  } catch (err) {
+//    console.error("Update config value failed:", err);
+//    return false;
+//  }
+//}
+
+export async function updateOTSConfigValue<K extends keyof AppSettings>(
+  key: K,
+  value: AppSettings[K]
 ): Promise<boolean> {
-  try {
-    const strVal =
-      typeof value === "object" ? JSON.stringify(value) : String(value);
-    const res = await request(
-      `/config/set?nkey=${encodeURIComponent(key)}&nvalue=${encodeURIComponent(strVal)}`,
-      {
-        method: "POST",
-      },
+  const payload = {
+    [key]: value,
+  };
+
+  const response = await request(`/config/set`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    console.error(
+      errorData.detail 
+        ? (typeof errorData.detail === "string" ? errorData.detail : JSON.stringify(errorData.detail))
+        : `Failed to update setting '${String(key)}' (Status ${response.status})`
     );
-    return res.ok;
-  } catch (err) {
-    console.error("Update config value failed:", err);
-    return false;
+    return false
+  } else {
+    return response.ok
   }
 }
 

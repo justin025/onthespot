@@ -1,33 +1,31 @@
-import os
 import asyncio
+import json
+import mimetypes
+import os
+import re
 import secrets
+import shutil
 import threading
 import time
-import json
 import uuid
-import re
-import shutil
 from concurrent.futures import ThreadPoolExecutor
-from urllib.parse import quote
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
-from contextlib import asynccontextmanager
-import mimetypes
-
 
 import uvicorn
-from pydantic import BaseModel
-from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import (
     FileResponse,
     JSONResponse,
-    RedirectResponse,
     Response,
     StreamingResponse,
 )
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field, TypeAdapter
+from pydantic_core import ValidationError
 
 # librespot currently ships protobuf files generated for the compatibility
 # runtime. Keep source launches aligned with Docker, which sets this variable
@@ -35,67 +33,24 @@ from fastapi.staticfiles import StaticFiles
 os.environ.setdefault("PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION", "python")
 
 
-from .api.generic import generic_add_account
+from .accounts import FillAccountPool, get_account_token
 from .api.apple_music import apple_music_add_account
 from .api.bandcamp import bandcamp_add_account
-from .api.deezer import deezer_add_account
-from .api.qobuz import qobuz_add_account
-from .api.soundcloud import soundcloud_add_account
 from .api.crunchyroll import crunchyroll_add_account
+from .api.deezer import deezer_add_account
+from .api.generic import generic_add_account
+from .api.qobuz import qobuz_add_account
+from .api.registry import SERVICE_SEARCH_FUNCTIONS
+from .api.soundcloud import soundcloud_add_account
 from .api.spotify import (
-    MirrorSpotifyPlayback,
     add_spotify_zeroconf_login,
     spotify_connect_status,
     spotify_get_search_results,
     spotify_new_session,
-    start_spotify_connect_service,
-    stop_spotify_connect_service,
 )
 from .api.tidal import tidal_add_account_pt1, tidal_add_account_pt2
-from .api.registry import SERVICE_SEARCH_FUNCTIONS
-
-from .accounts import FillAccountPool, get_account_token
-from .parsingworker import ParsingWorker
-from .otsconfig import config
-from .parse_item import get_search_results
-from .runtimedata import (
-    get_logger,
-    pending,
-    download_queue,
-    download_queue_lock,
-    download_paused,
-    pending_lock,
-    parsing,
-    parsing_lock,
-    subscribe_websocket,
-    unsubscribe_websocket,
-    account_pool,
-    notification_hook,
-    progress_hook,
-    get_rate_limit_state,
-)
-from .downloader import DownloadWorker, RetryWorker
 from .constants import ItemStatus
-from .library import (
-    is_allowed_path,
-    missing_items,
-    remove_missing_items,
-    read_cover,
-    rename_file,
-    scan_library,
-    export_index,
-    import_index,
-    verify_file,
-    update_cover,
-    update_metadata,
-    write_m3u,
-)
-from .utils import format_local_id, open_item, retry_single_item
-from .statistics import clear_history, export_history, get_statistics, import_history
-from .updater import (
-    check_for_updates,
-)
-
+from .downloader import DownloadWorker, RetryWorker
 from .export_locations import (
     default_export_directory,
     playlist_backup_directory,
@@ -103,6 +58,44 @@ from .export_locations import (
     set_playlist_backup_directory,
     write_export_file,
 )
+from .library import (
+    export_index,
+    import_index,
+    is_allowed_path,
+    missing_items,
+    read_cover,
+    remove_missing_items,
+    rename_file,
+    scan_library,
+    update_cover,
+    update_metadata,
+    verify_file,
+    write_m3u,
+)
+from .otsconfig import config
+from .parse_item import get_search_results
+from .parsingworker import ParsingWorker
+from .runtimedata import (
+    account_pool,
+    download_paused,
+    download_queue,
+    download_queue_lock,
+    get_logger,
+    get_rate_limit_state,
+    notification_hook,
+    parsing,
+    parsing_lock,
+    pending,
+    pending_lock,
+    progress_hook,
+    subscribe_websocket,
+    unsubscribe_websocket,
+)
+from .statistics import clear_history, export_history, get_statistics, import_history
+from .updater import (
+    check_for_updates,
+)
+from .utils import format_local_id, open_item, retry_single_item
 from .youtube_auth import (
     managed_youtube_cookie_path,
     store_youtube_cookie_file,
@@ -110,7 +103,6 @@ from .youtube_auth import (
     validate_youtube_cookie_file,
     youtube_auth_status,
 )
-
 
 log_level = int(os.environ.get("LOG_LEVEL", 20))
 logger = get_logger("gui")
@@ -128,7 +120,6 @@ fillaccountpool = FillAccountPool()
 _spotify_companion_pairings: dict[str, float] = {}
 _spotify_companion_pairing_lock = threading.Lock()
 _SPOTIFY_COMPANION_PAIRING_TTL = 10 * 60
-
 
 ##ONTHESPOT BRIDGE FUNCTIONS
 def add_spotify_account():
@@ -475,7 +466,7 @@ class YouTubeAuthentication(BaseModel):
     browser: str | None = None
     cookie_file: str | None = None
 
-
+## Queue Models
 class QueueOrder(BaseModel):
     local_ids: list[str]
 
@@ -491,7 +482,7 @@ class QueueVerify(BaseModel):
     local_ids: list[str] = []
     retry: bool = True
 
-
+## Profiles Models
 class DownloadProfile(BaseModel):
     id: str
     name: str
@@ -499,11 +490,10 @@ class DownloadProfile(BaseModel):
     bitrate: str = "320k"
     download_path: str = ""
 
-
 class ActiveProfile(BaseModel):
     profile_id: str
 
-
+## Library Models
 class LibraryPath(BaseModel):
     path: str
 
@@ -545,6 +535,181 @@ class LibraryOpen(BaseModel):
     action: str = "folder"
 
 
+## Config Models
+
+class AccountLogin(BaseModel):
+    client_id: str | None = None
+    app_version: str | None = None
+    app_locale: str | None = None
+
+
+class Account(BaseModel):
+    uuid: str
+    service: str
+    active: bool = True
+    login: AccountLogin | None = None
+
+
+
+class AppSettings(BaseModel):
+    version: str = "v2.0.0 Alpha 2"
+    debug_mode: bool = False
+    language_index: int = 0
+    total_downloaded_items: int = 0
+    total_downloaded_data: int = 0
+    m3u_format: str = "m3u8"
+    use_double_digit_path_numbers: bool = False
+    ffmpeg_args: list[str] = Field(default_factory=list)
+    active_account_number: int = 0
+    accounts: list[Account] = Field(default_factory=list)
+
+    language: str = "en_US"
+    theme: str = "dark"
+    active_download_profile: str = "mp3-320"
+    export_folder_path: str = ""
+    playlist_backup_folder_path: str = ""
+    youtube_auth_mode: str = "none"
+    youtube_cookies_browser: str = ""
+    youtube_cookies_file: str = ""
+    download_profiles: list[DownloadProfile] = Field(default_factory=list)
+    explicit_label: str = "🅴"
+    download_copy_btn: bool = False
+    download_open_btn: bool = False
+    download_locate_btn: bool = True
+    download_delete_btn: bool = True
+    show_search_thumbnails: bool = False
+    show_download_thumbnails: bool = True
+    thumbnail_size: int = 60
+    max_search_results: int = 10
+    disable_download_popups: bool = False
+    windows_10_explorer_thumbnails: bool = False
+    mirror_spotify_playback: bool = False
+
+    check_for_updates: bool = True
+    update_repository: str = "ots-downloader/onthespot"
+    update_check_interval_hours: int = 12
+    illegal_character_replacement: str = "-"
+    raw_media_download: bool = False
+    rotate_active_account_number: bool = False
+    download_delay: int = 10
+    download_delay_variance: int = 5
+    download_chunk_size: int = 50000
+    maximum_queue_workers: int = 1
+    maximum_download_workers: int = 1
+    enable_retry_worker: bool = False
+    retry_worker_delay: int = 5
+    api_retry_max_attempts: int = 3
+    api_retry_base_delay: int = 2
+    api_retry_max_delay: int = 60
+    api_request_delay: int = 1
+    cache_api_calls: bool = True
+    api_response_cache_ttl_seconds: int = 86400
+    spotify_metadata_cache_ttl_seconds: int = 604800
+    spotify_search_cache_ttl_seconds: int = 900
+    playlist_automation_cache_ttl_seconds: int = 60
+    spotify_connect_port: int = 6768
+    spotify_webapi_override_client_id: str = ""
+    spotify_webapi_override_client_secret: str = ""
+    cache_metadata_in_queue: bool = True
+    fetch_genre_metadata: bool = False
+    fetch_extended_album_metadata: bool = False
+    fetch_audio_features: bool = False
+    fetch_track_credits: bool = False
+    enable_search_tracks: bool = True
+    enable_search_albums: bool = True
+    enable_search_playlists: bool = True
+    enable_search_artists: bool = True
+    enable_search_episodes: bool = True
+    enable_search_podcasts: bool = True
+    enable_search_audiobooks: bool = True
+    f_search_tracks: bool = False
+    f_search_albums: bool = False
+    f_search_artists: bool = False
+    f_search_playlists: bool = False
+    search_prefix: str = "the"
+    download_queue_show_waiting: bool = True
+    download_queue_show_failed: bool = True
+    download_queue_show_cancelled: bool = True
+    download_queue_show_unavailable: bool = True
+    download_queue_show_completed: bool = True
+    audio_download_path: str = "/root/Music/OnTheSpot"
+    track_file_format: str = "mp3"
+    track_path_formatter: str = "Tracks/{album_artist}/{year} {album}/{track_number}. {name}"
+    podcast_file_format: str = "mp3"
+    podcast_path_formatter: str = "Episodes/{album}/{name}"
+    use_playlist_path: bool = False
+    playlist_path_formatter: str = "Playlists/{playlist_name} by {playlist_owner}/{playlist_number}. {name} - {artist}"
+    create_m3u_file: bool = False
+    m3u_path_formatter: str = "M3U/{playlist_name} by {playlist_owner}"
+    extinf_separator: str = "; "
+    extinf_label: str = "{playlist_number}. {artist} - {name}"
+    save_album_cover: bool = False
+    album_cover_format: str = "png"
+    file_bitrate: str = "320k"
+    file_hertz: int = 44100
+    use_custom_file_bitrate: bool = False
+    use_source_format: bool = False
+    download_lyrics: bool = False
+    only_download_synced_lyrics: bool = False
+    only_download_plain_lyrics: bool = False
+    save_lrc_file: bool = False
+    translate_file_path: bool = False
+    metadata_separator: str = "; "
+    overwrite_existing_metadata: bool = False
+    embed_branding: bool = False
+    embed_cover: bool = True
+    embed_artist: bool = True
+    embed_album: bool = True
+    embed_albumartist: bool = True
+    embed_name: bool = True
+    embed_year: bool = True
+    embed_discnumber: bool = True
+    embed_tracknumber: bool = True
+    embed_genre: bool = True
+    embed_performers: bool = False
+    embed_producers: bool = False
+    embed_writers: bool = True
+    embed_composer: bool = True
+    prefer_composer_as_album_artist: bool = False
+    shorten_composer_tag: bool = False
+    embed_label: bool = True
+    embed_copyright: bool = True
+    embed_description: bool = True
+    embed_language: bool = True
+    embed_isrc: bool = True
+    embed_length: bool = True
+    embed_url: bool = True
+    embed_key: bool = False
+    embed_bpm: bool = False
+    embed_compilation: bool = False
+    embed_lyrics: bool = False
+    embed_explicit: bool = False
+    embed_upc: bool = False
+    embed_service_id: bool = False
+    embed_timesignature: bool = False
+    embed_acousticness: bool = False
+    embed_danceability: bool = False
+    embed_energy: bool = False
+    embed_instrumentalness: bool = False
+    embed_liveness: bool = False
+    embed_loudness: bool = False
+    embed_speechiness: bool = False
+    embed_valence: bool = False
+    video_download_path: str = "/root/Videos/OnTheSpot"
+    movie_file_format: str = "mkv"
+    movie_path_formatter: str = "Movies/{name} ({release_year})"
+    show_file_format: str = "mkv"
+    show_path_formatter: str = "Shows/{show_name}/Season {season_number}/{episode_number}. {name}"
+    preferred_video_resolution: int = 1080
+    download_subtitles: bool = False
+    download_chapters: bool = False
+    preferred_audio_language: str = "en-US"
+    preferred_subtitle_language: str = "en-US"
+    download_all_available_audio: bool = False
+    download_all_available_subtitles: bool = False
+    v2a_enable: bool = False
+    v2a_preferred_codec: str = "mp3"
+    v2a_preferred_bitrate: int = 192
 # ---------------------------------------------------------------------------
 # API ENDPOINTS
 # ---------------------------------------------------------------------------
@@ -1375,32 +1540,62 @@ async def get_config():
     """
     return config.as_dict()
 
+@app.patch("/config/set", status_code=status.HTTP_200_OK)
+async def update_partial_config(patch_data: dict):
+    model_fields = AppSettings.model_fields
+    result = None
 
-@app.post("/config/set")
-async def set_config(nkey, nvalue):
-    """
-    Endpoint to set a configuration setting.
+    for key, value in patch_data.items():
+        # 1. Verify the key exists in AppSettings
+        if key not in model_fields:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=f"Field '{key}' is not a valid setting.",
+            )
 
-    :param nkey: Key of the configuration setting.
-    :param nvalue: Value for the configuration setting.
-    :return: Updated configuration setting.
-    """
-    if nvalue in ["false", "true"]:
-        match nvalue:
-            case "false":
-                nvalue = False
-            case "true":
-                nvalue = True
-            case _:
-                pass
-    try:
-        if str(nvalue).isdigit():
-            nvalue = int(nvalue)
-    except:
-        pass
-    result = config.set(nkey, nvalue)
+        # 2. Get the field's declared type and validate the value against it
+        field_info = model_fields[key]
+        adapter = TypeAdapter(field_info.annotation)
+
+        try:
+            # Validates type, handles lists/dicts/optionals, and coerces if needed
+            validated_value = adapter.validate_python(value)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=f"Invalid value for field '{key}': {exc.errors()}",
+            )
+
+        # 3. Store the validated value
+        result = config.set(key, validated_value)
 
     return result
+        
+##@app.post("/config/set")
+##async def set_config(nkey, nvalue):
+##    """
+##    Endpoint to set a configuration setting.
+##
+##    :param nkey: Key of the configuration setting.
+##    :param nvalue: Value for the configuration setting.
+##    :return: Updated configuration setting.
+##    """
+##    if nvalue in ["false", "true"]:
+##        match nvalue:
+##            case "false":
+##                nvalue = False
+##            case "true":
+##                nvalue = True
+##            case _:
+##                pass
+##    try:
+##        if str(nvalue).isdigit():
+##            nvalue = int(nvalue)
+##    except:
+##        pass
+##    result = config.set(nkey, nvalue)
+##
+##    return result
 
 
 @app.post("/config/save")
