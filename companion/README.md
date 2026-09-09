@@ -5,8 +5,9 @@ Unraid) but Spotify runs on a desktop or phone on the local LAN.
 
 This is a small helper for the Spotify computer. Do **not** run it inside the
 OnTheSpot Docker container: the container cannot receive Spotify's local mDNS
-discovery from a different network. Run it on the Windows, macOS, or Linux
-computer where Spotify is open.
+discovery from a different network.
+
+**Run it on the Windows, macOS, or Linux computer where Spotify is open.**
 
 The companion runs Spotify Connect discovery locally, so Spotify can find it.
 After the user selects it, the companion sends the one-time login payload to
@@ -23,6 +24,12 @@ cannot be resolved is refused rather than assumed local. Pass
 The preferred local discovery port is `6768`. If another companion or local
 service is already using it, the helper automatically selects the next free
 port and prints the address it chose.
+
+## Using uv (universal - recommended)
+```
+uv sync
+uv run python run.py --server-url https://your-onthe-spot-url.example --pairing-token YOUR_ONE_TIME_TOKEN --cleanup
+```
 
 ## Windows
 
