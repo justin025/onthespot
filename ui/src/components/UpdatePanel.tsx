@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, Download, ExternalLink, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import {
   fetchUpdateInfo,
-  installApplicationUpdate,
   UpdateInfo,
 } from "../lib/api";
 

@@ -487,7 +487,7 @@ class DownloadProfile(BaseModel):
     id: str
     name: str
     format: str = "mp3"
-    bitrate: str = "320k"
+    bitrate: int = 320
     download_path: str = ""
 
 class ActiveProfile(BaseModel):
@@ -649,6 +649,7 @@ class AppSettings(BaseModel):
     file_hertz: int = 44100
     use_custom_file_bitrate: bool = False
     use_source_format: bool = False
+    prefer_best_source_format: bool = True
     download_lyrics: bool = False
     only_download_synced_lyrics: bool = False
     only_download_plain_lyrics: bool = False
@@ -737,7 +738,7 @@ async def save_download_profile(profile: DownloadProfile):
     value["format"] = profile.format.lstrip(".").lower()
     if value["format"] not in {"mp3", "flac", "m4a", "opus", "ogg", "wav"}:
         return {"success": False, "error": "Unsupported audio format"}
-    value["bitrate"] = str(profile.bitrate or "320k")
+    value["bitrate"] = int(profile.bitrate or 320)
     value["download_path"] = (
         os.path.abspath(profile.download_path) if profile.download_path else ""
     )
@@ -1720,6 +1721,8 @@ async def export_config_file(payload: dict[str, Any]):
 
 @app.post("/config/import")
 async def import_config(payload: dict):
+    raise NotImplementedError
+    ## Guard the imported entry using the AppSettings interface
     if not isinstance(payload, dict):
         raise HTTPException(
             status_code=400, detail="Configuration must be a JSON object"
@@ -1760,23 +1763,7 @@ def _safe_queue_snapshot() -> list[dict]:
 @app.get("/statistics")
 async def download_statistics():
     raise NotImplementedError
-    stats = get_statistics()
-    library_snapshot = scan_library()
-    with download_queue_lock:
-        queue_counts: dict[str, int] = {}
-        for item in download_queue.values():
-            status = str(
-                getattr(
-                    item.get("item_status", ""), "value", item.get("item_status", "")
-                )
-            )
-            queue_counts[status] = queue_counts.get(status, 0) + 1
-    return {
-        **stats,
-        "storage_used": int(library_snapshot.get("storage_used", 0) or 0),
-        "library_tracks": int(library_snapshot.get("count", 0) or 0),
-        "queue_counts": queue_counts,
-    }
+
 
 
 @app.post("/statistics/clear")

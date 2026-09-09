@@ -394,7 +394,9 @@ def format_local_id(item_id):
 # Application helpers
 # ---------------------------------------------------------------------------
 def requeue_item(item: dict) -> None:
-    """Move *item* to the back of the queue and mark it available for RetryWorker to re-add to the pending queue."""
+    """Move *item* to the back of the queue and mark it available for RetryWorker to re-add to the pending queue If not cancelled."""
+    if item.get("item_status", ItemStatus.CANCELLED) in [ItemStatus.CANCELLED, ItemStatus.UNAVAILABLE]:
+        pass
     with download_queue_lock:
         try:
             local_id = item["local_id"]
@@ -652,7 +654,7 @@ def run_ffmpeg(command: list) -> None:
         subprocess.check_call(command, shell=False)
 
 
-def convert_audio_format(filename, bitrate, default_format, force_bitrate=False):
+def convert_audio_format(filename, bitrate: int, default_format, force_bitrate=False):
     """Re-encode or copy *filename* to the target format via ffmpeg.
 
     If the file is already in *default_format* and a custom bitrate is not
@@ -663,7 +665,7 @@ def convert_audio_format(filename, bitrate, default_format, force_bitrate=False)
         file_stem, filetype = os.path.splitext(os.path.basename(target_path))
 
         temp_name = os.path.join(
-            os.path.dirname(target_path), "~" + file_stem + filetype
+            os.path.dirname(target_path), "~" + file_stem + default_format
         )
 
         if os.path.isfile(temp_name):
@@ -680,7 +682,7 @@ def convert_audio_format(filename, bitrate, default_format, force_bitrate=False)
 
         # Check if media format is service default
 
-        if filetype == default_format and (config.get("use_custom_file_bitrate") or force_bitrate):
+        if filetype == default_format and force_bitrate:
             command += ["-b:a", bitrate]
         elif filetype == default_format:
             command += ["-c:a", "copy"]
@@ -692,7 +694,7 @@ def convert_audio_format(filename, bitrate, default_format, force_bitrate=False)
                 "-ar",
                 f"{config.get('file_hertz') if filetype != '.opus' else 48000}",
                 "-b:a",
-                bitrate,
+                f"{bitrate}k",
             ]
 
         # Add user defined parameters

@@ -22,36 +22,33 @@ import os
 import threading
 import time
 
-
 from .accounts import get_account_token
-
 from .api.registry import (
     SERVICE_LYRICS_FUNCTIONS,
     get_metadata_function,
 )
-from .services_middleware import (
-    download_spotify,
-    download_deezer,
-    download_via_ytdlp_audio,
-    download_http_stream,
-    download_apple_music,
-    download_crunchyroll,
-    download_generic_v2a,
-    download_generic
-)
-
 from .constants import ItemStatus
 from .library import remember_item, verify_file
 from .otsconfig import config
+from .resources.exceptions import DownloadCancelled, TrackUnavailableError
 from .runtimedata import (
-    pending,
     download_paused,
     download_queue,
     download_queue_lock,
     get_logger,
-    temp_download_path,
+    pending,
     progress_hook,
-    wait_for_download_resume,
+    temp_download_path,
+)
+from .services_middleware import (
+    download_apple_music,
+    download_crunchyroll,
+    download_deezer,
+    download_generic,
+    download_generic_v2a,
+    download_http_stream,
+    download_spotify,
+    download_via_ytdlp_audio,
 )
 from .utils import (
     add_to_m3u_file,
@@ -60,14 +57,12 @@ from .utils import (
     embed_metadata,
     fix_mp3_metadata,
     format_item_path,
-    set_music_thumbnail,
-    strip_metadata,
+    jittered_delay,
     requeue_item,
     retry_single_item,
-    jittered_delay,
+    set_music_thumbnail,
+    strip_metadata,
 )
-from .resources.exceptions import DownloadCancelled, TrackUnavailableError
-
 
 logger = get_logger("downloader")
 
@@ -210,7 +205,6 @@ class DownloadWorker:
             item = None
             temp_path = ""
             file_path = ""
-
             try:
                 if download_paused.is_set():
                     time.sleep(0.2)
@@ -222,7 +216,7 @@ class DownloadWorker:
                         if item is None:
                             time.sleep(0.2)
                             continue
-                        if item.get("_discarded"):
+                        if item.get("item_status", ItemStatus.CANCELLED) in [ItemStatus.CANCELLED, ItemStatus.DELETED, ItemStatus.FAILED]:
                             continue
                         with download_queue_lock:
                             # Playlist items are registered before they reach
@@ -251,6 +245,8 @@ class DownloadWorker:
                 item_id = item["item_id"]
 
                 self._apply_download_profile(item)
+                self._get_download_format(item)
+                self._get_target_format(item)
                 item["_active_download"] = True
                 #wait_for_download_resume(item)
                 self._raise_if_cancelled(item)
@@ -293,8 +289,6 @@ class DownloadWorker:
                         progress_hook(progress_item, 25)
                     except Exception as e:
                         logger.error("error emitting progress metadata %s", str(e), exc_info=True)
-                except DownloadCancelled:
-                    raise
                 except (Exception, KeyError) as exc:
                     error_msg = (
                         f"Failed to fetch metadata for '{item_id}', Error: {exc}"
@@ -455,7 +449,26 @@ class DownloadWorker:
     # ------------------------------------------------------------------
     # Path helpers
     # ------------------------------------------------------------------
+    @staticmethod
+    def _get_target_format(item):
+        """
+        Retrieves and Embeds the target format to the item information so it doesn't change mid download.
+        This is an independent module taking into account all the settings for the user preferred format.
+        """
+        if item.get("item_type") == "track":
+            if config.get("use_source_format") or config.get("raw_media_download"):
+                item["target_format"] = ""           
+            else:
+                item["target_format"] = item.get("profile_format")
 
+    @staticmethod
+    def _get_download_format(item):
+        if item.get("item_type") == "track":
+            if config.get("prefer_best_source_format") or config.get("use_source_format"):
+                item["download_format"] = ""
+            else:
+                item["download_format"] = item.get("profile_format")
+            
     @staticmethod
     def _apply_download_profile(item):
         profiles = config.get("download_profiles", []) or []
@@ -467,9 +480,11 @@ class DownloadWorker:
             return
         item["profile_id"] = profile.get("id")
         item["profile_name"] = profile.get("name", profile.get("id", "Default"))
-        item["profile_format"] = str(profile.get("format", config.get("track_file_format"))).lstrip(".")
-        item["profile_bitrate"] = profile.get("bitrate", config.get("file_bitrate"))
-        item["profile_download_path"] = profile.get("download_path", "")
+        item["profile_format"] = str(profile.get("format", config.get("track_file_format", "mp3"))).lstrip(".")
+        item["profile_bitrate"] = profile.get("bitrate", config.get("file_bitrate", "320k"))
+        
+
+        ##item["profile_download_path"] = profile.get("download_path", "")
 
     def _resolve_paths(self, item, item_type, item_path):
         """Return ``(temp_file_path, file_path)`` for *item*."""
@@ -717,12 +732,20 @@ class DownloadWorker:
                 item_metadata.update(extra)
 
         # Rename temp file to final path with correct extension
-        target_format = item.get("profile_format") or config.get("track_file_format")
-        target_bitrate = item.get("profile_bitrate") or config.get("file_bitrate")
-        if config.get("raw_media_download") or config.get("use_source_format"):
-            final_path = file_path + default_format
-        elif item_type == "track":
-            final_path = file_path + "." + target_format
+        target_format = item.get("target_format", "mp3")
+        target_bitrate = item.get("profile_bitrate", 320)
+        
+        if item_type == "track":
+            if target_format == "":
+                final_path = file_path + default_format
+                force_bitrate = False
+            else:
+                final_path = file_path + "." + target_format
+                # We don't check if the source is lower than the profile requires because
+                # some formats carry wildly better quality at a lower bitrate
+                # we may filter by those but needs research
+                bitrate = target_bitrate
+                force_bitrate = True
         else:
             final_path = file_path + "." + config.get("podcast_file_format")
 
@@ -731,14 +754,14 @@ class DownloadWorker:
 
         if not config.get("raw_media_download"):
             progress_hook(item, 70, ItemStatus.CONVERTING)
-            if item.get("profile_bitrate") or config.get("use_custom_file_bitrate"):
-                bitrate = target_bitrate
+            
             convert_audio_format(
                 final_path,
-                bitrate,
+                bitrate if isinstance(bitrate, int) else int(bitrate.strip("k")), #the k gets added after to keep compatibility with services middleware
                 default_format,
-                force_bitrate=bool(item.get("profile_bitrate")),
+                force_bitrate
             )
+
             embed_metadata(item, item_metadata)
 
             if config.get("save_album_cover") or config.get("embed_cover"):

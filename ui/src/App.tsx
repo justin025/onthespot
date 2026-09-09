@@ -20,12 +20,6 @@ import {
   NotificationBannerItem,
   SearchResultItem,
   NotificationContent,
-  CustomTheme,
-  CustomThemePalette,
-  DEFAULT_CUSTOM_THEME,
-  SavedCustomTheme,
-  ThemePreset,
-  ThemeMode,
 } from "./types";
 import { useNotifications } from "./lib/notifications";
 import { installDocumentLocalization } from "./lib/localizeDocument";
@@ -97,208 +91,6 @@ const PageLoading = () => (
   </div>
 );
 
-const isThemePreset = (value: string | null): value is ThemePreset =>
-  value === "spotify" ||
-  value === "midnight" ||
-  value === "forest" ||
-  value === "light" ||
-  value === "ocean" ||
-  value === "sunset" ||
-  value === "violet" ||
-  value === "rose" ||
-  value === "custom";
-
-const isHexColor = (value: unknown): value is string =>
-  typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
-
-const getHexLuminance = (hex: string): number => {
-  const channels = [1, 3, 5].map(
-    (offset) => Number.parseInt(hex.slice(offset, offset + 2), 16) / 255,
-  );
-  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
-};
-
-const isThemeMode = (value: unknown): value is ThemeMode =>
-  value === "light" || value === "dark";
-
-const isCustomThemePalette = (value: unknown): value is CustomThemePalette => {
-  if (!value || typeof value !== "object") return false;
-  const candidate = value as Partial<CustomThemePalette>;
-  return (
-    isHexColor(candidate.background) &&
-    isHexColor(candidate.surface) &&
-    isHexColor(candidate.elevated) &&
-    isHexColor(candidate.accent) &&
-    isHexColor(candidate.text) &&
-    isHexColor(candidate.muted)
-  );
-};
-
-const isCustomTheme = (value: unknown): value is CustomTheme => {
-  if (!value || typeof value !== "object") return false;
-  const candidate = value as Partial<CustomTheme>;
-  return (
-    isThemeMode(candidate.mode) &&
-    isCustomThemePalette(candidate.dark) &&
-    isCustomThemePalette(candidate.light)
-  );
-};
-
-const cloneDefaultCustomTheme = (): CustomTheme => ({
-  mode: DEFAULT_CUSTOM_THEME.mode,
-  dark: { ...DEFAULT_CUSTOM_THEME.dark },
-  light: { ...DEFAULT_CUSTOM_THEME.light },
-});
-
-const migrateLegacyCustomTheme = (value: unknown): CustomTheme | null => {
-  if (!value || typeof value !== "object") return null;
-  const legacy = value as Partial<CustomThemePalette> & { mode?: unknown };
-  if (
-    !isThemeMode(legacy.mode) ||
-    !isHexColor(legacy.background) ||
-    !isHexColor(legacy.surface) ||
-    !isHexColor(legacy.elevated) ||
-    !isHexColor(legacy.accent) ||
-    !isHexColor(legacy.text) ||
-    !isHexColor(legacy.muted)
-  ) {
-    return null;
-  }
-
-  const legacyPalette: CustomThemePalette = {
-    background: legacy.background,
-    surface: legacy.surface,
-    elevated: legacy.elevated,
-    accent: legacy.accent,
-    text: legacy.text,
-    muted: legacy.muted,
-  };
-  const legacyLooksLight =
-    getHexLuminance(legacy.background) > getHexLuminance(legacy.text);
-
-  return {
-    mode: legacy.mode,
-    dark: !legacyLooksLight
-      ? legacyPalette
-      : { ...DEFAULT_CUSTOM_THEME.dark, accent: legacy.accent },
-    light: legacyLooksLight
-      ? legacyPalette
-      : { ...DEFAULT_CUSTOM_THEME.light, accent: legacy.accent },
-  };
-};
-
-const readStoredThemePreset = (): ThemePreset | null => {
-  try {
-    const stored = window.localStorage.getItem("ots-theme-preset");
-    return isThemePreset(stored) ? stored : null;
-  } catch {
-    return null;
-  }
-};
-
-const readStoredCustomTheme = (): CustomTheme => {
-  try {
-    const stored = window.localStorage.getItem("ots-custom-theme");
-    if (stored) {
-      const parsed: unknown = JSON.parse(stored);
-      if (isCustomTheme(parsed)) return parsed;
-      const migrated = migrateLegacyCustomTheme(parsed);
-      if (migrated) return migrated;
-    }
-  } catch {
-    // Use the default palette when browser storage is unavailable or invalid.
-  }
-  return cloneDefaultCustomTheme();
-};
-
-const CUSTOM_THEMES_STORAGE_KEY = "ots-custom-themes";
-
-const cloneCustomTheme = (theme: CustomTheme): CustomTheme => ({
-  mode: theme.mode,
-  dark: { ...theme.dark },
-  light: { ...theme.light },
-});
-
-const isSavedCustomTheme = (value: unknown): value is SavedCustomTheme => {
-  if (!value || typeof value !== "object") return false;
-  const candidate = value as Partial<SavedCustomTheme>;
-  return (
-    typeof candidate.id === "string" &&
-    candidate.id.length > 0 &&
-    typeof candidate.name === "string" &&
-    candidate.name.trim().length > 0 &&
-    isCustomTheme(candidate.theme) &&
-    typeof candidate.updatedAt === "number" &&
-    Number.isFinite(candidate.updatedAt)
-  );
-};
-
-const readStoredCustomThemes = (): SavedCustomTheme[] => {
-  try {
-    const stored = window.localStorage.getItem(CUSTOM_THEMES_STORAGE_KEY);
-    if (!stored) return [];
-    const parsed: unknown = JSON.parse(stored);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(isSavedCustomTheme).slice(0, 50);
-  } catch {
-    return [];
-  }
-};
-
-const persistStoredCustomThemes = (themes: SavedCustomTheme[]) => {
-  try {
-    window.localStorage.setItem(
-      CUSTOM_THEMES_STORAGE_KEY,
-      JSON.stringify(themes),
-    );
-  } catch {
-    // Saved themes still remain available for this session when storage is unavailable.
-  }
-};
-
-const createCustomThemeId = (): string => {
-  if (
-    typeof crypto !== "undefined" &&
-    typeof crypto.randomUUID === "function"
-  ) {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-};
-
-const readStoredThemeMode = (): ThemeMode | null => {
-  try {
-    const stored = window.localStorage.getItem("ots-theme-mode");
-    return isThemeMode(stored) ? stored : null;
-  } catch {
-    return null;
-  }
-};
-
-const getCustomThemeStyle = (
-  theme: CustomTheme,
-  mode: ThemeMode = theme.mode,
-): React.CSSProperties => {
-  const palette = theme[mode];
-  return {
-    "--spotify-black": palette.background,
-    "--spotify-surface": palette.surface,
-    "--spotify-surface-elevated": palette.elevated,
-    "--spotify-text": palette.text,
-    "--spotify-muted": palette.muted,
-    "--spotify-green": palette.accent,
-    "--spotify-green-bright": `color-mix(in srgb, ${palette.accent} 78%, white)`,
-    "--ots-green-contrast": `color-mix(in srgb, ${palette.accent} 72%, ${palette.background})`,
-    "--ots-green-contrast-hover": `color-mix(in srgb, ${palette.accent} 84%, ${palette.background})`,
-    "--ots-border": `color-mix(in srgb, ${palette.text} 18%, ${palette.background})`,
-    "--ots-border-strong": `color-mix(in srgb, ${palette.text} 30%, ${palette.background})`,
-    "--ots-field": `color-mix(in srgb, ${palette.surface} 72%, ${palette.background})`,
-    "--ots-danger": mode === "light" ? "#b42318" : "#ff7b7b",
-    "--ots-on-accent":
-      getHexLuminance(palette.accent) > 0.55 ? "#181818" : "#ffffff",
-  } as React.CSSProperties;
-};
-
 const initialTabFromLocation = (): NavTab => {
   const tab = new URLSearchParams(window.location.search).get("tab");
   const validTabs: NavTab[] = [
@@ -334,31 +126,14 @@ export default function App() {
   } = useNotifications(SSEid);
   const [notificationHistoryOpen, setNotificationHistoryOpen] = useState(false);
   const [wsConnected, setWsConnected] = useState(false);
-  const [themePreset, setThemePreset] = useState<ThemePreset>(
-    () => readStoredThemePreset() ?? "spotify",
-  );
-  const [customTheme, setCustomTheme] = useState<CustomTheme>(() =>
-    readStoredCustomTheme(),
-  );
-  const [savedCustomThemes, setSavedCustomThemes] = useState<
-    SavedCustomTheme[]
-  >(() => readStoredCustomThemes());
-  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
-    const storedMode = readStoredThemeMode();
-    if (storedMode) return storedMode;
-    const storedPreset = readStoredThemePreset();
-    if (storedPreset === "light") return "light";
-    if (storedPreset === "custom") return readStoredCustomTheme().mode;
-    return "dark";
-  });
-  const isDarkMode: "light" | "dark" = themeMode;
+
+  const isDarkMode: "light" | "dark" = "dark";
   const [hasNewVersion, SetNewVersion] = useState(false);
   const [downloadsPaused, setDownloadsPausedState] = useState(false);
   const [downloadSpeed, setDownloadSpeed] = useState(0);
   const [downloadEta, setDownloadEta] = useState(0);
   const [profiles, setProfiles] = useState<DownloadProfile[]>([]);
   const [activeProfile, setActiveProfile] = useState("");
-  const themePersistenceRef = useRef<Promise<void>>(Promise.resolve());
   const profileMutationRef = useRef(0);
 
   // Initial load
@@ -383,13 +158,6 @@ export default function App() {
     if (cfg) {
       setWsConnected(true); // Set Connection status
       setConfig(cfg);
-      // Respect a browser-selected preset; otherwise initialize from backend theme state.
-      if (!readStoredThemePreset()) {
-        const backendThemeMode: ThemeMode =
-          cfg.theme === "dark" ? "dark" : "light";
-        setThemePreset(backendThemeMode === "dark" ? "spotify" : "light");
-        setThemeMode(backendThemeMode);
-      }
     }
     if (qData) setQueue(qData);
     if (accData) setAccounts(accData);
@@ -429,27 +197,6 @@ export default function App() {
     [config?.language],
   );
 
-  //  useEffect(() => {
-  //    if (!config || config.check_for_updates === false) {
-  //      SetNewVersion(false);
-  //      return;
-  //    }
-  //    let mounted = true;
-  //    const checkUpdates = async () => {
-  //      const status = await fetchUpdateInfo();
-  //      if (mounted) SetNewVersion(Boolean(status?.update_available));
-  //    };
-  //    void checkUpdates();
-  //    const interval = window.setInterval(
-  //      () => void checkUpdates(),
-  //      6 * 60 * 60 * 1000,
-  //    );
-  //    return () => {
-  //      mounted = false;
-  //      window.clearInterval(interval);
-  //    };
-  //  }, [config?.check_for_updates]);
-
   useEffect(() => {
     const handleShortcut = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
@@ -471,133 +218,6 @@ export default function App() {
     }
     fetchQueueData();
   }, [notifications]);
-
-  //  useEffect(() => {
-  //    let mounted = true;
-  //    const refreshAccountHealth = async () => {
-  //      const [freshAccounts, freshHealth] = await Promise.all([
-  //        fetchAccounts(),
-  //        fetchAccountHealth(),
-  //      ]);
-  //      if (mounted) {
-  //        setAccounts(freshAccounts);
-  //        setAccountHealth(freshHealth);
-  //      }
-  //    };
-  //    void refreshAccountHealth();
-  //    const interval = window.setInterval(
-  //      () => void refreshAccountHealth(),
-  //      60000,
-  //    );
-  //    return () => {
-  //      mounted = false;
-  //      window.clearInterval(interval);
-  //    };
-  //  }, []);
-
-  const persistThemeMode = (newMode: ThemeMode) => {
-    themePersistenceRef.current = themePersistenceRef.current
-      .catch(() => undefined)
-      .then(async () => {
-        if (!config) return;
-        await updateOTSConfigValue("theme", newMode);
-        setConfig((prev) => (prev ? { ...prev, theme: newMode } : null));
-        await saveOTSConfig();
-      });
-    return themePersistenceRef.current;
-  };
-
-  const handleThemeChange = async (newPreset: ThemePreset) => {
-    // Presets choose the colour palette; the Light/Dark control owns the mode.
-    // Keeping these independent prevents clicking a preset from changing mode.
-    setThemePreset(newPreset);
-    try {
-      window.localStorage.setItem("ots-theme-preset", newPreset);
-      window.localStorage.setItem("ots-theme-mode", themeMode);
-    } catch {
-      // Theme still applies for this session when storage is unavailable.
-    }
-  };
-
-  const handleCustomThemeChange = async (newCustomTheme: CustomTheme) => {
-    setCustomTheme(newCustomTheme);
-    setThemePreset("custom");
-    setThemeMode(newCustomTheme.mode);
-    try {
-      window.localStorage.setItem(
-        "ots-custom-theme",
-        JSON.stringify(newCustomTheme),
-      );
-      window.localStorage.setItem("ots-theme-preset", "custom");
-      window.localStorage.setItem("ots-theme-mode", newCustomTheme.mode);
-    } catch {
-      // Theme still applies for this session when storage is unavailable.
-    }
-    await persistThemeMode(newCustomTheme.mode);
-  };
-
-  const handleSaveCustomTheme = async (name: string): Promise<boolean> => {
-    const normalizedName = name.trim();
-    if (!normalizedName) return false;
-
-    const snapshot: CustomTheme = cloneCustomTheme({
-      ...customTheme,
-      mode: themeMode,
-    });
-    const existing = savedCustomThemes.find(
-      (savedTheme) =>
-        savedTheme.name.toLocaleLowerCase() ===
-        normalizedName.toLocaleLowerCase(),
-    );
-    const nextTheme: SavedCustomTheme = {
-      id: existing?.id ?? createCustomThemeId(),
-      name: normalizedName,
-      theme: snapshot,
-      updatedAt: Date.now(),
-    };
-    const nextThemes = existing
-      ? savedCustomThemes.map((savedTheme) =>
-          savedTheme.id === existing.id ? nextTheme : savedTheme,
-        )
-      : [nextTheme, ...savedCustomThemes].slice(0, 50);
-
-    setSavedCustomThemes(nextThemes);
-    persistStoredCustomThemes(nextThemes);
-    return true;
-  };
-
-  const handleLoadCustomTheme = async (savedTheme: SavedCustomTheme) => {
-    await handleCustomThemeChange({
-      ...cloneCustomTheme(savedTheme.theme),
-      mode: themeMode,
-    });
-  };
-
-  const handleDeleteCustomTheme = async (id: string) => {
-    const nextThemes = savedCustomThemes.filter(
-      (savedTheme) => savedTheme.id !== id,
-    );
-    setSavedCustomThemes(nextThemes);
-    persistStoredCustomThemes(nextThemes);
-  };
-
-  const handleThemeModeChange = async (newMode: ThemeMode) => {
-    setThemeMode(newMode);
-    if (themePreset === "custom") {
-      await handleCustomThemeChange({ ...customTheme, mode: newMode });
-      return;
-    }
-    try {
-      window.localStorage.setItem("ots-theme-mode", newMode);
-    } catch {
-      // Theme still applies for this session when storage is unavailable.
-    }
-    await persistThemeMode(newMode);
-  };
-
-  const toggleTheme = async () => {
-    await handleThemeModeChange(isDarkMode === "dark" ? "light" : "dark");
-  };
 
   const checkNewVersion = async () => {
     const status = await fetchUpdateInfo(true);
@@ -673,19 +293,10 @@ export default function App() {
 
   const handleVerifyQueue = async () => {
     return;
-    await verifyDownloadQueue([], true);
-    setQueue(await fetchDownloadQueue());
   };
 
   const handlePauseToggle = async () => {
     return;
-    const ok = await setDownloadsPaused(!downloadsPaused);
-    if (ok) setDownloadsPausedState(!downloadsPaused);
-    const state = await fetchDownloadState();
-    setDownloadSpeed(state.speed);
-    setDownloadEta(state.eta_seconds);
-    const q = await fetchDownloadQueue();
-    setQueue(q);
   };
 
   const handleReorder = async (local_ids: string[]) => {
@@ -840,13 +451,7 @@ export default function App() {
 
   return (
     <div
-      className={`theme-${themePreset} ${isDarkMode === "dark" ? "dark-theme" : "light-theme"} min-h-screen antialiased`}
-      style={
-        themePreset === "custom"
-          ? getCustomThemeStyle(customTheme, themeMode)
-          : undefined
-      }
-    >
+      className={`${isDarkMode === "dark" ? "dark-theme" : "light-theme"} min-h-screen antialiased`}>
       <Navbar
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -861,8 +466,6 @@ export default function App() {
         activeDownloads={activeDownloadsCount}
         accountCount={accounts.length}
         appVersion={config?.version || "v2.0.0 Alpha 2"}
-        isDarkMode={isDarkMode}
-        toggleTheme={toggleTheme}
         notificationHistoryCount={history.length}
         onOpenNotificationHistory={() => setNotificationHistoryOpen(true)}
         language={config?.language || "en_US"}
@@ -920,16 +523,6 @@ export default function App() {
               onSaveProfile={handleSaveProfile}
               onDeleteProfile={handleDeleteProfile}
               onActivateProfile={handleActivateProfile}
-              themePreset={themePreset}
-              onThemeChange={handleThemeChange}
-              themeMode={themeMode}
-              onThemeModeChange={handleThemeModeChange}
-              customTheme={customTheme}
-              onCustomThemeChange={handleCustomThemeChange}
-              savedCustomThemes={savedCustomThemes}
-              onSaveCustomTheme={handleSaveCustomTheme}
-              onLoadCustomTheme={handleLoadCustomTheme}
-              onDeleteCustomTheme={handleDeleteCustomTheme}
             />
           )}
 

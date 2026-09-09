@@ -49,14 +49,14 @@
       "id": "mp3-320",
       "name": "MP3 · 320 kbps",
       "format": "mp3",
-      "bitrate": "320k",
+      "bitrate": 320,
       "download_path": ""
     },
     {
       "id": "flac",
       "name": "FLAC · lossless",
       "format": "flac",
-      "bitrate": "1411k",
+      "bitrate": 1411,
       "download_path": ""
     }
   ],
@@ -137,6 +137,7 @@
   "file_hertz": 44100,
   "use_custom_file_bitrate": false,
   "use_source_format": false,
+  "prefer_best_source_format": true,
   "download_lyrics": false,
   "only_download_synced_lyrics": false,
   "only_download_plain_lyrics": false,

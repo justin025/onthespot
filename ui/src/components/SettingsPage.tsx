@@ -49,16 +49,6 @@ interface SettingsPageProps {
   onSaveProfile: (profile: DownloadProfile) => Promise<DownloadProfile | null>;
   onDeleteProfile: (profileId: string) => Promise<boolean>;
   onActivateProfile: (profileId: string) => Promise<boolean>;
-  themePreset: ThemePreset;
-  onThemeChange: (theme: ThemePreset) => Promise<void>;
-  themeMode: ThemeMode;
-  onThemeModeChange: (mode: ThemeMode) => Promise<void>;
-  customTheme: CustomTheme;
-  onCustomThemeChange: (theme: CustomTheme) => Promise<void>;
-  savedCustomThemes: SavedCustomTheme[];
-  onSaveCustomTheme: (name: string) => Promise<boolean>;
-  onLoadCustomTheme: (theme: SavedCustomTheme) => Promise<void>;
-  onDeleteCustomTheme: (id: string) => Promise<void>;
 }
 
 export type SettingsSection =
@@ -135,16 +125,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   onSaveProfile,
   onDeleteProfile,
   onActivateProfile,
-  themePreset,
-  onThemeChange,
-  themeMode,
-  onThemeModeChange,
-  customTheme,
-  onCustomThemeChange,
-  savedCustomThemes,
-  onSaveCustomTheme,
-  onLoadCustomTheme,
-  onDeleteCustomTheme,
 }) => {
   const [section, setSection] = useState<SettingsSection>(
     initialSection || "general",
@@ -153,8 +133,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [customThemeName, setCustomThemeName] = useState("");
-  const [customThemeMessage, setCustomThemeMessage] = useState("");
   const [backupMessage, setBackupMessage] = useState("");
   const [formatterTarget, setFormatterTarget] = useState<FormatterKey>(
     "track_path_formatter",
@@ -164,7 +142,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   const [editingSettingsNav, setEditingSettingsNav] = useState(false);
   const [draggedSettingsNav, setDraggedSettingsNav] =
     useState<SettingsSection | null>(null);
-  const activeCustomPalette = customTheme[themeMode];
 
   useEffect(() => {
     if (initialSection) setSection(initialSection);
@@ -215,30 +192,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         start + token.length,
       );
     });
-  };
-
-  const handleCustomPaletteColorChange = (
-    key: keyof CustomThemePalette,
-    value: string,
-  ) => {
-    void onCustomThemeChange({
-      ...customTheme,
-      mode: themeMode,
-      [themeMode]: {
-        ...activeCustomPalette,
-        [key]: value,
-      },
-    });
-  };
-
-  const handleSaveNamedCustomTheme = async () => {
-    const saved = await onSaveCustomTheme(customThemeName);
-    if (!saved) {
-      setCustomThemeMessage("Enter a name before saving this palette.");
-      return;
-    }
-    setCustomThemeMessage("Theme saved. Saving the same name updates it.");
-    setCustomThemeName("");
   };
 
   const triggerSave = async () => {
@@ -1342,282 +1295,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                 </p>
               </div>
 
-              <div className="mb-8 border-b border-gray-200 pb-6 dark:border-neutral-800/60">
-                <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <h4 className="text-base font-medium text-gray-900 dark:text-neutral-100">
-                      Theme
-                    </h4>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-neutral-400">
-                      Choose a colour palette for the whole app. The Light/Dark
-                      control changes the mode for every palette, and your
-                      selection is saved in this browser.
-                    </p>
-                  </div>
-                  <div
-                    className="ots-segmented"
-                    role="group"
-                    aria-label="Theme mode"
-                  >
-                    <button
-                      type="button"
-                      aria-pressed={themeMode === "dark"}
-                      className={`ots-segment ${themeMode === "dark" ? "ots-segment-active" : ""}`}
-                      onClick={() => void onThemeModeChange("dark")}
-                    >
-                      Dark
-                    </button>
-                    <button
-                      type="button"
-                      aria-pressed={themeMode === "light"}
-                      className={`ots-segment ${themeMode === "light" ? "ots-segment-active" : ""}`}
-                      onClick={() => void onThemeModeChange("light")}
-                    >
-                      Light
-                    </button>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {THEME_PRESETS.map((theme) => {
-                    const isSelected = themePreset === theme.id;
-                    const swatches =
-                      theme.id === "custom"
-                        ? ([
-                            activeCustomPalette.background,
-                            activeCustomPalette.accent,
-                            activeCustomPalette.text,
-                          ] as [string, string, string])
-                        : theme.swatches;
-                    const mode = themeMode;
-                    return (
-                      <button
-                        key={theme.id}
-                        type="button"
-                        aria-pressed={isSelected}
-                        onClick={() => void onThemeChange(theme.id)}
-                        className={`ots-theme-option ${isSelected ? "ots-theme-option-active" : ""}`}
-                      >
-                        <span className="ots-theme-preview" aria-hidden="true">
-                          {swatches.map((swatch) => (
-                            <span
-                              key={swatch}
-                              style={{ backgroundColor: swatch }}
-                            />
-                          ))}
-                        </span>
-                        <span className="min-w-0 text-left">
-                          <span className="flex items-center gap-2 text-sm font-bold">
-                            {theme.label}
-                            <span className="ots-theme-mode">{mode}</span>
-                          </span>
-                          <span className="mt-1 block text-xs text-gray-500 dark:text-neutral-400">
-                            {theme.description}
-                          </span>
-                        </span>
-                        <span
-                          className={`ots-theme-check ${isSelected ? "ots-theme-check-visible" : ""}`}
-                          aria-hidden="true"
-                        >
-                          ✓
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {themePreset === "custom" && (
-                <div className="mb-8 border-b border-gray-200 pb-6 dark:border-neutral-800/60">
-                  <div className="mb-4">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <Palette className="h-4 w-4 text-[var(--spotify-green)]" />
-                        <h4 className="text-base font-medium text-gray-900 dark:text-neutral-100">
-                          Custom palette
-                        </h4>
-                      </div>
-                      <p className="mt-1 text-sm text-gray-500 dark:text-neutral-400">
-                        Pick the colors that should shape the app. Changes apply
-                        immediately and are saved in this browser.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    {(
-                      [
-                        ["background", "Background", "The page background."],
-                        ["surface", "Panels", "Cards and main surfaces."],
-                        [
-                          "elevated",
-                          "Elevated",
-                          "Raised controls and active cards.",
-                        ],
-                        ["accent", "Accent", "Highlights and primary actions."],
-                        ["text", "Text", "Main readable text."],
-                        ["muted", "Muted text", "Secondary labels and hints."],
-                      ] as Array<[keyof CustomThemePalette, string, string]>
-                    ).map(([key, label, description]) => (
-                      <label key={key} className="ots-color-control">
-                        <span className="min-w-0">
-                          <span className="block text-sm font-semibold text-gray-900 dark:text-neutral-100">
-                            {label}
-                          </span>
-                          <span className="mt-1 block text-xs text-gray-500 dark:text-neutral-400">
-                            {description}
-                          </span>
-                        </span>
-                        <span className="flex items-center gap-2">
-                          <input
-                            aria-label={label}
-                            type="color"
-                            value={activeCustomPalette[key]}
-                            onChange={(event) =>
-                              handleCustomPaletteColorChange(
-                                key,
-                                event.target.value,
-                              )
-                            }
-                          />
-                          <code>{activeCustomPalette[key].toUpperCase()}</code>
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-
-                  <div className="mt-5 border-t border-gray-200 pt-5 dark:border-neutral-800/60">
-                    <div className="mb-3">
-                      <h5 className="text-sm font-semibold text-gray-900 dark:text-neutral-100">
-                        Saved custom themes
-                      </h5>
-                      <p className="mt-1 text-xs text-gray-500 dark:text-neutral-400">
-                        Save this palette with a name so you can switch back to
-                        it later. Saving an existing name updates that theme.
-                      </p>
-                    </div>
-
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <input
-                        type="text"
-                        value={customThemeName}
-                        onChange={(event) => {
-                          setCustomThemeName(event.target.value);
-                          if (customThemeMessage) setCustomThemeMessage("");
-                        }}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter")
-                            void handleSaveNamedCustomTheme();
-                        }}
-                        placeholder="e.g. Warm studio"
-                        aria-label="Saved theme name"
-                        className="ots-input min-w-0 flex-1 text-sm"
-                      />
-                      <button
-                        type="button"
-                        className="ots-button ots-button-primary sm:min-w-[8rem]"
-                        onClick={() => void handleSaveNamedCustomTheme()}
-                        disabled={!customThemeName.trim()}
-                      >
-                        <Save className="h-3.5 w-3.5" />
-                        Save theme
-                      </button>
-                    </div>
-
-                    {customThemeMessage && (
-                      <p
-                        className="mt-2 text-xs text-[var(--spotify-green)]"
-                        role="status"
-                      >
-                        {customThemeMessage}
-                      </p>
-                    )}
-
-                    <div className="mt-4 space-y-2">
-                      {savedCustomThemes.length === 0 ? (
-                        <p className="ots-card p-3 text-xs text-gray-500 dark:text-neutral-400">
-                          No saved custom themes yet.
-                        </p>
-                      ) : (
-                        savedCustomThemes.map((savedTheme) => {
-                          const savedPalette = savedTheme.theme[themeMode];
-                          return (
-                            <div
-                              key={savedTheme.id}
-                              className="ots-card flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between"
-                            >
-                              <div className="flex min-w-0 items-center gap-3">
-                                <span
-                                  className="ots-theme-preview"
-                                  aria-hidden="true"
-                                >
-                                  {[
-                                    savedPalette.background,
-                                    savedPalette.accent,
-                                    savedPalette.text,
-                                  ].map((swatch) => (
-                                    <span
-                                      key={swatch}
-                                      style={{ backgroundColor: swatch }}
-                                    />
-                                  ))}
-                                </span>
-                                <div className="min-w-0">
-                                  <p className="truncate text-sm font-semibold text-gray-900 dark:text-neutral-100">
-                                    {savedTheme.name}
-                                  </p>
-                                  <p className="mt-0.5 text-xs text-gray-500 dark:text-neutral-400">
-                                    Updated{" "}
-                                    {new Date(
-                                      savedTheme.updatedAt,
-                                    ).toLocaleDateString()}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex shrink-0 items-center gap-2">
-                                <button
-                                  type="button"
-                                  className="ots-button ots-button-secondary ots-button-sm"
-                                  onClick={() =>
-                                    void onLoadCustomTheme(savedTheme)
-                                  }
-                                >
-                                  Load
-                                </button>
-                                <button
-                                  type="button"
-                                  className="ots-button ots-button-danger ots-button-sm"
-                                  aria-label={`Delete ${savedTheme.name}`}
-                                  onClick={() =>
-                                    void onDeleteCustomTheme(savedTheme.id)
-                                  }
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                  Delete
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="ots-button ots-button-secondary mt-4"
-                    onClick={() =>
-                      void onCustomThemeChange({
-                        mode: themeMode,
-                        dark: { ...DEFAULT_CUSTOM_THEME.dark },
-                        light: { ...DEFAULT_CUSTOM_THEME.light },
-                      })
-                    }
-                  >
-                    <RotateCcw className="h-3.5 w-3.5" />
-                    Reset custom palette
-                  </button>
-                </div>
-              )}
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 mb-8">
                 {renderInput("thumbnail_size", "Thumbnail Size (px)", "number")}

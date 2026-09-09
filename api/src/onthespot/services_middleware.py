@@ -82,11 +82,13 @@ def download_spotify(item, item_id, item_type, token, temp_path):
     else:
         audio_key = EpisodeId.from_base62(item_id)
 
-    quality = AudioQuality.HIGH
-    bitrate = "160k"
-    if token.get_user_attribute("type") == "premium" and item_type == "track":
-        quality = AudioQuality.VERY_HIGH
-        bitrate = "320k"
+    if item.get("download_format") != "":
+        quality = AudioQuality.HIGH
+        bitrate = "160k"
+    else:
+        if token.get_user_attribute("type") == "premium" and item_type == "track":
+            quality = AudioQuality.VERY_HIGH
+            bitrate = "320k"
 
     try:
         stream = token.content_feeder().load(
@@ -129,25 +131,38 @@ def download_spotify(item, item_id, item_type, token, temp_path):
 
     return default_format, bitrate
 
+def _select_deezer_quality(song, item):
+    """
+    Selects the best fitting format given the preferred profile and available ones.
+
+    Cascades from best to worst in case of unavailability
+    """
+    if item.get("profile_bitrate") > 1000 and int(song.get("FILESIZE_FLAC", 0)) > 0:
+        return 9, "FLAC", "1411k", ".flac"
+        
+    if item.get("profile_bitrate") > 256 and int(song.get("FILESIZE_MP3_320", 0)) > 0:
+        return 5, "MP3_320", "320k", ".mp3"
+    
+    if item.get("profile_bitrate") > 129 and int(song.get("FILESIZE_MP3_256", 0)) > 0:
+        return 3, "MP3_256", "256k", ".mp3"
+    
+    return 1, "MP3_128", "128k", ".mp3"
+
 def download_deezer(item, item_id, token, temp_path):
     song = get_song_info_from_deezer_website(token, item_id)
-    song_quality = 1
-    song_format = "MP3_128"
-    bitrate = "128k"
-    default_format = ".mp3"
-
-    if int(song.get("FILESIZE_FLAC", 0)) > 0:
-        song_quality, song_format, bitrate, default_format = (
-            9,
-            "FLAC",
-            "1411k",
-            ".flac",
-        )
-    elif int(song.get("FILESIZE_MP3_320", 0)) > 0:
-        song_quality, song_format, bitrate = 3, "MP3_320", "320k"
-    elif int(song.get("FILESIZE_MP3_256", 0)) > 0:
-        song_quality, song_format, bitrate = 5, "MP3_256", "256k"
-
+    
+    if item.get("download_format") in ["mp3", "flac"]:
+        song_quality, song_format, bitrate, default_format = _select_deezer_quality(song, item)
+    else:
+        if int(song.get("FILESIZE_FLAC", 0)) > 0:
+            song_quality, song_format, bitrate, default_format = 9, "FLAC", "1411k", ".flac"
+        elif int(song.get("FILESIZE_MP3_320", 0)) > 0:
+            song_quality, song_format, bitrate = 3, "MP3_320", "320k"
+        elif int(song.get("FILESIZE_MP3_256", 0)) > 0:
+            song_quality, song_format, bitrate = 5, "MP3_256", "256k"
+        else:
+            song_quality, song_format, bitrate, default_format = 1, "MP3_128", "128k", ".mp3"
+    
     temp_path += default_format
 
     headers = {
