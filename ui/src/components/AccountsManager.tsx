@@ -41,7 +41,7 @@ const SERVICE_OPTIONS = [
   { value: 'soundcloud', label: 'SoundCloud', mode: 'token', tokenLabel: 'OAuth Token', requirement: 'Optional for public content; add a token for account access.', tokenRequired: false },
   { value: 'spotify', label: 'Spotify', mode: 'device', requirement: 'Requires Spotify Premium. Start sign-in, then open Spotify’s Connect to a device menu and select OnTheSpot.' },
   { value: 'tidal', label: 'Tidal', mode: 'device', requirement: 'Starts a Tidal device-link sign-in in your browser.' },
-  { value: 'youtube', label: 'YouTube Music', mode: 'youtube', requirement: 'Configure an explicit local YouTube session for videos that require sign-in.' },
+  { value: 'youtube', label: 'YouTube Music', mode: 'youtube', requirement: 'Configure an explicit local YouTube session for videos that require sign-in or add public account' },
 ] as const satisfies ReadonlyArray<{ value: string; label: string; mode: CredentialMode; requirement: string; tokenLabel?: string; tokenRequired?: boolean }>;
 
 const getServicePresentation = (service: string): ServicePresentation => {
@@ -214,11 +214,10 @@ export const AccountsManager: React.FC<AccountsManagerProps> = ({
           setYoutubeUploadComplete(true);
           setSignInStarted('YouTube cookies installed on OnTheSpot. Run the cleanup command below to remove the temporary local files.');
         } else {
-          const configuredMode = youtubeAuthMode === 'browser' ? 'browser' : 'cookie_file';
           const configured = await onConfigureYouTubeAuthentication({
-            mode: configuredMode,
-            browser: configuredMode === 'browser' ? youtubeBrowser : undefined,
-            cookie_file: configuredMode === 'cookie_file' ? youtubeCookieFile : undefined,
+            mode: youtubeAuthMode,
+            browser: youtubeAuthMode === 'browser' ? youtubeBrowser : undefined,
+            cookie_file: youtubeAuthMode === 'cookie_file' ? youtubeCookieFile : undefined,
           });
           if (!configured) throw new Error('The selected YouTube session source is not usable.');
           setYoutubeStatus(await fetchYouTubeAuthenticationStatus());
@@ -227,10 +226,10 @@ export const AccountsManager: React.FC<AccountsManagerProps> = ({
         }
       } catch (error) {
         setFormError(error instanceof Error ? error.message : 'Could not configure YouTube authentication.');
+        return;
       } finally {
         setLoading(false);
       }
-      return;
     }
     setLoading(true);
     const res = await onAddAccount(service, { username, token });
@@ -467,7 +466,8 @@ export const AccountsManager: React.FC<AccountsManagerProps> = ({
                   <p className="text-sm font-medium text-white">YouTube session source</p>
                   <p className="text-xs leading-relaxed text-[#b3b3b3]">YouTube does not support yt-dlp OAuth sign-in. For Docker or Unraid, upload a Netscape-format cookies.txt file so the server can use your session.</p>
                   <select value={youtubeAuthMode} onChange={(event) => { setYoutubeAuthMode(event.target.value as YouTubeSetupMode); setYoutubeUploadComplete(false); setFormError(''); }} className="ots-select w-full">
-                    <option value="upload">Upload cookies.txt (recommended)</option>
+                    <option value="none">No Cookie file, only public videos (recommended)</option>
+                    <option value="upload">Upload cookies.txt (recommended if you must access private videos)</option>
                     <option value="browser">Read a browser on the OnTheSpot host</option>
                     <option value="cookie_file">Use a file path on the OnTheSpot host</option>
                   </select>

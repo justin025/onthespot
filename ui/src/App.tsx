@@ -127,7 +127,7 @@ export default function App() {
   const [notificationHistoryOpen, setNotificationHistoryOpen] = useState(false);
   const [wsConnected, setWsConnected] = useState(false);
 
-  const isDarkMode: "light" | "dark" = "dark";
+  const [isDarkMode, setDarkMode] = useState("dark");
   const [hasNewVersion, SetNewVersion] = useState(false);
   const [downloadsPaused, setDownloadsPausedState] = useState(false);
   const [downloadSpeed, setDownloadSpeed] = useState(0);
@@ -178,13 +178,13 @@ export default function App() {
     void loadData();
   }, [loadData]);
 
-  useEffect(() => {
-    if (isDarkMode === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [isDarkMode]);
+//  useEffect(() => {
+//    if (isDarkMode === "dark") {
+//      document.documentElement.classList.add("dark");
+//    } else {
+//      document.documentElement.classList.remove("dark");
+//    }
+//  }, [isDarkMode]);
 
   useEffect(() => {
     const locale = (config?.language || "en_US").replace("_", "-");
@@ -218,6 +218,19 @@ export default function App() {
     }
     fetchQueueData();
   }, [notifications]);
+
+  const toggleDarkMode = async () => {
+    return
+    //To be reimplemented as previous code broke the native tailwind behaviour
+    if (isDarkMode == "dark") {
+      //setDarkMode("dark")
+      return
+    } else {
+      //setDarkMode("light")
+      return
+    }
+    
+  }
 
   const checkNewVersion = async () => {
     const status = await fetchUpdateInfo(true);
@@ -431,7 +444,7 @@ export default function App() {
       window.setTimeout(async () => {
         setAccounts(await fetchAccounts());
         setAccountHealth(await fetchAccountHealth());
-      }, 1500);
+      }, 2500);
     }
     return ok;
   };
@@ -465,6 +478,7 @@ export default function App() {
         }
         activeDownloads={activeDownloadsCount}
         accountCount={accounts.length}
+        toggleTheme={() => toggleDarkMode()}
         appVersion={config?.version || "v2.0.0 Alpha 2"}
         notificationHistoryCount={history.length}
         onOpenNotificationHistory={() => setNotificationHistoryOpen(true)}
@@ -484,11 +498,6 @@ export default function App() {
             />
           )}
 
-          {activeTab === "library" && (
-            <LibraryPage
-              onQueueChanged={async () => setQueue(await fetchDownloadQueue())}
-            />
-          )}
 
           {activeTab === "queue" && (
             <DownloadQueue
@@ -543,8 +552,6 @@ export default function App() {
               youtubeCookieFile={config?.youtube_cookies_file || ""}
             />
           )}
-
-          {activeTab === "statistics" && <StatisticsPanel />}
 
           {activeTab === "diagnostics" && (
             <DiagnosticsPanel

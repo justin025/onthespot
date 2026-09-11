@@ -50,10 +50,8 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({
 
   useEffect(() => {
     void refresh();
-    const interval = window.setInterval(() => void refresh(), 10_000);
-    return () => window.clearInterval(interval);
   }, []);
-
+  
   if (loading && !data)
     return (
       <div className="flex items-center gap-2 p-4 text-sm text-gray-500">

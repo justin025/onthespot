@@ -49,6 +49,7 @@ from .api.spotify import (
     spotify_new_session,
 )
 from .api.tidal import tidal_add_account_pt1, tidal_add_account_pt2
+from .api.youtube_music import youtube_music_add_account
 from .constants import ItemStatus
 from .downloader import DownloadWorker, RetryWorker
 from .export_locations import (
@@ -1969,7 +1970,7 @@ async def add_account(service: str, item: AccountData | None = None):
             apple_music_add_account(item.token)
             found = True
         case "youtube":
-            generic_add_account()
+            youtube_music_add_account()
             found = True
         case "bandcamp":
             bandcamp_add_account()
