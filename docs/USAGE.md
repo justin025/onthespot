@@ -29,40 +29,31 @@ form changes to show the fields required by the selected service.
 | --- | --- | --- |
 | Apple Music | Media User Token | A valid Apple Music session and subscription may be required for protected content. |
 | Bandcamp | None | Uses public Bandcamp access. |
-| Crunchyroll | Email and password | Used for supported video content. |
+| ~~Crunchyroll~~ | Email and password | Used for supported video content. |
 | Deezer | ARL cookie value | A valid Deezer session is required. |
 | Generic | None | Uses the generic/yt-dlp worker for supported URLs. |
-| Qobuz | Email and password | A valid Qobuz account is required. |
+| Qobuz?? | Email and password | A valid Qobuz account is required. |
 | SoundCloud | Optional OAuth token | Public content works without a token; add one for account-specific access. |
-| Spotify | Spotify Connect sign-in | Requires Spotify Premium. See the Spotify worker section below. |
+| Spotify | Spotify Connect sign-in and Dev API Keys | Requires Spotify Premium and WebAPI Dev Keys. |
 | Tidal | Device-link sign-in | Follow the link shown by OnTheSpot. |
-| YouTube Music | Optional cookies | Public videos may work without cookies. Sign-in or bot-protected videos require a Netscape-format `cookies.txt` file. |
+| YouTube Music | Optional cookies | Public videos works without cookies. Sign-in or private videos require a Netscape-format `cookies.txt` file. |
 
-Only use accounts and session data you are authorized to use. Secrets are
-stored in OnTheSpot's persistent configuration directory and must not be
-committed to Git.
+Only use accounts and session data you are authorized to use. 
 
-### Spotify worker account
+Secrets are stored in and encrypted file inside the root folder, with the encryption key on the side, it's not ideal but better than clean secrets, a password protection will be implemented in the stable 2.0 or 2.1.
 
-The Spotify worker supplies Spotify media access. It is not the same as the
-Spotify Web API credentials used for catalogue metadata.
+### Spotify Connect account
 
-- **Local network:** choose this when OnTheSpot and the Spotify app are on the
-  same LAN. Start sign-in, open Spotify's **Connect to a device** menu, and
-  select **OnTheSpot**.
-- **Remote access:** choose this when OnTheSpot is on another machine, such as
-  Docker on Unraid. Create a short-lived pairing code and run the displayed
-  companion command on the computer where Spotify is open. The companion must
-  share a LAN with Spotify for Connect discovery, while its server URL must be
-  reachable from that computer. See [the companion guide](../companion/README.md).
+To login via connect and your desktop app you'll need to run the companion on the PC running spotify.
 
-The companion is a one-time helper. A successful pairing saves the Spotify
-worker on the server and the generated cleanup command removes the temporary
-local companion checkout.
+> [!WARNING] Spotify has restriced API calls, be careful of the delay time, also some new accounts report to have basically no API call at all, so results may vary.
 
-### Spotify API credentials
+More info can be found in the `/companion` folder.
 
-Spotify catalogue search and Playlist sorting need a Spotify Developer app:
+
+### Spotify Dev WebAPI credentials
+
+Spotify needs a Spotify Developer app:
 
 1. Create an app in the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
 2. Copy its Client ID and Client Secret into **Settings → API config**.
@@ -84,30 +75,22 @@ YouTube does not provide a yt-dlp OAuth login. When a video requires sign-in:
    directory; the browser upload is not retained as a separate temporary file.
 5. Delete the exported local file when setup succeeds.
 
-The **Read a browser on the OnTheSpot host** option only works when that browser
-profile exists on the same machine as the OnTheSpot process. It cannot read a
-desktop browser from inside a Docker container.
+The **Read a browser on the OnTheSpot host** option is not intended to work for now, do not use it.
 
 ## Search & discover
 
-Use this page for text searches and direct links.
+Use this page for ~~text searches and~~ direct links.
 
-1. Select one or more media categories: Tracks, Albums, Playlists, Artists,
+~~1. Select one or more media categories: Tracks, Albums, Playlists, Artists,
    Podcasts, or Movies.
 2. Select one or more entries under **Search services**. **All services** uses
-   every currently available search worker.
-3. Enter a query and click **Search**.
+   every currently available search worker.~~
+
+> [!WARNING] Search is disabled for now because of api limits and bot detection, use only URLs
+
+3. Enter an URL copied from a service and click **Search**.
 4. Confirm the service badge on a result, then click **Download**.
 
-When multiple services are selected, OnTheSpot requests them independently,
-isolates a failed provider, and interleaves successful provider results so one
-large result set cannot hide the others. The result header shows a count for
-each returned service. Results still come from each provider's own catalogue,
-so matches and metadata can differ.
-
-Changing the selected services or media categories clears stale results. A
-direct supported URL is parsed and sent to the queue using its detected
-service.
 
 ## Download queue
 
@@ -136,73 +119,8 @@ profile assigned when they were queued unless changed with a batch action.
 
 ## Local library
 
-**Local library** indexes files saved by OnTheSpot.
+Coming Soon
 
-- **Scan library** refreshes the index and artwork.
-- Search by title, artist, album, or genre.
-- Sort by artist, album, title, date added, or other available fields, then
-  reverse the order with the A–Z/Z–A control.
-- Filter by format, artist, genre, download date, duplicates, missing artwork,
-  or metadata issues.
-- Play a local file, open its folder, edit metadata, rename it, or delete it.
-- Create an `.m3u` file from matching library items.
-- **Verify files** detects incomplete, corrupt, or missing indexed files.
-
-Missing-file entries can be re-downloaded when a source URL was saved, removed
-individually from the index, or cleared together. Removing an index entry does
-not recreate or delete an already missing file.
-
-## Playlist sorting
-
-Playlist sorting uses Spotify OAuth and is separate from the Spotify worker
-account. The Client ID and Client Secret come from **Settings → API config**.
-
-### Connect Spotify
-
-1. Open Playlist sorting. OnTheSpot proposes a callback based on the address
-   currently open in the browser.
-2. Add that exact callback to the Spotify Developer Dashboard.
-3. Save the redirect URI and click **Connect Spotify**.
-
-For local development, Spotify accepts the loopback form
-`http://127.0.0.1:<port>/playlist-automation/callback`; OnTheSpot converts
-`localhost` to `127.0.0.1` automatically. A remote installation needs an HTTPS
-callback that reaches that installation. The saved refresh token is reused, so
-normal page loads should not require another authorization.
-
-### Sorting tools
-
-- **Sort tracks:** add and drag priority rules such as release date, artist,
-  album, and title.
-- **Manage duplicates:** choose which duplicate to retain by release date or
-  playlist order.
-- **Version replacer:** find older/newer or alternate versions, with same-artist
-  or global search modes.
-- **Dynamic playlists:** feed one or more source playlists into a target using
-  replace, merge, or append behaviour, filters, sample limits, and optional
-  local-file preservation. Drag configurations to set dependency order.
-- **Schedules:** run a configuration or all dynamic playlists daily, on
-  weekdays, weekly, or monthly.
-- **Review changes:** approve or reject proposed removals and replacements
-  before applying them.
-- **Compare:** find tracks shared by two or more selected playlists and remove
-  individual copies.
-- **Ignored tracks:** inspect and restore items excluded from replacement or
-  duplicate processing.
-- **History / Undo:** review operations and undo supported changes.
-- **Debug:** inspect searchable processing events and failures.
-
-Playlist rows support click, Shift-click range selection, and click-drag
-selection. Selected playlists can also be downloaded directly, exported to
-CSV, backed up/restored, or included in an automation-config export. Export and
-backup destinations are set in **Settings → Backup & Restore**.
-
-## Download statistics
-
-The statistics page summarizes completed and failed downloads, success rate,
-storage represented by indexed downloads, formats, services, and history.
-Clearing statistics removes the recorded statistics history; it does not
-delete downloaded media.
 
 ## Settings
 
@@ -213,7 +131,6 @@ Settings sections are listed A–Z by default and can be reordered with
   playlist-automation cache lifetime.
 - **Audio Outputs:** download roots, filename/folder formatters, playlist folder
   organization, M3U files, cover art, conversion, and lyrics.
-- **Backup & Restore:** portable settings backup/restore plus default export and
   playlist-backup folders.
 - **Display Settings:** theme preset, light/dark mode, custom/saved themes,
   language, thumbnails, and display preferences.
@@ -223,8 +140,9 @@ Settings sections are listed A–Z by default and can be reordered with
 - **ID3 Tagging:** embedded metadata fields and metadata behaviour.
 - **Video Media:** video output paths, formats, resolution, audio, and subtitles.
 
-Click **Save Config** after changing backend settings. Theme, navigation, and
-some display preferences save immediately in the browser.
+> [NOTE] Click **Save Config** after changing backend settings. 
+
+Navigation and some display preferences save immediately in the browser.
 
 ## Diagnostics, notifications, and logs
 
@@ -233,20 +151,13 @@ some display preferences save immediately in the browser.
 - **Notification history** keeps user-visible success, warning, and error
   messages for the current installation.
 - **Server logs** can be filtered by severity and cleared from the view.
+- **Updates** check if a new update is available from source.
 
-If a service disappears briefly during a server restart, the UI preserves the
-selected search-service choices and restores them after reconnecting.
 
 ## Troubleshooting
 
 - A service filter only appears when a matching worker is available.
-- If all search cards show one provider, confirm more than one service button
-  is selected and inspect the per-service counts above the results.
 - If Spotify Connect is missing, verify Premium access, same-LAN discovery, and
   local firewall rules; use the companion for a remote server.
-- If Playlist sorting asks to connect again, confirm its persistent config
-  directory is mounted and the saved callback exactly matches the Spotify app.
-- If YouTube stalls or reports bot/sign-in protection, re-upload fresh cookies
-  and retry the item.
 - Use **Diagnostics**, **Notification history**, and **Server logs** for the
   exact backend error before retrying or changing credentials.

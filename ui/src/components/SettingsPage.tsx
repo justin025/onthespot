@@ -51,8 +51,8 @@ export type SettingsSection =
   | "video"
   | "metadata"
   | "search"
-  | "display"
-  | "backup";
+  | "display";
+  //| "backup";
 
 type FormatterKey = "track_path_formatter" | "playlist_path_formatter";
 
@@ -82,7 +82,7 @@ const SETTINGS_NAV_ITEMS: Array<{
 }> = [
   { id: "search", icon: Search, label: "API config" },
   { id: "audio", icon: Music, label: "Audio Outputs" },
-  { id: "backup", icon: Archive, label: "Backup & Restore" },
+//  { id: "backup", icon: Archive, label: "Backup & Restore" },
   { id: "display", icon: Eye, label: "Display Settings" },
   { id: "profiles", icon: Download, label: "Download Profiles" },
   { id: "general", icon: Cpu, label: "General & Workers" },
@@ -1306,7 +1306,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             </div>
           )}
 
-          {section === "backup" && (
+          {section === "disabled-backup" && (
             <div className="animate-[fadeIn_0.2s_ease-out]">
               <div className="mb-6">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-neutral-100">
