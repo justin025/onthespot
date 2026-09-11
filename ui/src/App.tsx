@@ -558,6 +558,7 @@ export default function App() {
               wsConnected={wsConnected}
               newVersion={hasNewVersion}
               checkVersion={checkNewVersion}
+              config={config}
             />
           )}
 

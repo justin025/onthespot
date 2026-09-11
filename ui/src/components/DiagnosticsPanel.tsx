@@ -14,11 +14,16 @@ import {
   getTargetBackendUrl,
   SystemDiagnostics,
 } from "../lib/api";
+import { UpdatePanel } from "./UpdatePanel";
+import {
+  OTSConfig,
+} from "../types";
 
 interface DiagnosticsPanelProps {
   wsConnected: boolean;
   newVersion: boolean;
   checkVersion: () => Promise<void>;
+  config: OTSConfig | null;
 }
 
 const formatBytes = (value: number) => {
@@ -37,6 +42,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({
   wsConnected,
   newVersion,
   checkVersion,
+  config
 }) => {
   const [data, setData] = useState<SystemDiagnostics | null>(null);
   const [loading, setLoading] = useState(true);
@@ -272,6 +278,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({
           )}
         </div>
       </section>
+      <UpdatePanel currentVersion={config.version} />
     </div>
   );
 };

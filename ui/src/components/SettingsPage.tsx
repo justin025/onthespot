@@ -643,7 +643,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                   )}
                 </div>
               </div>
-              <UpdatePanel currentVersion={config.version} />
             </div>
           )}
 
