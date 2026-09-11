@@ -19,14 +19,7 @@ import {
   GripVertical,
 } from "lucide-react";
 import {
-  CustomTheme,
-  CustomThemePalette,
-  DEFAULT_CUSTOM_THEME,
   OTSConfig,
-  SavedCustomTheme,
-  THEME_PRESETS,
-  ThemeMode,
-  ThemePreset,
 } from "../types";
 import {
   DownloadProfile,
@@ -36,7 +29,7 @@ import {
 } from "../lib/api";
 import { translate } from "../lib/i18n";
 import { DownloadProfilesPanel } from "./DownloadProfilesPanel";
-import { UpdatePanel } from "./UpdatePanel";
+
 
 interface SettingsPageProps {
   initialSection?: SettingsSection;
@@ -544,7 +537,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                 {renderToggle(
                   "raw_media_download",
                   "Raw Media Download",
-                  "Skip media conversion and ID3 metadata writing",
+                  "Skip media conversion and ID3 metadata writing, !! overrides profiles and any other format setting.",
                 )}
                 {renderToggle(
                   "enable_retry_worker",
@@ -672,39 +665,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                 <div className="sm:col-span-2 divide-y divide-gray-100 dark:divide-neutral-800/60 mb-2 border-b border-gray-100 dark:border-neutral-800/60">
                   {renderToggle(
                     "use_source_format",
-                    "Use Source Format",
-                    "Uses the best source quality and format directly",
+                    "Keep Source Format",
+                    "Always use the best source format as target, overriding the profiles",
                   )}
                   {renderToggle(
-                    "use_custom_file_bitrate",
-                    "Use Custom Bitrate",
-                    "Enforces files to output using target bitrate selections",
-                  )}
+                  "prefer_best_source_format",
+                  "Use best format for download",
+                  "Always download the best format available and convert if the profile target format is different"
+                )}
                 </div>
-                {renderSelect(
-                  "track_file_format",
-                  "Track Media Format",
-                  [
-                    { val: "flac", text: "FLAC (Lossless HiRes)" },
-                    { val: "mp3", text: "MP3 (Universal 320k)" },
-                    { val: "m4a", text: "M4A / AAC" },
-                    { val: "opus", text: "Opus (High Efficiency)" },
-                    { val: "wav", text: "WAV (Uncompressed)" },
-                    { val: "ogg", text: "Vorbis Ogg" },
-                  ],
-                  "Download container if standard source formats are disabled.",
-                )}
-                {renderSelect(
-                  "file_bitrate",
-                  "Converted Track File Bitrate",
-                  [
-                    { val: "320k", text: "320 kbps (Maximum Quality)" },
-                    { val: "256k", text: "256 kbps (High)" },
-                    { val: "192k", text: "192 kbps (Medium)" },
-                    { val: "128k", text: "128 kbps (Standard)" },
-                  ],
-                  "Download bitrate conversion output when custom bitrates are enabled.",
-                )}
                 {renderSelect(
                   "podcast_file_format",
                   "Podcast File Format",

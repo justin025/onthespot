@@ -216,7 +216,6 @@ export interface OTSConfig {
   download_queue_show_unavailable: boolean;
   download_queue_show_completed: boolean;
   audio_download_path: string;
-  track_file_format: string;
   track_path_formatter: string;
   podcast_file_format: string;
   podcast_path_formatter: string;
@@ -228,7 +227,6 @@ export interface OTSConfig {
   extinf_label: string;
   save_album_cover: boolean;
   album_cover_format: string;
-  file_bitrate: string;
   file_hertz: number;
   use_custom_file_bitrate: boolean;
   download_lyrics: boolean;
